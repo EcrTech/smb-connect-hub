@@ -153,90 +153,77 @@ export default function AdminEmailLists() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-4">
             {filteredLists.map((list) => (
-              <Card 
-                key={list.id} 
-                className={`hover:shadow-lg transition-all cursor-pointer ${
-                  selectedLists.includes(list.id) ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => {
-                  setSelectedLists(prev => 
-                    prev.includes(list.id) 
-                      ? prev.filter(id => id !== list.id)
-                      : [...prev, list.id]
-                  );
-                }}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedLists.includes(list.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          setSelectedLists(prev => 
-                            prev.includes(list.id) 
-                              ? prev.filter(id => id !== list.id)
-                              : [...prev, list.id]
-                          );
-                        }}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="truncate">{list.name}</span>
+              <Card key={list.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={selectedLists.includes(list.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setSelectedLists(prev => 
+                          prev.includes(list.id) 
+                            ? prev.filter(id => id !== list.id)
+                            : [...prev, list.id]
+                        );
+                      }}
+                      className="mt-1 w-4 h-4 rounded border-gray-300"
+                    />
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-lg font-semibold">{list.name}</h3>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteList(list.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Users className="w-4 h-4" />
+                        <span>{list.total_recipients} recipients</span>
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground mb-4">
+                        Created {new Date(list.created_at).toLocaleDateString()}
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/email-lists/${list.id}`);
+                          }}
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Manage
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBulkEmailDialog({ open: true, listIds: [list.id] });
+                          }}
+                          disabled={list.total_recipients === 0}
+                        >
+                          <Mail className="w-4 h-4 mr-2" />
+                          Send
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteList(list.id);
-                      }}
-                      className="flex-shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </CardTitle>
-                  {list.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {list.description}
-                    </p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>{list.total_recipients} recipients</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Created {new Date(list.created_at).toLocaleDateString()}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/email-lists/${list.id}`);
-                      }}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Manage
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setBulkEmailDialog({ open: true, listIds: [list.id] });
-                      }}
-                      disabled={list.total_recipients === 0}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Send
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
