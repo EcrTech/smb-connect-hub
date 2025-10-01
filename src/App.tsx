@@ -15,6 +15,9 @@ import UserManagement from "./pages/admin/UserManagement";
 import AdminAssociations from "./pages/admin/AdminAssociations";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
+import CreateAssociation from "./pages/admin/CreateAssociation";
+import CreateCompany from "./pages/admin/CreateCompany";
+import BulkUpload from "./pages/admin/BulkUpload";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
@@ -88,6 +91,30 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdminAssociationRequests />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/create-association" 
+            element={
+              <ProtectedRoute>
+                <CreateAssociation />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/create-company" 
+            element={
+              <ProtectedRoute>
+                <CreateCompany />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/bulk-upload" 
+            element={
+              <ProtectedRoute>
+                <BulkUpload />
               </ProtectedRoute>
             } 
           />

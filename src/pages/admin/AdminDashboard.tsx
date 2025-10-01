@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Shield, LogOut, Settings, FileText } from 'lucide-react';
+import { Building2, Users, Shield, LogOut, FileText, Plus, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle>Admin Actions</CardTitle>
             <CardDescription>Manage platform resources</CardDescription>
@@ -196,6 +196,30 @@ export default function AdminDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin/users')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Users
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Create Actions */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Quick Create</CardTitle>
+            <CardDescription>Add new records to the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button className="w-full" onClick={() => navigate('/admin/create-association')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Association
+              </Button>
+              <Button className="w-full" onClick={() => navigate('/admin/create-company')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Company
+              </Button>
+              <Button className="w-full" onClick={() => navigate('/admin/bulk-upload')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload
               </Button>
             </div>
           </CardContent>
