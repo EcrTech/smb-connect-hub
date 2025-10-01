@@ -41,6 +41,8 @@ interface ProfileData {
   linkedin_url: string | null;
   twitter_url: string | null;
   website_url: string | null;
+  employment_status: string | null;
+  open_to_work: boolean;
 }
 
 interface WorkExperience {
@@ -306,7 +308,7 @@ export default function MemberProfile() {
                   )}
                 </div>
 
-                <div className="flex-1">
+              <div className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>
                       <h1 className="text-3xl font-bold">{fullName}</h1>
@@ -317,6 +319,22 @@ export default function MemberProfile() {
                         <div className="flex items-center gap-2 mt-2 text-muted-foreground">
                           <MapPin className="w-4 h-4" />
                           <span>{profile.location}</span>
+                        </div>
+                      )}
+                      {/* Employment Status Badge */}
+                      {profile.employment_status && (
+                        <div className="mt-3">
+                          <Badge 
+                            variant={profile.open_to_work ? "default" : "secondary"}
+                            className="text-sm"
+                          >
+                            {profile.employment_status === 'open_to_opportunities' && '🟢 Open to opportunities'}
+                            {profile.employment_status === 'actively_looking' && '🔍 Actively looking'}
+                            {profile.employment_status === 'hiring' && '📢 Hiring'}
+                            {profile.employment_status === 'not_looking' && 'Not looking'}
+                            {profile.employment_status === 'open_to_consulting' && '💼 Open to consulting'}
+                            {profile.employment_status === 'available_for_freelance' && '✨ Available for freelance'}
+                          </Badge>
                         </div>
                       )}
                     </div>
@@ -362,14 +380,19 @@ export default function MemberProfile() {
         </Card>
 
         {/* About */}
-        {profile.bio && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <h2 className="text-xl font-semibold mb-4">About</h2>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">About</h2>
+              {isOwnProfile && !profile.bio && <EditProfileDialog profile={profile} onSave={loadProfile} />}
+            </div>
+            {profile.bio ? (
               <p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <p className="text-muted-foreground italic">No description added yet</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Work Experience */}
         <Card className="mb-6">

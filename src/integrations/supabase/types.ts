@@ -852,12 +852,14 @@ export type Database = {
           cover_image: string | null
           created_at: string | null
           current_context: string | null
+          employment_status: string | null
           first_name: string
           headline: string | null
           id: string
           last_name: string
           linkedin_url: string | null
           location: string | null
+          open_to_work: boolean | null
           phone: string | null
           twitter_url: string | null
           updated_at: string | null
@@ -869,12 +871,14 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
+          employment_status?: string | null
           first_name: string
           headline?: string | null
           id: string
           last_name: string
           linkedin_url?: string | null
           location?: string | null
+          open_to_work?: boolean | null
           phone?: string | null
           twitter_url?: string | null
           updated_at?: string | null
@@ -886,12 +890,14 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
+          employment_status?: string | null
           first_name?: string
           headline?: string | null
           id?: string
           last_name?: string
           linkedin_url?: string | null
           location?: string | null
+          open_to_work?: boolean | null
           phone?: string | null
           twitter_url?: string | null
           updated_at?: string | null

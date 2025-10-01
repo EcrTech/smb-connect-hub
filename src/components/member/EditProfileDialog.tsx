@@ -11,6 +11,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Edit } from 'lucide-react';
@@ -27,6 +29,8 @@ interface EditProfileDialogProps {
     linkedin_url: string | null;
     twitter_url: string | null;
     website_url: string | null;
+    employment_status: string | null;
+    open_to_work: boolean;
   };
   onSave: () => void;
 }
@@ -45,6 +49,8 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
     linkedin_url: profile.linkedin_url || '',
     twitter_url: profile.twitter_url || '',
     website_url: profile.website_url || '',
+    employment_status: profile.employment_status || '',
+    open_to_work: profile.open_to_work || false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +70,8 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
           linkedin_url: formData.linkedin_url || null,
           twitter_url: formData.twitter_url || null,
           website_url: formData.website_url || null,
+          employment_status: formData.employment_status || null,
+          open_to_work: formData.open_to_work,
         })
         .eq('id', profile.id);
 
@@ -140,6 +148,39 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
               rows={4}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="employment_status">Employment Status</Label>
+            <Select
+              value={formData.employment_status}
+              onValueChange={(value) => setFormData({ ...formData, employment_status: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select your status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open_to_opportunities">🟢 Open to opportunities</SelectItem>
+                <SelectItem value="actively_looking">🔍 Actively looking</SelectItem>
+                <SelectItem value="hiring">📢 Hiring</SelectItem>
+                <SelectItem value="not_looking">Not looking</SelectItem>
+                <SelectItem value="open_to_consulting">💼 Open to consulting</SelectItem>
+                <SelectItem value="available_for_freelance">✨ Available for freelance</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="open_to_work"
+              checked={formData.open_to_work}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, open_to_work: checked as boolean })
+              }
+            />
+            <Label htmlFor="open_to_work" className="cursor-pointer">
+              Show "Open to Work" badge on profile
+            </Label>
           </div>
 
           <div className="space-y-2">
