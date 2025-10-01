@@ -1305,6 +1305,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_add_chat_participant: {
+        Args: { check_chat_id: string; check_user_id: string }
+        Returns: boolean
+      }
       check_company_admin_for_member: {
         Args: { member_company_id: string }
         Returns: boolean
@@ -1343,6 +1347,10 @@ export type Database = {
       }
       is_association_manager_of_user: {
         Args: { target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
+      is_chat_participant: {
+        Args: { check_chat_id: string; check_user_id: string }
         Returns: boolean
       }
       is_company_admin: {
