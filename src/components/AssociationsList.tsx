@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ interface Association {
 }
 
 export function AssociationsList() {
+  const navigate = useNavigate();
   const [associations, setAssociations] = useState<Association[]>([]);
   const [filteredAssociations, setFilteredAssociations] = useState<Association[]>([]);
   const [displayedAssociations, setDisplayedAssociations] = useState<Association[]>([]);
@@ -133,7 +135,11 @@ export function AssociationsList() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {displayedAssociations.map((association) => (
-          <Card key={association.id} className="hover:shadow-lg transition-shadow">
+          <Card 
+            key={association.id} 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate(`/admin/associations/${association.id}`)}
+          >
             <CardHeader>
               <div className="flex items-start justify-between">
                 <Building2 className="h-8 w-8 text-primary" />
@@ -144,7 +150,10 @@ export function AssociationsList() {
                   <Button 
                     size="sm" 
                     variant="ghost"
-                    onClick={() => setEditingAssociation(association)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingAssociation(association);
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

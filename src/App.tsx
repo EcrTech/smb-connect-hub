@@ -15,6 +15,7 @@ import UserManagement from "./pages/admin/UserManagement";
 import AdminAssociations from "./pages/admin/AdminAssociations";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
+import AssociationProfileView from "./pages/admin/AssociationProfileView";
 import CreateAssociation from "./pages/admin/CreateAssociation";
 import CreateCompany from "./pages/admin/CreateCompany";
 import CreateUser from "./pages/admin/CreateUser";
@@ -82,7 +83,15 @@ const App = () => (
             } 
           />
           <Route 
-            path="/admin/companies" 
+            path="/admin/associations/:id" 
+            element={
+              <ProtectedRoute>
+                <AssociationProfileView />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/companies"
             element={
               <ProtectedRoute>
                 <AdminCompanies />
