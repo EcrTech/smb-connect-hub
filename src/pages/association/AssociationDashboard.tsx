@@ -197,9 +197,9 @@ export default function AssociationDashboard() {
                 <Users className="w-4 h-4 mr-2" />
                 Send Invitations
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/association/settings')}>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />
-                Association Settings
+                Association Profile
               </Button>
             </div>
           </CardContent>

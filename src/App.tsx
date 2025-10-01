@@ -17,6 +17,7 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
+import AssociationProfile from "./pages/association/AssociationProfile";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
@@ -111,6 +112,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AssociationCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/profile" 
+            element={
+              <ProtectedRoute>
+                <AssociationProfile />
               </ProtectedRoute>
             } 
           />

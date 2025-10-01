@@ -201,11 +201,14 @@ export type Database = {
           country: string | null
           created_at: string | null
           description: string | null
+          founded_year: number | null
           id: string
           is_active: boolean | null
+          keywords: string[] | null
           logo: string | null
           name: string
           postal_code: string | null
+          social_links: Json | null
           state: string | null
           updated_at: string | null
           website: string | null
@@ -218,11 +221,14 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           description?: string | null
+          founded_year?: number | null
           id?: string
           is_active?: boolean | null
+          keywords?: string[] | null
           logo?: string | null
           name: string
           postal_code?: string | null
+          social_links?: Json | null
           state?: string | null
           updated_at?: string | null
           website?: string | null
@@ -235,11 +241,14 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           description?: string | null
+          founded_year?: number | null
           id?: string
           is_active?: boolean | null
+          keywords?: string[] | null
           logo?: string | null
           name?: string
           postal_code?: string | null
+          social_links?: Json | null
           state?: string | null
           updated_at?: string | null
           website?: string | null
@@ -483,6 +492,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "company_invitations_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      key_functionaries: {
+        Row: {
+          association_id: string
+          bio: string | null
+          created_at: string | null
+          designation: string
+          display_order: number | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          photo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          association_id: string
+          bio?: string | null
+          created_at?: string | null
+          designation: string
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          photo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          association_id?: string
+          bio?: string | null
+          created_at?: string | null
+          designation?: string
+          display_order?: number | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          photo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_functionaries_association_id_fkey"
             columns: ["association_id"]
             isOneToOne: false
             referencedRelation: "associations"
