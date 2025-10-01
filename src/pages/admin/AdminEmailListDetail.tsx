@@ -166,8 +166,19 @@ export default function AdminEmailListDetail() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = 'email,name\nexample@email.com,John Doe\nanother@email.com,Jane Smith';
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const csvContent = `email,name
+john.doe@example.com,John Doe
+jane.smith@company.com,Jane Smith
+contact@business.org,
+
+# Instructions:
+# 1. The 'email' column is REQUIRED
+# 2. The 'name' column is optional
+# 3. Remove these example rows and the instruction lines before uploading
+# 4. Keep the header row (email,name)
+# 5. One recipient per row`;
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -176,6 +187,11 @@ export default function AdminEmailListDetail() {
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Template Downloaded',
+      description: 'Remove example rows before uploading your data',
+    });
   };
 
   const filteredRecipients = recipients.filter((recipient) =>
