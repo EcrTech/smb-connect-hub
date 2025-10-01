@@ -32,6 +32,8 @@ import MemberConnections from "./pages/member/MemberConnections";
 import BrowseMembers from "./pages/member/BrowseMembers";
 import MemberProfile from "./pages/member/MemberProfile";
 import MemberFeed from "./pages/member/MemberFeed";
+import CompanyFeed from "./pages/company/CompanyFeed";
+import AssociationFeed from "./pages/association/AssociationFeed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -243,6 +245,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MemberFeed />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/feed" 
+            element={
+              <ProtectedRoute>
+                <CompanyFeed />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/feed" 
+            element={
+              <ProtectedRoute>
+                <AssociationFeed />
               </ProtectedRoute>
             } 
           />

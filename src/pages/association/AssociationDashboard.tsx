@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, LogOut, Settings } from 'lucide-react';
+import { Building2, Users, LogOut, Settings, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -226,8 +226,12 @@ export default function AssociationDashboard() {
             <CardDescription>Manage your association and companies</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="w-full" onClick={() => navigate('/association/companies')}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Button className="w-full" onClick={() => navigate('/association/feed')}>
+                <Radio className="w-4 h-4 mr-2" />
+                Association Feed
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/companies')}>
                 <Building2 className="w-4 h-4 mr-2" />
                 Manage Companies
               </Button>

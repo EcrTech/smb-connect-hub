@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, MessageSquare, LogOut, Settings } from 'lucide-react';
+import { Building2, Users, MessageSquare, LogOut, Settings, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -155,8 +155,12 @@ export default function CompanyDashboard() {
             <CardDescription>Manage your company and team</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="w-full" onClick={() => navigate('/company/members')}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Button className="w-full" onClick={() => navigate('/company/feed')}>
+                <Radio className="w-4 h-4 mr-2" />
+                Company Feed
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/company/members')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Members
               </Button>
