@@ -21,7 +21,9 @@ import {
   LogOut,
   Image as ImageIcon,
   X,
-  Search
+  Search,
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import logo from '@/assets/smb-connect-logo.jpg';
@@ -371,76 +373,110 @@ export default function MemberFeed() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
-            <div>
-              <h1 className="text-2xl font-bold">SMB Connect</h1>
-              <p className="text-sm text-muted-foreground">Member Feed</p>
+      {/* Header - LinkedIn style */}
+      <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            {/* Left - Logo and Search */}
+            <div className="flex items-center gap-4 flex-1 max-w-2xl">
+              <img 
+                src={logo} 
+                alt="SMB Connect" 
+                className="h-8 object-contain cursor-pointer" 
+                onClick={() => navigate('/feed')}
+              />
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search posts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-9 bg-muted/50"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {profile && currentUserId && (
-              <Avatar 
-                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
-                onClick={() => navigate(`/profile/${currentUserId}`)}
+
+            {/* Right - Navigation Icons */}
+            <div className="flex items-center gap-6">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                onClick={() => navigate('/feed')}
               >
-                <AvatarImage src={profile.avatar || undefined} />
-                <AvatarFallback>
-                  {profile.first_name?.[0]}{profile.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+                <MessageSquare className="w-5 h-5" />
+                <span className="text-xs">Feed</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                onClick={() => navigate('/members')}
+              >
+                <Users className="w-5 h-5" />
+                <span className="text-xs">Members</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                onClick={() => navigate('/messages')}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-xs">Messages</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                onClick={() => navigate('/companies')}
+              >
+                <Building2 className="w-5 h-5" />
+                <span className="text-xs">Companies</span>
+              </Button>
+              
+              {/* Profile Dropdown */}
+              <div className="flex items-center gap-2 border-l pl-4">
+                {profile && currentUserId && (
+                  <Avatar 
+                    className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
+                    onClick={() => navigate(`/profile/${currentUserId}`)}
+                  >
+                    <AvatarImage src={profile.avatar || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {profile.first_name?.[0]}{profile.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="mb-6 flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </div>
-
-        {/* Search Bar */}
+        {/* Create Post Card */}
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Create Post */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <Avatar>
+            <div className="flex gap-3">
+              <Avatar className="w-12 h-12">
                 <AvatarImage src={profile?.avatar || undefined} />
                 <AvatarFallback>
                   {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-3">
                 <Textarea
                   placeholder="What's on your mind?"
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
                   rows={3}
-                  className="resize-none"
+                  className="resize-none border-0 focus-visible:ring-0 p-0"
                 />
                 {imagePreview && (
                   <div className="relative">
@@ -459,33 +495,34 @@ export default function MemberFeed() {
                     </Button>
                   </div>
                 )}
-                <div className="flex justify-between items-center">
-                  <div className="flex gap-2">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      className="hidden"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Add Photo
-                    </Button>
-                  </div>
-                  <Button
-                    onClick={handleCreatePost}
-                    disabled={!newPostContent.trim() || posting}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    {posting ? 'Posting...' : 'Post'}
-                  </Button>
-                </div>
               </div>
+            </div>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <div className="flex gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ImageIcon className="w-5 h-5 mr-2" />
+                  Photo
+                </Button>
+              </div>
+              <Button
+                onClick={handleCreatePost}
+                disabled={!newPostContent.trim() || posting}
+                size="sm"
+              >
+                {posting ? 'Posting...' : 'Post'}
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -52,7 +52,8 @@ export default function Dashboard() {
     case 'company':
       return <CompanyDashboard />;
     case 'member':
-      return <MemberDashboard />;
+      navigate('/feed');
+      return null;
     default:
       return null;
   }
