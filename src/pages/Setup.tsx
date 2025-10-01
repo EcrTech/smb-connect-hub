@@ -79,10 +79,10 @@ export default function Setup() {
               Sign Out
             </Button>
             <Button 
-              onClick={() => window.location.reload()} 
+              onClick={() => navigate('/dashboard')} 
               className="flex-1"
             >
-              Check Status
+              Refresh Status
             </Button>
           </div>
         </CardContent>
