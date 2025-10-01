@@ -1100,6 +1100,10 @@ export type Database = {
       }
     }
     Functions: {
+      check_company_admin_for_member: {
+        Args: { member_company_id: string }
+        Returns: boolean
+      }
       get_user_role_context: {
         Args: { check_user_id: string }
         Returns: string
@@ -1133,6 +1137,10 @@ export type Database = {
         Returns: boolean
       }
       is_company_admin: {
+        Args: { check_company_id: string; check_user_id: string }
+        Returns: boolean
+      }
+      is_company_admin_safe: {
         Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
