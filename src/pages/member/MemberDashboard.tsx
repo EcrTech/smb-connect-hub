@@ -6,12 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Building2, Users, MessageSquare, TrendingUp, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function MemberDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userData } = useUserRole();
   const [profile, setProfile] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -21,6 +23,8 @@ export default function MemberDashboard() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      setCurrentUserId(user.id);
 
       const { data: profileData } = await supabase
         .from('profiles')
@@ -79,10 +83,23 @@ export default function MemberDashboard() {
               <p className="text-sm text-muted-foreground">Member Dashboard</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-3">
+            {profile && currentUserId && (
+              <Avatar 
+                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+                onClick={() => navigate(`/profile/${currentUserId}`)}
+              >
+                <AvatarImage src={profile.avatar || undefined} />
+                <AvatarFallback>
+                  {profile.first_name?.[0]}{profile.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
