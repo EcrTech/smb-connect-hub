@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Upload } from 'lucide-react';
 import { AssociationsList } from '@/components/AssociationsList';
 
 export default function AdminAssociations() {
@@ -18,10 +18,16 @@ export default function AdminAssociations() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
-            <Button onClick={() => navigate('/admin/create-association')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Association
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate('/admin/bulk-upload-associations')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload
+              </Button>
+              <Button onClick={() => navigate('/admin/create-association')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Association
+              </Button>
+            </div>
           </div>
         </div>
       </header>

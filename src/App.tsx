@@ -17,7 +17,10 @@ import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
 import CreateAssociation from "./pages/admin/CreateAssociation";
 import CreateCompany from "./pages/admin/CreateCompany";
-import BulkUpload from "./pages/admin/BulkUpload";
+import CreateUser from "./pages/admin/CreateUser";
+import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
+import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
+import BulkUploadUsers from "./pages/admin/BulkUploadUsers";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
@@ -111,10 +114,34 @@ const App = () => (
             } 
           />
           <Route 
-            path="/admin/bulk-upload" 
+            path="/admin/create-user" 
             element={
               <ProtectedRoute>
-                <BulkUpload />
+                <CreateUser />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/bulk-upload-associations" 
+            element={
+              <ProtectedRoute>
+                <BulkUploadAssociations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/bulk-upload-companies" 
+            element={
+              <ProtectedRoute>
+                <BulkUploadCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/bulk-upload-users" 
+            element={
+              <ProtectedRoute>
+                <BulkUploadUsers />
               </ProtectedRoute>
             } 
           />

@@ -217,9 +217,33 @@ export default function AdminDashboard() {
                 <Plus className="w-4 h-4 mr-2" />
                 Create Company
               </Button>
-              <Button className="w-full" onClick={() => navigate('/admin/bulk-upload')}>
+              <Button className="w-full" onClick={() => navigate('/admin/create-user')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create User
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Upload Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Upload</CardTitle>
+            <CardDescription>Upload CSV files to create multiple records</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/bulk-upload-associations')}>
                 <Upload className="w-4 h-4 mr-2" />
-                Bulk Upload
+                Bulk Upload Associations
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/bulk-upload-companies')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload Companies
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/bulk-upload-users')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload Users
               </Button>
             </div>
           </CardContent>

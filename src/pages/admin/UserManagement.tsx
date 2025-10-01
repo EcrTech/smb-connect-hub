@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Building2, Users, Search, Plus } from 'lucide-react';
+import { Shield, Building2, Users, Search, Plus, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ interface Company {
 }
 
 export default function UserManagement() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -224,6 +226,16 @@ export default function UserManagement() {
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
           <p className="text-muted-foreground">Manage user roles and permissions</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin/bulk-upload-users')}>
+            <Upload className="h-4 w-4 mr-2" />
+            Bulk Upload
+          </Button>
+          <Button onClick={() => navigate('/admin/create-user')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create User
+          </Button>
         </div>
       </div>
 
