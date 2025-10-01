@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search } from 'lucide-react';
+import { Search, PenSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ComposeMessageDialog } from './ComposeMessageDialog';
 
 interface ConversationListProps {
   selectedChatId: string | null;
@@ -26,6 +28,7 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [composeOpen, setComposeOpen] = useState(false);
 
   useEffect(() => {
     if (currentUserId) {
@@ -184,8 +187,19 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search */}
-      <div className="p-4 border-b">
+      {/* Header with Compose Button */}
+      <div className="p-4 border-b space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Messages</h2>
+          <Button 
+            size="sm" 
+            onClick={() => setComposeOpen(true)}
+            className="gap-2"
+          >
+            <PenSquare className="w-4 h-4" />
+            Compose
+          </Button>
+        </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
@@ -241,6 +255,14 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
           </div>
         )}
       </ScrollArea>
+
+      {/* Compose Dialog */}
+      <ComposeMessageDialog
+        open={composeOpen}
+        onOpenChange={setComposeOpen}
+        currentUserId={currentUserId}
+        onChatCreated={onSelectChat}
+      />
     </div>
   );
 }
