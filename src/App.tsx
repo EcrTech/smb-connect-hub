@@ -66,7 +66,15 @@ const App = () => (
             } 
           />
           <Route 
-            path="/admin" 
+            path="/dashboard/messages" 
+            element={
+              <ProtectedRoute>
+                <MemberMessages />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin"
             element={
               <ProtectedRoute>
                 <AdminDashboard />
