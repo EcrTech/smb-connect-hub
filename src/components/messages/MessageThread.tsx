@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 interface MessageThreadProps {
   chatId: string;
   currentUserId: string | null;
+  compact?: boolean;
 }
 
 interface Message {
@@ -26,7 +27,7 @@ interface Message {
   isOwn: boolean;
 }
 
-export function MessageThread({ chatId, currentUserId }: MessageThreadProps) {
+export function MessageThread({ chatId, currentUserId, compact = false }: MessageThreadProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatName, setChatName] = useState('');
@@ -179,12 +180,14 @@ export function MessageThread({ chatId, currentUserId }: MessageThreadProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="border-b p-4 bg-card">
-        <h2 className="font-semibold text-lg">{chatName}</h2>
-      </div>
+      {!compact && (
+        <div className="border-b p-4 bg-card">
+          <h2 className="font-semibold text-lg">{chatName}</h2>
+        </div>
+      )}
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className={cn("flex-1 p-4", compact && "h-[400px]")}>
         <div className="space-y-4">
           {messages.map((message) => (
             <div

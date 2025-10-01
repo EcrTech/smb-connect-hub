@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
+import { FloatingChat } from '@/components/messages/FloatingChat';
 import { 
   ArrowLeft, 
   Heart, 
@@ -615,6 +616,9 @@ export default function MemberFeed() {
           </div>
         )}
       </main>
+
+      {/* Floating Chat Widget */}
+      <FloatingChat currentUserId={currentUserId} />
     </div>
   );
 }

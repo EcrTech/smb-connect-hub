@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { FloatingChat } from '@/components/messages/FloatingChat';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -20,7 +21,8 @@ import {
   Mail,
   Phone,
   Edit,
-  Camera
+  Camera,
+  MessageSquare
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
 import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperienceDialog';
@@ -93,6 +95,9 @@ export default function MemberProfile() {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'none' | 'pending' | 'connected'>('none');
+  const [chatId, setChatId] = useState<string | null>(null);
 
   const isOwnProfile = currentUser === userId;
 
@@ -101,9 +106,141 @@ export default function MemberProfile() {
     loadProfile();
   }, [userId]);
 
+  useEffect(() => {
+    if (currentUser && userId && !isOwnProfile) {
+      checkConnectionStatus();
+    }
+  }, [currentUser, userId, isOwnProfile]);
+
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setCurrentUser(user?.id || null);
+  };
+
+  const checkConnectionStatus = async () => {
+    try {
+      // Get both members
+      const { data: currentMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', currentUser)
+        .single();
+
+      const { data: otherMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!currentMember || !otherMember) return;
+
+      // Check connection status
+      const { data: connection } = await supabase
+        .from('connections')
+        .select('id, status')
+        .or(`and(sender_id.eq.${currentMember.id},receiver_id.eq.${otherMember.id}),and(sender_id.eq.${otherMember.id},receiver_id.eq.${currentMember.id})`)
+        .maybeSingle();
+
+      if (connection) {
+        if (connection.status === 'accepted') {
+          setConnectionStatus('connected');
+          // Find existing chat
+          await findExistingChat(currentMember.id, otherMember.id);
+        } else {
+          setConnectionStatus('pending');
+        }
+      } else {
+        setConnectionStatus('none');
+      }
+    } catch (error) {
+      console.error('Error checking connection:', error);
+    }
+  };
+
+  const findExistingChat = async (currentMemberId: string, otherMemberId: string) => {
+    try {
+      // Get chats where current member is participant
+      const { data: currentChats } = await supabase
+        .from('chat_participants')
+        .select('chat_id')
+        .eq('company_id', currentMemberId);
+
+      if (!currentChats || currentChats.length === 0) return;
+
+      // Check each chat to see if other member is also in it
+      for (const chat of currentChats) {
+        const { data: participants } = await supabase
+          .from('chat_participants')
+          .select('company_id')
+          .eq('chat_id', chat.chat_id);
+
+        if (participants && participants.length === 2) {
+          const otherParticipant = participants.find(p => p.company_id !== currentMemberId);
+          if (otherParticipant?.company_id === otherMemberId) {
+            setChatId(chat.chat_id);
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error finding chat:', error);
+    }
+  };
+
+  const handleStartMessage = async () => {
+    try {
+      if (chatId) {
+        // Chat already exists, just open it
+        return;
+      }
+
+      // Create new chat
+      const { data: currentMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', currentUser)
+        .single();
+
+      const { data: otherMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!currentMember || !otherMember) return;
+
+      const { data: newChat, error: chatError } = await supabase
+        .from('chats')
+        .insert({
+          type: 'direct',
+          last_message_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (chatError) throw chatError;
+
+      const { error: participantError } = await supabase
+        .from('chat_participants')
+        .insert([
+          { chat_id: newChat.id, company_id: currentMember.id },
+          { chat_id: newChat.id, company_id: otherMember.id }
+        ]);
+
+      if (participantError) throw participantError;
+
+      setChatId(newChat.id);
+      toast({
+        title: 'Success',
+        description: 'Chat created',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create chat',
+        variant: 'destructive',
+      });
+    }
   };
 
   const loadProfile = async () => {
@@ -343,6 +480,13 @@ export default function MemberProfile() {
 
                   {/* Contact & Social Links */}
                   <div className="flex flex-wrap gap-3 mt-4">
+                    {/* Message Button for Connected Users */}
+                    {!isOwnProfile && connectionStatus === 'connected' && (
+                      <Button variant="default" size="sm" onClick={handleStartMessage}>
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Message
+                      </Button>
+                    )}
                     {profile.phone && (
                       <a href={`tel:${profile.phone}`}>
                         <Button variant="outline" size="sm">
@@ -546,6 +690,11 @@ export default function MemberProfile() {
           </Card>
         )}
       </main>
+
+      {/* Floating Chat Widget */}
+      {!isOwnProfile && connectionStatus === 'connected' && (
+        <FloatingChat currentUserId={currentUser} initialChatId={chatId} />
+      )}
     </div>
   );
 }
