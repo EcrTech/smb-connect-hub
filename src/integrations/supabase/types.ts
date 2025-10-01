@@ -203,6 +203,7 @@ export type Database = {
           description: string | null
           founded_year: number | null
           id: string
+          industry: string | null
           is_active: boolean | null
           keywords: string[] | null
           logo: string | null
@@ -223,6 +224,7 @@ export type Database = {
           description?: string | null
           founded_year?: number | null
           id?: string
+          industry?: string | null
           is_active?: boolean | null
           keywords?: string[] | null
           logo?: string | null
@@ -243,6 +245,7 @@ export type Database = {
           description?: string | null
           founded_year?: number | null
           id?: string
+          industry?: string | null
           is_active?: boolean | null
           keywords?: string[] | null
           logo?: string | null

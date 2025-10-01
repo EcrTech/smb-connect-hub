@@ -26,6 +26,7 @@ interface Association {
   is_active: boolean;
   founded_year: number;
   logo: string;
+  industry: string;
   keywords: string[];
   social_links: any;
 }
@@ -165,12 +166,20 @@ export default function AssociationProfileView() {
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mb-4">{association.description}</p>
-                {association.founded_year && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <Calendar className="w-4 h-4" />
-                    <span>Founded in {association.founded_year}</span>
-                  </div>
-                )}
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
+                  {association.founded_year && (
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>Founded in {association.founded_year}</span>
+                    </div>
+                  )}
+                  {association.industry && (
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4" />
+                      <span>{association.industry}</span>
+                    </div>
+                  )}
+                </div>
                 {association.keywords && association.keywords.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {association.keywords.map((keyword, index) => (

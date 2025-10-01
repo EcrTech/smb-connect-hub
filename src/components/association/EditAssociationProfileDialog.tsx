@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -23,6 +24,7 @@ const profileSchema = z.object({
   country: z.string().default('India'),
   postal_code: z.string().optional(),
   founded_year: z.string().optional(),
+  industry: z.string().optional(),
   keywords: z.string().optional(),
   linkedin: z.string().optional(),
   twitter: z.string().optional(),
@@ -53,6 +55,7 @@ export function EditAssociationProfileDialog({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -68,6 +71,7 @@ export function EditAssociationProfileDialog({
       country: association.country || 'India',
       postal_code: association.postal_code || '',
       founded_year: association.founded_year?.toString() || '',
+      industry: association.industry || '',
       keywords: association.keywords?.join(', ') || '',
       linkedin: socialLinks.linkedin || '',
       twitter: socialLinks.twitter || '',
@@ -106,6 +110,7 @@ export function EditAssociationProfileDialog({
           country: data.country,
           postal_code: data.postal_code,
           founded_year: data.founded_year ? parseInt(data.founded_year) : null,
+          industry: data.industry || null,
           keywords: keywordsArray,
           social_links: socialLinksObj,
         })
@@ -161,6 +166,55 @@ export function EditAssociationProfileDialog({
               <div>
                 <Label htmlFor="founded_year">Founded Year</Label>
                 <Input {...register('founded_year')} id="founded_year" type="number" placeholder="2020" disabled={loading} />
+              </div>
+
+              <div>
+                <Label htmlFor="industry">Industry</Label>
+                <Controller
+                  name="industry"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select industry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">All</SelectItem>
+                        <SelectItem value="Agriculture & Allied Activities">Agriculture & Allied Activities</SelectItem>
+                        <SelectItem value="Automobile & Auto Components">Automobile & Auto Components</SelectItem>
+                        <SelectItem value="Aviation">Aviation</SelectItem>
+                        <SelectItem value="Banking, Financial Services & Insurance (BFSI)">Banking, Financial Services & Insurance (BFSI)</SelectItem>
+                        <SelectItem value="Biotechnology & Life Sciences">Biotechnology & Life Sciences</SelectItem>
+                        <SelectItem value="Chemicals & Petrochemicals">Chemicals & Petrochemicals</SelectItem>
+                        <SelectItem value="Construction & Real Estate">Construction & Real Estate</SelectItem>
+                        <SelectItem value="Consumer Goods (FMCG & Consumer Durables)">Consumer Goods (FMCG & Consumer Durables)</SelectItem>
+                        <SelectItem value="Defence & Aerospace">Defence & Aerospace</SelectItem>
+                        <SelectItem value="Education & EdTech">Education & EdTech</SelectItem>
+                        <SelectItem value="Electronics & Electricals">Electronics & Electricals</SelectItem>
+                        <SelectItem value="Energy (Oil, Gas, Power, Renewables)">Energy (Oil, Gas, Power, Renewables)</SelectItem>
+                        <SelectItem value="Engineering & Capital Goods">Engineering & Capital Goods</SelectItem>
+                        <SelectItem value="Environmental Services & Waste Management">Environmental Services & Waste Management</SelectItem>
+                        <SelectItem value="Food Processing & Beverages">Food Processing & Beverages</SelectItem>
+                        <SelectItem value="Healthcare & Pharmaceuticals">Healthcare & Pharmaceuticals</SelectItem>
+                        <SelectItem value="Hospitality & Tourism">Hospitality & Tourism</SelectItem>
+                        <SelectItem value="Information Technology (IT) & ITES">Information Technology (IT) & ITES</SelectItem>
+                        <SelectItem value="Infrastructure & Logistics">Infrastructure & Logistics</SelectItem>
+                        <SelectItem value="Legal & Professional Services">Legal & Professional Services</SelectItem>
+                        <SelectItem value="Manufacturing (General)">Manufacturing (General)</SelectItem>
+                        <SelectItem value="Media, Entertainment & Publishing">Media, Entertainment & Publishing</SelectItem>
+                        <SelectItem value="Metals & Mining">Metals & Mining</SelectItem>
+                        <SelectItem value="Public Sector & Government">Public Sector & Government</SelectItem>
+                        <SelectItem value="Retail & E-commerce">Retail & E-commerce</SelectItem>
+                        <SelectItem value="Telecommunications">Telecommunications</SelectItem>
+                        <SelectItem value="Textiles & Apparel">Textiles & Apparel</SelectItem>
+                        <SelectItem value="Transport & Mobility">Transport & Mobility</SelectItem>
+                        <SelectItem value="Water & Sanitation">Water & Sanitation</SelectItem>
+                        <SelectItem value="Non-Profit & Social Enterprises">Non-Profit & Social Enterprises</SelectItem>
+                        <SelectItem value="Startups & Emerging Businesses">Startups & Emerging Businesses</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
 
               <div>
