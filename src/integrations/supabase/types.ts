@@ -408,6 +408,7 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          annual_turnover: number | null
           association_id: string
           business_type: string | null
           city: string | null
@@ -435,6 +436,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          annual_turnover?: number | null
           association_id: string
           business_type?: string | null
           city?: string | null
@@ -462,6 +464,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          annual_turnover?: number | null
           association_id?: string
           business_type?: string | null
           city?: string | null

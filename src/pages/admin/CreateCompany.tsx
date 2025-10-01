@@ -29,6 +29,8 @@ const companySchema = z.object({
   pan_number: z.string().optional(),
   business_type: z.string().optional(),
   industry_type: z.string().optional(),
+  employee_count: z.string().optional(),
+  annual_turnover: z.string().optional(),
 });
 
 type CompanyFormData = z.infer<typeof companySchema>;
@@ -92,6 +94,8 @@ export default function CreateCompany() {
           pan_number: data.pan_number,
           business_type: data.business_type,
           industry_type: data.industry_type,
+          employee_count: data.employee_count ? parseInt(data.employee_count) : null,
+          annual_turnover: data.annual_turnover ? parseFloat(data.annual_turnover) : null,
           is_active: true,
           is_verified: false,
         }]);
@@ -190,6 +194,17 @@ export default function CreateCompany() {
                 <div>
                   <Label htmlFor="industry_type">Industry Type</Label>
                   <Input {...register('industry_type')} id="industry_type" placeholder="Technology, Healthcare, etc." disabled={loading} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="employee_count">Number of Employees</Label>
+                  <Input {...register('employee_count')} id="employee_count" type="number" placeholder="e.g., 50" disabled={loading} />
+                </div>
+                <div>
+                  <Label htmlFor="annual_turnover">Annual Turnover (₹)</Label>
+                  <Input {...register('annual_turnover')} id="annual_turnover" type="number" step="0.01" placeholder="e.g., 10000000" disabled={loading} />
                 </div>
               </div>
 

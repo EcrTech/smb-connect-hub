@@ -8,9 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, UserPlus, Search, Check, Clock, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, UserPlus, Search, Check, Clock, X, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Member {
   id: string;
@@ -22,9 +25,31 @@ interface Member {
     bio: string | null;
   };
   company: {
+    id: string;
     name: string;
+    association_id: string;
+    employee_count: number | null;
+    annual_turnover: number | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    association: {
+      id: string;
+      name: string;
+    } | null;
   } | null;
   connectionStatus?: 'none' | 'pending_sent' | 'pending_received' | 'connected';
+}
+
+interface Association {
+  id: string;
+  name: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  association_id: string;
 }
 
 export default function BrowseMembers() {
@@ -38,34 +63,147 @@ export default function BrowseMembers() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [connectionMessage, setConnectionMessage] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filter states
+  const [associations, setAssociations] = useState<Association[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedAssociation, setSelectedAssociation] = useState<string>('');
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [minEmployees, setMinEmployees] = useState<string>('');
+  const [maxEmployees, setMaxEmployees] = useState<string>('');
+  const [minTurnover, setMinTurnover] = useState<string>('');
+  const [maxTurnover, setMaxTurnover] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
 
   useEffect(() => {
     loadMembers();
+    loadFiltersData();
   }, []);
 
   useEffect(() => {
+    applyFilters();
+  }, [searchTerm, members, selectedAssociation, selectedCompany, minEmployees, maxEmployees, minTurnover, maxTurnover, selectedCity, selectedState, selectedCountry]);
+
+  const loadFiltersData = async () => {
+    try {
+      // Load associations
+      const { data: associationsData } = await supabase
+        .from('associations')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (associationsData) setAssociations(associationsData);
+
+      // Load companies
+      const { data: companiesData } = await supabase
+        .from('companies')
+        .select('id, name, association_id')
+        .eq('is_active', true)
+        .order('name');
+      
+      if (companiesData) setCompanies(companiesData);
+    } catch (error) {
+      console.error('Error loading filters data:', error);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...members];
+
+    // Search term filter
     if (searchTerm) {
-      const filtered = members.filter(m => {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(m => {
         const fullName = `${m.profile.first_name} ${m.profile.last_name}`.toLowerCase();
         const companyName = m.company?.name.toLowerCase() || '';
-        const search = searchTerm.toLowerCase();
         return fullName.includes(search) || companyName.includes(search);
       });
-      setFilteredMembers(filtered);
-    } else {
-      setFilteredMembers(members);
     }
-  }, [searchTerm, members]);
+
+    // Association filter
+    if (selectedAssociation) {
+      filtered = filtered.filter(m => m.company?.association_id === selectedAssociation);
+    }
+
+    // Company filter
+    if (selectedCompany) {
+      filtered = filtered.filter(m => m.company?.id === selectedCompany);
+    }
+
+    // Employee count filter
+    if (minEmployees) {
+      const min = parseInt(minEmployees);
+      filtered = filtered.filter(m => m.company?.employee_count && m.company.employee_count >= min);
+    }
+    if (maxEmployees) {
+      const max = parseInt(maxEmployees);
+      filtered = filtered.filter(m => m.company?.employee_count && m.company.employee_count <= max);
+    }
+
+    // Turnover filter
+    if (minTurnover) {
+      const min = parseFloat(minTurnover);
+      filtered = filtered.filter(m => m.company?.annual_turnover && m.company.annual_turnover >= min);
+    }
+    if (maxTurnover) {
+      const max = parseFloat(maxTurnover);
+      filtered = filtered.filter(m => m.company?.annual_turnover && m.company.annual_turnover <= max);
+    }
+
+    // Location filters
+    if (selectedCity) {
+      filtered = filtered.filter(m => m.company?.city?.toLowerCase() === selectedCity.toLowerCase());
+    }
+    if (selectedState) {
+      filtered = filtered.filter(m => m.company?.state?.toLowerCase() === selectedState.toLowerCase());
+    }
+    if (selectedCountry) {
+      filtered = filtered.filter(m => m.company?.country?.toLowerCase() === selectedCountry.toLowerCase());
+    }
+
+    setFilteredMembers(filtered);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedAssociation('');
+    setSelectedCompany('');
+    setMinEmployees('');
+    setMaxEmployees('');
+    setMinTurnover('');
+    setMaxTurnover('');
+    setSelectedCity('');
+    setSelectedState('');
+    setSelectedCountry('');
+  };
 
   const loadMembers = async () => {
     try {
       setLoading(true);
       if (!userData?.id) return;
 
-      // Load all members except current user
+      // Load all members except current user with company and association details
       const { data: membersData, error: membersError } = await supabase
         .from('members')
-        .select('id, user_id, company:companies(name)')
+        .select(`
+          id, 
+          user_id, 
+          company:companies(
+            id,
+            name,
+            association_id,
+            employee_count,
+            annual_turnover,
+            city,
+            state,
+            country,
+            association:associations(id, name)
+          )
+        `)
         .neq('id', userData.id)
         .eq('is_active', true);
 
@@ -213,17 +351,154 @@ export default function BrowseMembers() {
           <p className="text-muted-foreground">Connect with professionals in your network</p>
         </div>
 
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name or company..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or company..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Filter className="h-4 w-4 mr-2" />
+                      {showFilters ? 'Hide' : 'Show'} Advanced Filters
+                    </Button>
+                  </CollapsibleTrigger>
+                  {(selectedAssociation || selectedCompany || minEmployees || maxEmployees || minTurnover || maxTurnover || selectedCity || selectedState || selectedCountry) && (
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      <X className="h-4 w-4 mr-2" />
+                      Clear All
+                    </Button>
+                  )}
+                </div>
+
+                <CollapsibleContent className="space-y-4 pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Association Filter */}
+                    <div className="space-y-2">
+                      <Label>Association</Label>
+                      <Select value={selectedAssociation} onValueChange={setSelectedAssociation}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="All associations" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          <SelectItem value=" ">All associations</SelectItem>
+                          {associations.map(assoc => (
+                            <SelectItem key={assoc.id} value={assoc.id}>
+                              {assoc.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Company Filter */}
+                    <div className="space-y-2">
+                      <Label>Company</Label>
+                      <Select 
+                        value={selectedCompany} 
+                        onValueChange={setSelectedCompany}
+                        disabled={!selectedAssociation && selectedAssociation !== ' '}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="All companies" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover z-50">
+                          <SelectItem value=" ">All companies</SelectItem>
+                          {companies
+                            .filter(c => !selectedAssociation || selectedAssociation === ' ' || c.association_id === selectedAssociation)
+                            .map(company => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* City Filter */}
+                    <div className="space-y-2">
+                      <Label>City</Label>
+                      <Input
+                        placeholder="Enter city..."
+                        value={selectedCity}
+                        onChange={(e) => setSelectedCity(e.target.value)}
+                      />
+                    </div>
+
+                    {/* State Filter */}
+                    <div className="space-y-2">
+                      <Label>State</Label>
+                      <Input
+                        placeholder="Enter state..."
+                        value={selectedState}
+                        onChange={(e) => setSelectedState(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Country Filter */}
+                    <div className="space-y-2">
+                      <Label>Country</Label>
+                      <Input
+                        placeholder="Enter country..."
+                        value={selectedCountry}
+                        onChange={(e) => setSelectedCountry(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Employee Count Range */}
+                    <div className="space-y-2">
+                      <Label>Number of Employees</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={minEmployees}
+                          onChange={(e) => setMinEmployees(e.target.value)}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={maxEmployees}
+                          onChange={(e) => setMaxEmployees(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Turnover Range */}
+                    <div className="space-y-2">
+                      <Label>Annual Turnover (₹)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={minTurnover}
+                          onChange={(e) => setMinTurnover(e.target.value)}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={maxTurnover}
+                          onChange={(e) => setMaxTurnover(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+          </CardContent>
+        </Card>
 
         {loading ? (
           <p>Loading members...</p>
@@ -247,7 +522,19 @@ export default function BrowseMembers() {
                       </Avatar>
                       <h3 className="font-semibold text-lg">{fullName}</h3>
                       {member.company && (
-                        <p className="text-sm text-muted-foreground">{member.company.name}</p>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">{member.company.name}</p>
+                          {member.company.association && (
+                            <p className="text-xs text-muted-foreground">
+                              {member.company.association.name}
+                            </p>
+                          )}
+                          {(member.company.city || member.company.state) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[member.company.city, member.company.state].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
                       )}
                       {member.profile.bio && (
                         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
