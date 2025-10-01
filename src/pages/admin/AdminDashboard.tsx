@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Shield, LogOut, Settings } from 'lucide-react';
+import { Building2, Users, Shield, LogOut, Settings, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -12,7 +13,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalAssociations: 0,
     totalCompanies: 0,
-    totalUsers: 0
+    totalUsers: 0,
+    pendingRequests: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -37,10 +39,17 @@ export default function AdminDashboard() {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
+      // Load pending requests count
+      const { count: requestsCount } = await supabase
+        .from('association_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
       setStats({
         totalAssociations: associationsCount || 0,
         totalCompanies: companiesCount || 0,
-        totalUsers: usersCount || 0
+        totalUsers: usersCount || 0,
+        pendingRequests: requestsCount || 0
       });
     } catch (error: any) {
       console.error('Error loading stats:', error);
@@ -163,7 +172,20 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Button className="w-full" onClick={() => navigate('/admin/associations')}>
+              <Button 
+                className="w-full relative" 
+                onClick={() => navigate('/admin/requests')}
+                variant={stats.pendingRequests > 0 ? 'default' : 'outline'}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Association Requests
+                {stats.pendingRequests > 0 && (
+                  <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                    {stats.pendingRequests}
+                  </Badge>
+                )}
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/associations')}>
                 <Building2 className="w-4 h-4 mr-2" />
                 Manage Associations
               </Button>
@@ -174,10 +196,6 @@ export default function AdminDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin/users')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Users
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/settings')}>
-                <Settings className="w-4 h-4 mr-2" />
-                System Settings
               </Button>
             </div>
           </CardContent>

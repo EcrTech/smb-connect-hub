@@ -14,8 +14,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!loading && !role) {
-      // User has no role assigned, redirect to setup
-      navigate('/setup');
+      // User has no role assigned, redirect to request association page
+      navigate('/request-association');
     }
   }, [role, loading, navigate]);
 

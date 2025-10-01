@@ -129,6 +129,69 @@ export type Database = {
           },
         ]
       }
+      association_requests: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          city: string | null
+          contact_email: string
+          contact_phone: string | null
+          country: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          postal_code: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          city?: string | null
+          contact_email: string
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          postal_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          city?: string | null
+          contact_email?: string
+          contact_phone?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          postal_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       associations: {
         Row: {
           address: string | null
