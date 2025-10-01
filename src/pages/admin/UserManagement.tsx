@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Building2, Users, Search, Plus, Upload } from 'lucide-react';
+import { Shield, Building2, Users, Search, Plus, Upload, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface User {
   id: string;
@@ -54,6 +64,8 @@ export default function UserManagement() {
   const [selectedAssociation, setSelectedAssociation] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [memberRole, setMemberRole] = useState<string>('member');
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const { toast } = useToast();
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -62,7 +74,28 @@ export default function UserManagement() {
 
   useEffect(() => {
     loadData();
+    checkSuperAdmin();
   }, []);
+
+  const checkSuperAdmin = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('is_super_admin')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!error && data) {
+        setIsSuperAdmin(data.is_super_admin || false);
+      }
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+    }
+  };
 
   useEffect(() => {
     const filtered = users.filter(user =>
@@ -252,6 +285,30 @@ export default function UserManagement() {
     }
   };
 
+  const handleDeleteMember = async (user: User) => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Member deleted successfully'
+      });
+      setDeletingUser(null);
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
   const filteredCompanies = selectedAssociation
     ? companies.filter(c => c.association_id === selectedAssociation)
     : companies;
@@ -329,18 +386,19 @@ export default function UserManagement() {
                   </TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedUser(user)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Assign Role
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
+                    <div className="flex gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Assign Role
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
                         <DialogHeader>
                           <DialogTitle>Assign Role to {user.email}</DialogTitle>
                           <DialogDescription>
@@ -477,6 +535,16 @@ export default function UserManagement() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    {isSuperAdmin && user.roles.some(role => role.startsWith('Company')) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingUser(user)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -490,6 +558,26 @@ export default function UserManagement() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete member "{deletingUser?.email}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingUser && handleDeleteMember(deletingUser)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

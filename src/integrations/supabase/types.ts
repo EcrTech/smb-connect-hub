@@ -1115,6 +1115,10 @@ export type Database = {
         Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
+      is_super_admin: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       set_limit: {
         Args: { "": number }
         Returns: number

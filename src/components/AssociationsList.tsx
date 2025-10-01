@@ -5,9 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Building2, Mail, Phone, Globe, MapPin, Edit, Search } from 'lucide-react';
+import { Building2, Mail, Phone, Globe, MapPin, Edit, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditAssociationDialog } from './association/EditAssociationDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Association {
   id: string;
@@ -33,6 +43,8 @@ export function AssociationsList() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [editingAssociation, setEditingAssociation] = useState<Association | null>(null);
+  const [deletingAssociation, setDeletingAssociation] = useState<Association | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -40,7 +52,28 @@ export function AssociationsList() {
 
   useEffect(() => {
     loadAssociations();
+    checkSuperAdmin();
   }, []);
+
+  const checkSuperAdmin = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('is_super_admin')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!error && data) {
+        setIsSuperAdmin(data.is_super_admin || false);
+      }
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+    }
+  };
 
   useEffect(() => {
     if (searchTerm) {
@@ -105,6 +138,24 @@ export function AssociationsList() {
     }
   };
 
+  const handleDelete = async (association: Association) => {
+    try {
+      const { error } = await supabase
+        .from('associations')
+        .delete()
+        .eq('id', association.id);
+
+      if (error) throw error;
+
+      toast.success('Association deleted successfully');
+      setDeletingAssociation(null);
+      loadAssociations();
+    } catch (error: any) {
+      console.error('Error deleting association:', error);
+      toast.error(error.message || 'Failed to delete association');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -157,6 +208,18 @@ export function AssociationsList() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  {isSuperAdmin && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingAssociation(association);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
               </div>
               <CardTitle className="mt-2">{association.name}</CardTitle>
@@ -218,6 +281,26 @@ export function AssociationsList() {
           onSuccess={loadAssociations}
         />
       )}
+
+      <AlertDialog open={!!deletingAssociation} onOpenChange={(open) => !open && setDeletingAssociation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Association</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingAssociation?.name}"? This action cannot be undone and will also delete all associated companies and members.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingAssociation && handleDelete(deletingAssociation)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

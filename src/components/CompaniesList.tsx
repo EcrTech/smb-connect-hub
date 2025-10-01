@@ -3,8 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Building, Mail, Phone, Globe, MapPin, Search } from 'lucide-react';
+import { Building, Mail, Phone, Globe, MapPin, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Company {
   id: string;
@@ -32,6 +43,8 @@ export function CompaniesList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [deletingCompany, setDeletingCompany] = useState<Company | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -39,7 +52,28 @@ export function CompaniesList() {
 
   useEffect(() => {
     loadCompanies();
+    checkSuperAdmin();
   }, []);
+
+  const checkSuperAdmin = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('is_super_admin')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!error && data) {
+        setIsSuperAdmin(data.is_super_admin || false);
+      }
+    } catch (error) {
+      console.error('Error checking super admin status:', error);
+    }
+  };
 
   useEffect(() => {
     if (searchTerm) {
@@ -109,6 +143,24 @@ export function CompaniesList() {
     }
   };
 
+  const handleDelete = async (company: Company) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', company.id);
+
+      if (error) throw error;
+
+      toast.success('Company deleted successfully');
+      setDeletingCompany(null);
+      loadCompanies();
+    } catch (error: any) {
+      console.error('Error deleting company:', error);
+      toast.error(error.message || 'Failed to delete company');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -143,12 +195,24 @@ export function CompaniesList() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <Building className="h-8 w-8 text-primary" />
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
                   <Badge variant={company.is_active ? 'default' : 'secondary'}>
                     {company.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                   {company.is_verified && (
                     <Badge variant="outline">Verified</Badge>
+                  )}
+                  {isSuperAdmin && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingCompany(company);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   )}
                 </div>
               </div>
@@ -209,6 +273,26 @@ export function CompaniesList() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       )}
+
+      <AlertDialog open={!!deletingCompany} onOpenChange={(open) => !open && setDeletingCompany(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingCompany?.name}"? This action cannot be undone and will also delete all associated members.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingCompany && handleDelete(deletingCompany)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
