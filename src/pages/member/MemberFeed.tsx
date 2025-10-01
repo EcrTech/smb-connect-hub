@@ -470,56 +470,57 @@ export default function MemberFeed() {
                   {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-3">
+              <div className="flex-1">
                 <Textarea
                   placeholder="What's on your mind?"
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
                   rows={3}
-                  className="resize-none border-0 focus-visible:ring-0 p-0"
+                  className="resize-none border-0 focus-visible:ring-0 p-0 placeholder:text-muted-foreground"
                 />
-                {imagePreview && (
-                  <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="rounded-lg max-h-64 w-full object-cover"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2"
-                      onClick={removeImage}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <div className="flex gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
+            
+            {imagePreview && (
+              <div className="relative mt-3 ml-15">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="rounded-lg max-h-64 w-full object-cover"
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-muted-foreground hover:text-foreground"
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
                 >
-                  <ImageIcon className="w-5 h-5 mr-2" />
-                  Photo
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
+            )}
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-muted-foreground hover:text-foreground hover:bg-transparent"
+              >
+                <ImageIcon className="w-5 h-5 mr-2" />
+                Photo
+              </Button>
               <Button
                 onClick={handleCreatePost}
                 disabled={!newPostContent.trim() || posting}
                 size="sm"
+                className="bg-primary hover:bg-primary/90"
               >
                 {posting ? 'Posting...' : 'Post'}
               </Button>
