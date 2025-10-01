@@ -462,27 +462,27 @@ export default function MemberFeed() {
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         {/* Create Post Card */}
         <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex gap-3">
-              <Avatar className="w-12 h-12">
+          <CardContent className="pt-6 pb-4">
+            <div className="flex gap-3 mb-4">
+              <Avatar className="w-12 h-12 flex-shrink-0">
                 <AvatarImage src={profile?.avatar || undefined} />
                 <AvatarFallback>
                   {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
+              <div className="flex-1 min-h-[80px]">
                 <Textarea
                   placeholder="What's on your mind?"
                   value={newPostContent}
                   onChange={(e) => setNewPostContent(e.target.value)}
                   rows={3}
-                  className="resize-none border-0 focus-visible:ring-0 p-0 placeholder:text-muted-foreground"
+                  className="resize-none border-0 focus-visible:ring-0 px-3 py-2 placeholder:text-muted-foreground w-full"
                 />
               </div>
             </div>
             
             {imagePreview && (
-              <div className="relative mt-3 ml-15">
+              <div className="relative mb-4">
                 <img
                   src={imagePreview}
                   alt="Preview"
@@ -499,7 +499,7 @@ export default function MemberFeed() {
               </div>
             )}
 
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+            <div className="flex items-center justify-between pt-3 border-t">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -530,11 +530,13 @@ export default function MemberFeed() {
 
         {/* Posts Feed */}
         {loading ? (
-          <p className="text-center text-muted-foreground">Loading posts...</p>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading posts...</p>
+          </div>
         ) : posts.length === 0 ? (
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">No posts yet. Be the first to share!</p>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground text-lg">No posts yet. Be the first to share!</p>
             </CardContent>
           </Card>
         ) : (
