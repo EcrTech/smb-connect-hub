@@ -289,6 +289,10 @@ export default function UserManagement() {
                           <DialogTitle>Assign Role to {user.email}</DialogTitle>
                           <DialogDescription>
                             Select a role type and provide necessary details
+                            <br />
+                            <span className="text-xs text-muted-foreground">
+                              (Loaded: {associations.length} associations, {companies.length} companies)
+                            </span>
                           </DialogDescription>
                         </DialogHeader>
 
@@ -326,15 +330,19 @@ export default function UserManagement() {
                             <div className="space-y-2">
                               <Label>Association</Label>
                               <Select value={selectedAssociation} onValueChange={setSelectedAssociation}>
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-background">
                                   <SelectValue placeholder="Select association" />
                                 </SelectTrigger>
-                                <SelectContent>
-                                  {associations.map((assoc) => (
-                                    <SelectItem key={assoc.id} value={assoc.id}>
-                                      {assoc.name}
-                                    </SelectItem>
-                                  ))}
+                                <SelectContent className="bg-popover z-50">
+                                  {associations.length === 0 ? (
+                                    <SelectItem value="none" disabled>No associations found</SelectItem>
+                                  ) : (
+                                    associations.map((assoc) => (
+                                      <SelectItem key={assoc.id} value={assoc.id}>
+                                        {assoc.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -345,15 +353,19 @@ export default function UserManagement() {
                               <div className="space-y-2">
                                 <Label>Association</Label>
                                 <Select value={selectedAssociation} onValueChange={setSelectedAssociation}>
-                                  <SelectTrigger>
+                                  <SelectTrigger className="bg-background">
                                     <SelectValue placeholder="Select association first" />
                                   </SelectTrigger>
-                                  <SelectContent>
-                                    {associations.map((assoc) => (
-                                      <SelectItem key={assoc.id} value={assoc.id}>
-                                        {assoc.name}
-                                      </SelectItem>
-                                    ))}
+                                  <SelectContent className="bg-popover z-50">
+                                    {associations.length === 0 ? (
+                                      <SelectItem value="none" disabled>No associations found</SelectItem>
+                                    ) : (
+                                      associations.map((assoc) => (
+                                        <SelectItem key={assoc.id} value={assoc.id}>
+                                          {assoc.name}
+                                        </SelectItem>
+                                      ))
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -362,15 +374,19 @@ export default function UserManagement() {
                                 <div className="space-y-2">
                                   <Label>Company</Label>
                                   <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="bg-background">
                                       <SelectValue placeholder="Select company" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      {filteredCompanies.map((company) => (
-                                        <SelectItem key={company.id} value={company.id}>
-                                          {company.name}
-                                        </SelectItem>
-                                      ))}
+                                    <SelectContent className="bg-popover z-50">
+                                      {filteredCompanies.length === 0 ? (
+                                        <SelectItem value="none" disabled>No companies found</SelectItem>
+                                      ) : (
+                                        filteredCompanies.map((company) => (
+                                          <SelectItem key={company.id} value={company.id}>
+                                            {company.name}
+                                          </SelectItem>
+                                        ))
+                                      )}
                                     </SelectContent>
                                   </Select>
                                 </div>
