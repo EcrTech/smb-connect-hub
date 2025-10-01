@@ -1258,6 +1258,218 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          recipient_id: string
+          recipient_type: string
+          sender_id: string
+          sender_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          recipient_id: string
+          recipient_type: string
+          sender_id: string
+          sender_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          recipient_id?: string
+          recipient_type?: string
+          sender_id?: string
+          sender_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_list_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          list_id: string
+          metadata: Json | null
+          name: string | null
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          list_id: string
+          metadata?: Json | null
+          name?: string | null
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          list_id?: string
+          metadata?: Json | null
+          name?: string | null
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_list_recipients_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_lists: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          body_text: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          external_message_id: string | null
+          id: string
+          is_read: boolean
+          recipient_phone: string
+          sender_name: string | null
+          sender_phone: string
+          sent_at: string
+        }
+        Insert: {
+          body_text: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          external_message_id?: string | null
+          id?: string
+          is_read?: boolean
+          recipient_phone: string
+          sender_name?: string | null
+          sender_phone: string
+          sent_at?: string
+        }
+        Update: {
+          body_text?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          external_message_id?: string | null
+          id?: string
+          is_read?: boolean
+          recipient_phone?: string
+          sender_name?: string | null
+          sender_phone?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          association_id: string | null
+          body_text: string
+          company_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          association_id?: string | null
+          body_text: string
+          company_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          association_id?: string | null
+          body_text?: string
+          company_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_experience: {
         Row: {
           company: string

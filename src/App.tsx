@@ -24,6 +24,8 @@ import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
 import BulkUploadUsers from "./pages/admin/BulkUploadUsers";
 import AdminEmailLists from "./pages/admin/AdminEmailLists";
 import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
+import AdminWhatsAppLists from "./pages/admin/AdminWhatsAppLists";
+import AdminWhatsAppListDetail from "./pages/admin/AdminWhatsAppListDetail";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
@@ -188,7 +190,23 @@ const App = () => (
             } 
           />
           <Route 
-            path="/request-association" 
+            path="/admin/whatsapp-lists" 
+            element={
+              <ProtectedRoute>
+                <AdminWhatsAppLists />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/whatsapp-lists/:listId" 
+            element={
+              <ProtectedRoute>
+                <AdminWhatsAppListDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/request-association"
             element={
               <ProtectedRoute>
                 <RequestAssociation />
