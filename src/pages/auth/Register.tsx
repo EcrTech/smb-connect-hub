@@ -45,6 +45,7 @@ export default function Register() {
         email: data.email,
         password: data.password,
         options: {
+          emailRedirectTo: window.location.origin,
           data: {
             first_name: data.firstName,
             last_name: data.lastName,
