@@ -1,11 +1,11 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, AlertCircle } from 'lucide-react';
+import { Loader2, Send, AlertCircle, Image as ImageIcon, Upload } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import 'react-quill/dist/quill.snow.css';
 
@@ -23,7 +23,10 @@ export function BulkEmailDialog({
   listIds,
 }: BulkEmailDialogProps) {
   const { toast } = useToast();
+  const quillRef = useRef<any>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [recipientCount, setRecipientCount] = useState(0);
   const [listNames, setListNames] = useState<string[]>([]);
   const [senderEmail, setSenderEmail] = useState('');
@@ -58,6 +61,80 @@ export function BulkEmailDialog({
       setRecipientCount(count || 0);
     } catch (error) {
       console.error('Error loading recipient info:', error);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please upload an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Error',
+        description: 'Image size should be less than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      // Upload to Supabase storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+      const filePath = `email-images/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath);
+
+      // Insert image into editor
+      const quill = quillRef.current?.getEditor();
+      if (quill) {
+        const range = quill.getSelection(true);
+        quill.insertEmbed(range.index, 'image', publicUrl);
+        quill.setSelection(range.index + 1);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Image uploaded successfully',
+      });
+
+      // Reset file input
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to upload image',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -142,7 +219,8 @@ export function BulkEmailDialog({
     'list', 'bullet',
     'color', 'background',
     'align',
-    'link'
+    'link',
+    'image'
   ];
 
   return (
@@ -201,10 +279,39 @@ export function BulkEmailDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Message *</Label>
+            <div className="flex items-center justify-between">
+              <Label>Message *</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage || loading}
+              >
+                {uploadingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="w-4 h-4 mr-2" />
+                    Insert Image
+                  </>
+                )}
+              </Button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
             <div className="border rounded-md overflow-hidden">
               <Suspense fallback={<div className="h-[300px] flex items-center justify-center">Loading editor...</div>}>
                 <ReactQuill
+                  ref={quillRef}
                   theme="snow"
                   value={body}
                   onChange={setBody}
