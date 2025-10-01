@@ -22,6 +22,8 @@ import CreateUser from "./pages/admin/CreateUser";
 import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
 import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
 import BulkUploadUsers from "./pages/admin/BulkUploadUsers";
+import AdminEmailLists from "./pages/admin/AdminEmailLists";
+import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
@@ -166,6 +168,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <BulkUploadUsers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/email-lists" 
+            element={
+              <ProtectedRoute>
+                <AdminEmailLists />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/email-lists/:listId" 
+            element={
+              <ProtectedRoute>
+                <AdminEmailListDetail />
               </ProtectedRoute>
             } 
           />

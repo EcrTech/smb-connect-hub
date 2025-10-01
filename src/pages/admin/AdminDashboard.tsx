@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Shield, LogOut, FileText, Plus, Upload } from 'lucide-react';
+import { Building2, Users, Shield, LogOut, FileText, Plus, Upload, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -243,6 +243,10 @@ export default function AdminDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin/users')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Users
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/email-lists')}>
+                <Mail className="w-4 h-4 mr-2" />
+                Email Lists
               </Button>
             </div>
           </CardContent>

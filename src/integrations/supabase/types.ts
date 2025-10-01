@@ -679,6 +679,71 @@ export type Database = {
         }
         Relationships: []
       }
+      email_list_recipients: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          list_id: string
+          metadata: Json | null
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          list_id: string
+          metadata?: Json | null
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          list_id?: string
+          metadata?: Json | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_list_recipients_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "email_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_lists: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_messages: {
         Row: {
           body_html: string
