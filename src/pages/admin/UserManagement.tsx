@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,20 +41,67 @@ interface Company {
 export default function UserManagement() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleType, setRoleType] = useState<string>('');
   const [selectedAssociation, setSelectedAssociation] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [memberRole, setMemberRole] = useState<string>('member');
   const { toast } = useToast();
+  const observerRef = useRef<IntersectionObserver>();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const filtered = users.filter(user =>
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+    setPage(1);
+  }, [searchTerm, users]);
+
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = page * ITEMS_PER_PAGE;
+    setDisplayedUsers(filteredUsers.slice(startIndex, endIndex));
+    setHasMore(endIndex < filteredUsers.length);
+  }, [page, filteredUsers]);
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      setPage(prev => prev + 1);
+    }
+  }, [hasMore, loading]);
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    });
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [loadMore]);
 
   const loadData = async () => {
     try {
@@ -95,6 +142,7 @@ export default function UserManagement() {
       }));
 
       setUsers(usersWithRoles);
+      setFilteredUsers(usersWithRoles);
 
       // Load associations and companies
       const { data: assocData, error: assocError } = await supabase
@@ -204,10 +252,6 @@ export default function UserManagement() {
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const filteredCompanies = selectedAssociation
     ? companies.filter(c => c.association_id === selectedAssociation)
     : companies;
@@ -267,7 +311,7 @@ export default function UserManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {displayedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>
@@ -438,6 +482,12 @@ export default function UserManagement() {
               ))}
             </TableBody>
           </Table>
+
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

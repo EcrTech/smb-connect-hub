@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +27,15 @@ interface Company {
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [displayedCompanies, setDisplayedCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observerRef = useRef<IntersectionObserver>();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  const ITEMS_PER_PAGE = 12;
 
   useEffect(() => {
     loadCompanies();
@@ -45,7 +52,39 @@ export function CompaniesList() {
     } else {
       setFilteredCompanies(companies);
     }
+    setPage(1);
   }, [searchTerm, companies]);
+
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = page * ITEMS_PER_PAGE;
+    setDisplayedCompanies(filteredCompanies.slice(startIndex, endIndex));
+    setHasMore(endIndex < filteredCompanies.length);
+  }, [page, filteredCompanies]);
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      setPage(prev => prev + 1);
+    }
+  }, [hasMore, loading]);
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    });
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [loadMore]);
 
   const loadCompanies = async () => {
     try {
@@ -99,7 +138,7 @@ export function CompaniesList() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredCompanies.map((company) => (
+        {displayedCompanies.map((company) => (
           <Card key={company.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -164,6 +203,12 @@ export function CompaniesList() {
           </Card>
         ))}
       </div>
+
+      {hasMore && (
+        <div ref={loadMoreRef} className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
     </div>
   );
 }

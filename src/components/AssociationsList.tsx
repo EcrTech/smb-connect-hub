@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Mail, Phone, Globe, MapPin, Edit } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Building2, Mail, Phone, Globe, MapPin, Edit, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditAssociationDialog } from './association/EditAssociationDialog';
 
@@ -23,12 +24,66 @@ interface Association {
 
 export function AssociationsList() {
   const [associations, setAssociations] = useState<Association[]>([]);
+  const [filteredAssociations, setFilteredAssociations] = useState<Association[]>([]);
+  const [displayedAssociations, setDisplayedAssociations] = useState<Association[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [editingAssociation, setEditingAssociation] = useState<Association | null>(null);
+  const observerRef = useRef<IntersectionObserver>();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  
+  const ITEMS_PER_PAGE = 12;
 
   useEffect(() => {
     loadAssociations();
   }, []);
+
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = associations.filter(
+        (association) =>
+          association.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          association.city?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredAssociations(filtered);
+    } else {
+      setFilteredAssociations(associations);
+    }
+    setPage(1);
+  }, [searchTerm, associations]);
+
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = page * ITEMS_PER_PAGE;
+    setDisplayedAssociations(filteredAssociations.slice(startIndex, endIndex));
+    setHasMore(endIndex < filteredAssociations.length);
+  }, [page, filteredAssociations]);
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      setPage(prev => prev + 1);
+    }
+  }, [hasMore, loading]);
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore();
+      }
+    });
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [loadMore]);
 
   const loadAssociations = async () => {
     try {
@@ -39,6 +94,7 @@ export function AssociationsList() {
 
       if (error) throw error;
       setAssociations(data || []);
+      setFilteredAssociations(data || []);
     } catch (error) {
       console.error('Error loading associations:', error);
       toast.error('Failed to load associations');
@@ -57,17 +113,26 @@ export function AssociationsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold">Associations</h2>
           <p className="text-muted-foreground">
-            {associations.length} total associations
+            {filteredAssociations.length} of {associations.length} associations
           </p>
+        </div>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search associations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {associations.map((association) => (
+        {displayedAssociations.map((association) => (
           <Card key={association.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -129,6 +194,12 @@ export function AssociationsList() {
           </Card>
         ))}
       </div>
+
+      {hasMore && (
+        <div ref={loadMoreRef} className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
 
       {editingAssociation && (
         <EditAssociationDialog
