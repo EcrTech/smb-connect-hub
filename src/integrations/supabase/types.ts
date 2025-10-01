@@ -1361,6 +1361,10 @@ export type Database = {
         Args: { target_user_id: string; viewer_id: string }
         Returns: boolean
       }
+      is_member_of_association: {
+        Args: { target_association_id: string; viewer_id: string }
+        Returns: boolean
+      }
       is_same_company: {
         Args: { target_user_id: string; viewer_id: string }
         Returns: boolean
