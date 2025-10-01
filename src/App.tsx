@@ -8,6 +8,10 @@ import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AssociationDashboard from "./pages/association/AssociationDashboard";
+import CompanyDashboard from "./pages/company/CompanyDashboard";
+import MemberDashboard from "./pages/member/MemberDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +31,38 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/*" 
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/*" 
+            element={
+              <ProtectedRoute>
+                <AssociationDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/*" 
+            element={
+              <ProtectedRoute>
+                <CompanyDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/member/*" 
+            element={
+              <ProtectedRoute>
+                <MemberDashboard />
               </ProtectedRoute>
             } 
           />
