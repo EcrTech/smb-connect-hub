@@ -71,7 +71,7 @@ export function EditAssociationProfileDialog({
       country: association.country || 'India',
       postal_code: association.postal_code || '',
       founded_year: association.founded_year?.toString() || '',
-      industry: association.industry || '',
+      industry: association.industry || undefined,
       keywords: association.keywords?.join(', ') || '',
       linkedin: socialLinks.linkedin || '',
       twitter: socialLinks.twitter || '',
@@ -174,12 +174,12 @@ export function EditAssociationProfileDialog({
                   name="industry"
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value} disabled={loading}>
+                    <Select onValueChange={field.onChange} value={field.value || ''} disabled={loading}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select industry" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All</SelectItem>
+                        <SelectItem value="all">All</SelectItem>
                         <SelectItem value="Agriculture & Allied Activities">Agriculture & Allied Activities</SelectItem>
                         <SelectItem value="Automobile & Auto Components">Automobile & Auto Components</SelectItem>
                         <SelectItem value="Aviation">Aviation</SelectItem>
