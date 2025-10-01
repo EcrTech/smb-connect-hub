@@ -327,22 +327,48 @@ export default function UserManagement() {
         return;
       }
 
-      // Proceed with deletion
-      const { error } = await supabase
+      // Proceed with deletion - remove all role assignments
+      // Delete from members table
+      const { error: memberError } = await supabase
         .from('members')
         .delete()
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (memberError) {
+        console.error('Error deleting member:', memberError);
+        // Continue even if member deletion fails (might not exist)
+      }
+
+      // Delete from admin_users table
+      const { error: adminError } = await supabase
+        .from('admin_users')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (adminError) {
+        console.error('Error deleting admin_user:', adminError);
+        // Continue even if admin deletion fails (might not exist)
+      }
+
+      // Delete from association_managers table
+      const { error: assocError } = await supabase
+        .from('association_managers')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (assocError) {
+        console.error('Error deleting association_manager:', assocError);
+        // Continue even if association manager deletion fails (might not exist)
+      }
 
       // Log the deletion for audit
       await supabase.from('audit_logs').insert({
         user_id: currentUser.id,
         action: 'delete',
-        resource: 'member',
+        resource: 'user_all_roles',
         resource_id: user.id,
         changes: { 
-          deleted_member: user.email,
+          deleted_user: user.email,
           deletion_notes: deleteNotes 
         }
       });
