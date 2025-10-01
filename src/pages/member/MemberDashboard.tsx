@@ -170,8 +170,12 @@ export default function MemberDashboard() {
             <CardDescription>Explore SMB Connect</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="w-full" onClick={() => navigate('/members')}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Button className="w-full" onClick={() => navigate('/feed')}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Member Feed
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/members')}>
                 <Users className="w-4 h-4 mr-2" />
                 Find Members
               </Button>

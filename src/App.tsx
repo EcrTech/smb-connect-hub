@@ -31,6 +31,7 @@ import MemberCompanies from "./pages/member/MemberCompanies";
 import MemberConnections from "./pages/member/MemberConnections";
 import BrowseMembers from "./pages/member/BrowseMembers";
 import MemberProfile from "./pages/member/MemberProfile";
+import MemberFeed from "./pages/member/MemberFeed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -234,6 +235,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MemberProfile />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/feed" 
+            element={
+              <ProtectedRoute>
+                <MemberFeed />
               </ProtectedRoute>
             } 
           />
