@@ -1076,7 +1076,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      duplicate_companies_monitor: {
+        Row: {
+          association_id: string | null
+          company_ids: string[] | null
+          duplicate_count: number | null
+          first_created: string | null
+          last_created: string | null
+          name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_role_context: {
