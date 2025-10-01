@@ -166,6 +166,10 @@ export default function MemberDashboard() {
                 <Users className="w-4 h-4 mr-2" />
                 My Connections
               </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate(`/profile/${userData?.user_id}`)}>
+                <Users className="w-4 h-4 mr-2" />
+                My Profile
+              </Button>
             </div>
           </CardContent>
         </Card>

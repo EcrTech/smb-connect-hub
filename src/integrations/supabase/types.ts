@@ -294,6 +294,48 @@ export type Database = {
         }
         Relationships: []
       }
+      certifications: {
+        Row: {
+          created_at: string | null
+          credential_id: string | null
+          credential_url: string | null
+          display_order: number | null
+          expiration_date: string | null
+          id: string
+          issue_date: string | null
+          issuing_organization: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credential_id?: string | null
+          credential_url?: string | null
+          display_order?: number | null
+          expiration_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_organization: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credential_id?: string | null
+          credential_url?: string | null
+          display_order?: number | null
+          expiration_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuing_organization?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_participants: {
         Row: {
           chat_id: string
@@ -550,6 +592,51 @@ export type Database = {
           },
         ]
       }
+      education: {
+        Row: {
+          created_at: string | null
+          degree: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          field_of_study: string | null
+          grade: string | null
+          id: string
+          school: string
+          start_date: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          degree?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          school: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          degree?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          field_of_study?: string | null
+          grade?: string | null
+          id?: string
+          school?: string
+          start_date?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       key_functionaries: {
         Row: {
           association_id: string
@@ -762,35 +849,125 @@ export type Database = {
         Row: {
           avatar: string | null
           bio: string | null
+          cover_image: string | null
           created_at: string | null
           current_context: string | null
           first_name: string
+          headline: string | null
           id: string
           last_name: string
+          linkedin_url: string | null
+          location: string | null
           phone: string | null
+          twitter_url: string | null
           updated_at: string | null
+          website_url: string | null
         }
         Insert: {
           avatar?: string | null
           bio?: string | null
+          cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
           first_name: string
+          headline?: string | null
           id: string
           last_name: string
+          linkedin_url?: string | null
+          location?: string | null
           phone?: string | null
+          twitter_url?: string | null
           updated_at?: string | null
+          website_url?: string | null
         }
         Update: {
           avatar?: string | null
           bio?: string | null
+          cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
           first_name?: string
+          headline?: string | null
           id?: string
           last_name?: string
+          linkedin_url?: string | null
+          location?: string | null
           phone?: string | null
+          twitter_url?: string | null
           updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      skills: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          endorsements_count: number | null
+          id: string
+          skill_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          endorsements_count?: number | null
+          id?: string
+          skill_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          endorsements_count?: number | null
+          id?: string
+          skill_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      work_experience: {
+        Row: {
+          company: string
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          end_date: string | null
+          id: string
+          is_current: boolean | null
+          location: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          location?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          end_date?: string | null
+          id?: string
+          is_current?: boolean | null
+          location?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

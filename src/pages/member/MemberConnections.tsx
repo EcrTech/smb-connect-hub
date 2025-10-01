@@ -213,7 +213,11 @@ export default function MemberConnections() {
     const initials = `${otherPerson.profile.first_name[0]}${otherPerson.profile.last_name[0]}`;
 
     return (
-      <Card key={conn.id}>
+      <Card 
+        key={conn.id} 
+        className="hover:shadow-lg transition-shadow cursor-pointer"
+        onClick={() => navigate(`/profile/${otherPerson.user_id}`)}
+      >
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
             <Avatar className="w-12 h-12">
@@ -232,22 +236,29 @@ export default function MemberConnections() {
                 {new Date(conn.created_at).toLocaleDateString()}
               </p>
             </div>
-            {showActions === 'accept' && (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleAccept(conn.id)}>
-                  <Check className="w-4 h-4 mr-1" />
-                  Accept
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => handleReject(conn.id)}>
-                  <X className="w-4 h-4 mr-1" />
-                  Reject
-                </Button>
+            {showActions && (
+              <div 
+                className="flex gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {showActions === 'accept' && (
+                  <>
+                    <Button size="sm" onClick={() => handleAccept(conn.id)}>
+                      <Check className="w-4 h-4 mr-1" />
+                      Accept
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleReject(conn.id)}>
+                      <X className="w-4 h-4 mr-1" />
+                      Reject
+                    </Button>
+                  </>
+                )}
+                {showActions === 'cancel' && (
+                  <Button size="sm" variant="outline" onClick={() => handleCancelRequest(conn.id)}>
+                    Cancel
+                  </Button>
+                )}
               </div>
-            )}
-            {showActions === 'cancel' && (
-              <Button size="sm" variant="outline" onClick={() => handleCancelRequest(conn.id)}>
-                Cancel
-              </Button>
             )}
           </div>
         </CardContent>

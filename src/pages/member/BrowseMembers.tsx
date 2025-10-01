@@ -234,7 +234,11 @@ export default function BrowseMembers() {
               const initials = `${member.profile.first_name[0]}${member.profile.last_name[0]}`;
 
               return (
-                <Card key={member.id}>
+                <Card 
+                  key={member.id} 
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/profile/${member.user_id}`)}
+                >
                   <CardContent className="pt-6">
                     <div className="flex flex-col items-center text-center">
                       <Avatar className="w-16 h-16 mb-3">
@@ -250,7 +254,10 @@ export default function BrowseMembers() {
                           {member.profile.bio}
                         </p>
                       )}
-                      <div className="mt-4">
+                      <div 
+                        className="mt-4"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {getConnectionButton(member)}
                       </div>
                     </div>
