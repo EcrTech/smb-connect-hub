@@ -10,6 +10,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MemberDashboard from "./pages/member/MemberDashboard";
@@ -44,10 +45,18 @@ const App = () => (
             } 
           />
           <Route 
-            path="/admin/*" 
+            path="/admin" 
             element={
               <ProtectedRoute>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute>
+                <UserManagement />
               </ProtectedRoute>
             } 
           />
