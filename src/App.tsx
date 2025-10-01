@@ -32,6 +32,7 @@ import MemberConnections from "./pages/member/MemberConnections";
 import BrowseMembers from "./pages/member/BrowseMembers";
 import MemberProfile from "./pages/member/MemberProfile";
 import MemberFeed from "./pages/member/MemberFeed";
+import MemberMessages from "./pages/member/MemberMessages";
 import CompanyFeed from "./pages/company/CompanyFeed";
 import AssociationFeed from "./pages/association/AssociationFeed";
 import NotFound from "./pages/NotFound";
@@ -245,6 +246,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MemberFeed />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/messages" 
+            element={
+              <ProtectedRoute>
+                <MemberMessages />
               </ProtectedRoute>
             } 
           />

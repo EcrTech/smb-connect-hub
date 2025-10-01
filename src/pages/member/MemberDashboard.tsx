@@ -175,6 +175,10 @@ export default function MemberDashboard() {
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Member Feed
               </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/messages')}>
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Messages
+              </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/members')}>
                 <Users className="w-4 h-4 mr-2" />
                 Find Members
