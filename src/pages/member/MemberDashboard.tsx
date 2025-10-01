@@ -154,17 +154,17 @@ export default function MemberDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button className="w-full" onClick={() => navigate('/companies')}>
+              <Button className="w-full" onClick={() => navigate('/members')}>
+                <Users className="w-4 h-4 mr-2" />
+                Find Members
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/companies')}>
                 <Building2 className="w-4 h-4 mr-2" />
                 Browse Companies
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/chat')}>
-                <MessageSquare className="w-4 h-4 mr-2" />
-                Start Chatting
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/profile')}>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/connections')}>
                 <Users className="w-4 h-4 mr-2" />
-                My Profile
+                My Connections
               </Button>
             </div>
           </CardContent>

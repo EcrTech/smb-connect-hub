@@ -28,6 +28,8 @@ import AssociationProfile from "./pages/association/AssociationProfile";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
+import MemberConnections from "./pages/member/MemberConnections";
+import BrowseMembers from "./pages/member/BrowseMembers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -207,6 +209,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MemberCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/connections" 
+            element={
+              <ProtectedRoute>
+                <MemberConnections />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/members" 
+            element={
+              <ProtectedRoute>
+                <BrowseMembers />
               </ProtectedRoute>
             } 
           />
