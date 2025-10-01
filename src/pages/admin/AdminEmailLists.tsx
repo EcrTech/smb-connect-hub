@@ -24,7 +24,11 @@ export default function AdminEmailLists() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [bulkEmailDialog, setBulkEmailDialog] = useState<{ open: boolean; listId?: string }>({ open: false });
+  const [bulkEmailDialog, setBulkEmailDialog] = useState<{ open: boolean; listIds: string[] }>({ 
+    open: false, 
+    listIds: [] 
+  });
+  const [selectedLists, setSelectedLists] = useState<string[]>([]);
 
   useEffect(() => {
     loadEmailLists();
@@ -109,14 +113,23 @@ export default function AdminEmailLists() {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        {/* Search */}
-        <div className="mb-6">
+        {/* Search and Actions */}
+        <div className="mb-6 flex items-center justify-between gap-4">
           <Input
             placeholder="Search email lists..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
           />
+          {selectedLists.length > 0 && (
+            <Button 
+              onClick={() => setBulkEmailDialog({ open: true, listIds: selectedLists })}
+              className="whitespace-nowrap"
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Send to {selectedLists.length} List{selectedLists.length !== 1 ? 's' : ''}
+            </Button>
+          )}
         </div>
 
         {/* Email Lists */}
@@ -142,14 +155,44 @@ export default function AdminEmailLists() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredLists.map((list) => (
-              <Card key={list.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={list.id} 
+                className={`hover:shadow-lg transition-all cursor-pointer ${
+                  selectedLists.includes(list.id) ? 'ring-2 ring-primary' : ''
+                }`}
+                onClick={() => {
+                  setSelectedLists(prev => 
+                    prev.includes(list.id) 
+                      ? prev.filter(id => id !== list.id)
+                      : [...prev, list.id]
+                  );
+                }}
+              >
                 <CardHeader>
                   <CardTitle className="flex items-start justify-between">
-                    <span className="truncate">{list.name}</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedLists.includes(list.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          setSelectedLists(prev => 
+                            prev.includes(list.id) 
+                              ? prev.filter(id => id !== list.id)
+                              : [...prev, list.id]
+                          );
+                        }}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span className="truncate">{list.name}</span>
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteList(list.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteList(list.id);
+                      }}
                       className="flex-shrink-0"
                     >
                       <Trash2 className="w-4 h-4 text-destructive" />
@@ -174,7 +217,10 @@ export default function AdminEmailLists() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => navigate(`/admin/email-lists/${list.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/email-lists/${list.id}`);
+                      }}
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       Manage
@@ -182,7 +228,10 @@ export default function AdminEmailLists() {
                     <Button
                       size="sm"
                       className="flex-1"
-                      onClick={() => setBulkEmailDialog({ open: true, listId: list.id })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBulkEmailDialog({ open: true, listIds: [list.id] });
+                      }}
                       disabled={list.total_recipients === 0}
                     >
                       <Mail className="w-4 h-4 mr-2" />
@@ -205,8 +254,8 @@ export default function AdminEmailLists() {
       
       <BulkEmailDialog
         open={bulkEmailDialog.open}
-        onOpenChange={(open) => setBulkEmailDialog({ open, listId: bulkEmailDialog.listId })}
-        listId={bulkEmailDialog.listId}
+        onOpenChange={(open) => setBulkEmailDialog({ open, listIds: bulkEmailDialog.listIds })}
+        listIds={bulkEmailDialog.listIds}
       />
     </div>
   );
