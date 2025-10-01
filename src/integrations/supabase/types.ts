@@ -640,6 +640,146 @@ export type Database = {
         }
         Relationships: []
       }
+      email_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string
+          recipient_id: string
+          recipient_type: string
+          sender_id: string
+          sender_type: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          recipient_id: string
+          recipient_type: string
+          sender_id: string
+          sender_type: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          recipient_id?: string
+          recipient_type?: string
+          sender_id?: string
+          sender_type?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_messages: {
+        Row: {
+          body_html: string
+          body_text: string | null
+          conversation_id: string
+          created_at: string
+          direction: string
+          external_message_id: string | null
+          id: string
+          is_read: boolean
+          recipient_email: string
+          sender_email: string
+          sender_name: string | null
+          sent_at: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          body_text?: string | null
+          conversation_id: string
+          created_at?: string
+          direction: string
+          external_message_id?: string | null
+          id?: string
+          is_read?: boolean
+          recipient_email: string
+          sender_email: string
+          sender_name?: string | null
+          sent_at?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          body_text?: string | null
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          external_message_id?: string | null
+          id?: string
+          is_read?: boolean
+          recipient_email?: string
+          sender_email?: string
+          sender_name?: string | null
+          sent_at?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "email_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          association_id: string | null
+          body_html: string
+          body_text: string | null
+          company_id: string | null
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          subject: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          association_id?: string | null
+          body_html: string
+          body_text?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          name: string
+          subject: string
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          association_id?: string | null
+          body_html?: string
+          body_text?: string | null
+          company_id?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       key_functionaries: {
         Row: {
           association_id: string
