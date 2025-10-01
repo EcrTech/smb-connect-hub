@@ -10,7 +10,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import RequestAssociation from "./pages/RequestAssociation";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminActions from "./pages/admin/AdminActions";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAssociations from "./pages/admin/AdminAssociations";
 import AdminCompanies from "./pages/admin/AdminCompanies";
@@ -82,11 +82,19 @@ const App = () => (
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminDashboard />
+                <AdminAnalytics />
               </ProtectedRoute>
             } 
           />
           <Route 
+            path="/admin/actions"
+            element={
+              <ProtectedRoute>
+                <AdminActions />
+              </ProtectedRoute>
+            } 
+          />
+          <Route
             path="/admin/users" 
             element={
               <ProtectedRoute>

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import logo from '@/assets/smb-connect-logo.jpg';
 
-export default function AdminDashboard() {
+export default function AdminActions() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stats, setStats] = useState({
@@ -114,8 +114,8 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-3">
             <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
-              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">System Administration</p>
+              <h1 className="text-2xl font-bold">Admin Actions</h1>
+              <p className="text-sm text-muted-foreground">Manage Platform Resources</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -141,9 +141,9 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome, Administrator</h2>
+          <h2 className="text-3xl font-bold mb-2">Quick Actions</h2>
           <p className="text-muted-foreground">
-            Manage the entire SMB Connect platform
+            Create and manage platform resources
           </p>
         </div>
 
@@ -251,7 +251,7 @@ export default function AdminDashboard() {
                 <MessageCircle className="w-4 h-4 mr-2" />
                 WhatsApp Lists
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/analytics')}>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin')}>
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Analytics Dashboard
               </Button>

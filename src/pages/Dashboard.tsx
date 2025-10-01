@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
-import AdminDashboard from './admin/AdminDashboard';
+import AdminAnalytics from './admin/AdminAnalytics';
 import AssociationDashboard from './association/AssociationDashboard';
 import CompanyDashboard from './company/CompanyDashboard';
 import MemberDashboard from './member/MemberDashboard';
@@ -46,7 +46,7 @@ export default function Dashboard() {
   // Route to appropriate dashboard based on role
   switch (role) {
     case 'admin':
-      return <AdminDashboard />;
+      return <AdminAnalytics />;
     case 'association':
       return <AssociationDashboard />;
     case 'company':
