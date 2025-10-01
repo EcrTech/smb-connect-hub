@@ -166,18 +166,18 @@ export default function AssociationProfileView() {
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mb-4">{association.description}</p>
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
+                <div className="flex flex-wrap gap-4 text-sm mb-4">
                   {association.founded_year && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>Founded in {association.founded_year}</span>
-                    </div>
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      <span>Founded {association.founded_year}</span>
+                    </Badge>
                   )}
                   {association.industry && (
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4" />
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Building2 className="w-3 h-3" />
                       <span>{association.industry}</span>
-                    </div>
+                    </Badge>
                   )}
                 </div>
                 {association.keywords && association.keywords.length > 0 && (
