@@ -12,12 +12,69 @@ export default function AssociationDashboard() {
   const { toast } = useToast();
   const { userData } = useUserRole();
   const [association, setAssociation] = useState<any>(null);
+  const [stats, setStats] = useState({
+    totalCompanies: 0,
+    totalMembers: 0,
+    pendingInvitations: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (userData?.association) {
       setAssociation(userData.association);
+      loadStats(userData.association.id);
     }
   }, [userData]);
+
+  const loadStats = async (associationId: string) => {
+    try {
+      // Load companies count
+      const { count: companiesCount } = await supabase
+        .from('companies')
+        .select('*', { count: 'exact', head: true })
+        .eq('association_id', associationId)
+        .eq('is_active', true);
+
+      // Load total members count across all companies
+      const { data: companies } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('association_id', associationId)
+        .eq('is_active', true);
+
+      let totalMembers = 0;
+      if (companies) {
+        const { count: membersCount } = await supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .in('company_id', companies.map(c => c.id))
+          .eq('is_active', true);
+        totalMembers = membersCount || 0;
+      }
+
+      // Load pending invitations count
+      const { count: invitationsCount } = await supabase
+        .from('company_invitations')
+        .select('*', { count: 'exact', head: true })
+        .eq('association_id', associationId)
+        .eq('status', 'pending');
+
+      setStats({
+        totalCompanies: companiesCount || 0,
+        totalMembers,
+        pendingInvitations: invitationsCount || 0
+      });
+    } catch (error: any) {
+      console.error('Error loading stats:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard statistics',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -78,8 +135,14 @@ export default function AssociationDashboard() {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">In your association</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+                  <p className="text-xs text-muted-foreground">In your association</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -89,8 +152,14 @@ export default function AssociationDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Active members</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalMembers}</div>
+                  <p className="text-xs text-muted-foreground">Active members</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -100,8 +169,14 @@ export default function AssociationDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Awaiting response</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.pendingInvitations}</div>
+                  <p className="text-xs text-muted-foreground">Awaiting response</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

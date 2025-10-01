@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Mail, Phone, Globe, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Building2, Mail, Phone, Globe, MapPin, Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import { EditAssociationDialog } from './association/EditAssociationDialog';
 
 interface Association {
   id: string;
@@ -22,6 +24,7 @@ interface Association {
 export function AssociationsList() {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingAssociation, setEditingAssociation] = useState<Association | null>(null);
 
   useEffect(() => {
     loadAssociations();
@@ -69,9 +72,18 @@ export function AssociationsList() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <Building2 className="h-8 w-8 text-primary" />
-                <Badge variant={association.is_active ? 'default' : 'secondary'}>
-                  {association.is_active ? 'Active' : 'Inactive'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={association.is_active ? 'default' : 'secondary'}>
+                    {association.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => setEditingAssociation(association)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               <CardTitle className="mt-2">{association.name}</CardTitle>
               <CardDescription className="line-clamp-2">
@@ -117,6 +129,15 @@ export function AssociationsList() {
           </Card>
         ))}
       </div>
+
+      {editingAssociation && (
+        <EditAssociationDialog
+          association={editingAssociation}
+          open={!!editingAssociation}
+          onOpenChange={(open) => !open && setEditingAssociation(null)}
+          onSuccess={loadAssociations}
+        />
+      )}
     </div>
   );
 }
