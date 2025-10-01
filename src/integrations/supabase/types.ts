@@ -86,6 +86,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "analytics_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       association_managers: {
@@ -374,6 +381,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_participants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
             referencedColumns: ["id"]
           },
         ]
@@ -946,6 +960,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
@@ -1284,6 +1305,68 @@ export type Database = {
       }
     }
     Views: {
+      companies_public: {
+        Row: {
+          association_id: string | null
+          business_type: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          description: string | null
+          employee_count: number | null
+          id: string | null
+          industry_type: string | null
+          is_active: boolean | null
+          logo: string | null
+          name: string | null
+          state: string | null
+          website: string | null
+          year_established: number | null
+        }
+        Insert: {
+          association_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          employee_count?: number | null
+          id?: string | null
+          industry_type?: string | null
+          is_active?: boolean | null
+          logo?: string | null
+          name?: string | null
+          state?: string | null
+          website?: string | null
+          year_established?: number | null
+        }
+        Update: {
+          association_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          employee_count?: number | null
+          id?: string | null
+          industry_type?: string | null
+          is_active?: boolean | null
+          logo?: string | null
+          name?: string | null
+          state?: string | null
+          website?: string | null
+          year_established?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       duplicate_companies_monitor: {
         Row: {
           association_id: string | null
@@ -1303,10 +1386,55 @@ export type Database = {
           },
         ]
       }
+      key_functionaries_public: {
+        Row: {
+          association_id: string | null
+          bio: string | null
+          designation: string | null
+          display_order: number | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          photo: string | null
+        }
+        Insert: {
+          association_id?: string | null
+          bio?: string | null
+          designation?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          photo?: string | null
+        }
+        Update: {
+          association_id?: string | null
+          bio?: string | null
+          designation?: string | null
+          display_order?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          photo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_functionaries_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_add_chat_participant: {
         Args: { check_chat_id: string; check_user_id: string }
+        Returns: boolean
+      }
+      can_view_company_details: {
+        Args: { target_company_id: string; viewer_id: string }
         Returns: boolean
       }
       check_company_admin_for_member: {
