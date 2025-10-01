@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { CommentsSection } from '@/components/member/CommentsSection';
+import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { 
   ArrowLeft, 
   Heart, 
@@ -14,7 +17,10 @@ import {
   Send,
   Trash2,
   Building2,
-  LogOut
+  LogOut,
+  Image as ImageIcon,
+  X,
+  Search
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -50,10 +56,36 @@ export default function MemberFeed() {
   const [posting, setPosting] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showComments, setShowComments] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
     loadPosts();
+
+    // Set up real-time subscription for new posts
+    const channel = supabase
+      .channel('posts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts'
+        },
+        () => {
+          loadPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadProfile = async () => {
@@ -159,9 +191,30 @@ export default function MemberFeed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      let imageUrl = null;
+
+      // Upload image if present
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${user.id}/post-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile-images')
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-images')
+          .getPublicUrl(fileName);
+
+        imageUrl = publicUrl;
+      }
+
       const { error } = await supabase.from('posts').insert({
         user_id: user.id,
         content: newPostContent.trim(),
+        image_url: imageUrl,
       });
 
       if (error) throw error;
@@ -171,6 +224,8 @@ export default function MemberFeed() {
         description: 'Post created',
       });
       setNewPostContent('');
+      setImagePreview(null);
+      setImageFile(null);
       loadPosts();
     } catch (error: any) {
       toast({
@@ -181,6 +236,45 @@ export default function MemberFeed() {
     } finally {
       setPosting(false);
     }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Error',
+        description: 'Please select an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const toggleComments = (postId: string) => {
+    const newShowComments = new Set(showComments);
+    if (newShowComments.has(postId)) {
+      newShowComments.delete(postId);
+    } else {
+      newShowComments.add(postId);
+    }
+    setShowComments(newShowComments);
   };
 
   const handleLikePost = async (postId: string, currentlyLiked: boolean) => {
@@ -308,12 +402,27 @@ export default function MemberFeed() {
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-3xl">
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
         </div>
+
+        {/* Search Bar */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search posts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Create Post */}
         <Card className="mb-6">
@@ -333,7 +442,41 @@ export default function MemberFeed() {
                   rows={3}
                   className="resize-none"
                 />
-                <div className="flex justify-end">
+                {imagePreview && (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="rounded-lg max-h-64 w-full object-cover"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={removeImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Add Photo
+                    </Button>
+                  </div>
                   <Button
                     onClick={handleCreatePost}
                     disabled={!newPostContent.trim() || posting}
@@ -358,7 +501,15 @@ export default function MemberFeed() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {posts.map((post) => {
+            {posts
+              .filter(post => {
+                if (!searchTerm) return true;
+                const searchLower = searchTerm.toLowerCase();
+                const fullName = `${post.profile.first_name} ${post.profile.last_name}`.toLowerCase();
+                return post.content.toLowerCase().includes(searchLower) ||
+                       fullName.includes(searchLower);
+              })
+              .map((post) => {
               const fullName = `${post.profile.first_name} ${post.profile.last_name}`;
               const initials = `${post.profile.first_name[0]}${post.profile.last_name[0]}`;
               const isOwnPost = post.user_id === currentUserId;
@@ -397,15 +548,24 @@ export default function MemberFeed() {
                               {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                             </p>
                           </div>
-                          {isOwnPost && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeletePost(post.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+                          <div className="flex gap-2">
+                            {isOwnPost && (
+                              <>
+                                <EditPostDialog
+                                  postId={post.id}
+                                  initialContent={post.content}
+                                  onSave={loadPosts}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeletePost(post.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         <p className="mt-4 whitespace-pre-wrap">{post.content}</p>
@@ -428,11 +588,24 @@ export default function MemberFeed() {
                             <Heart className={`w-4 h-4 mr-2 ${post.user_liked ? 'fill-current' : ''}`} />
                             {post.likes_count > 0 && post.likes_count}
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => toggleComments(post.id)}
+                          >
                             <MessageCircle className="w-4 h-4 mr-2" />
                             {post.comments_count > 0 && post.comments_count}
                           </Button>
                         </div>
+
+                        {/* Comments Section */}
+                        {showComments.has(post.id) && (
+                          <CommentsSection
+                            postId={post.id}
+                            currentUserId={currentUserId}
+                            onCommentAdded={loadPosts}
+                          />
+                        )}
                       </div>
                     </div>
                   </CardContent>
