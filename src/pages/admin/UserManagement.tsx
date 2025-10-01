@@ -95,11 +95,39 @@ export default function UserManagement() {
       setUsers(usersWithRoles);
 
       // Load associations and companies
-      const { data: assocData } = await supabase.from('associations').select('id, name');
-      setAssociations(assocData || []);
+      const { data: assocData, error: assocError } = await supabase
+        .from('associations')
+        .select('id, name')
+        .order('name');
+      
+      if (assocError) {
+        console.error('Error loading associations:', assocError);
+        toast({
+          title: 'Warning',
+          description: 'Failed to load associations: ' + assocError.message,
+          variant: 'destructive'
+        });
+      } else {
+        console.log('Loaded associations:', assocData);
+        setAssociations(assocData || []);
+      }
 
-      const { data: compData } = await supabase.from('companies').select('id, name, association_id');
-      setCompanies(compData || []);
+      const { data: compData, error: compError } = await supabase
+        .from('companies')
+        .select('id, name, association_id')
+        .order('name');
+      
+      if (compError) {
+        console.error('Error loading companies:', compError);
+        toast({
+          title: 'Warning',
+          description: 'Failed to load companies: ' + compError.message,
+          variant: 'destructive'
+        });
+      } else {
+        console.log('Loaded companies:', compData);
+        setCompanies(compData || []);
+      }
 
     } catch (error: any) {
       toast({
