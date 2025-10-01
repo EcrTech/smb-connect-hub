@@ -286,7 +286,7 @@ const AdminAnalytics = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/admin/actions')}>
+          <Button variant="outline" onClick={() => navigate('/admin/requests')}>
             <Settings className="h-4 w-4 mr-2" />
             Admin Actions
           </Button>
