@@ -11,9 +11,13 @@ import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import UserManagement from "./pages/admin/UserManagement";
+import AdminAssociations from "./pages/admin/AdminAssociations";
+import AdminCompanies from "./pages/admin/AdminCompanies";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
+import AssociationCompanies from "./pages/association/AssociationCompanies";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import MemberDashboard from "./pages/member/MemberDashboard";
+import MemberCompanies from "./pages/member/MemberCompanies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,7 +65,23 @@ const App = () => (
             } 
           />
           <Route 
-            path="/association/*" 
+            path="/admin/associations" 
+            element={
+              <ProtectedRoute>
+                <AdminAssociations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/companies" 
+            element={
+              <ProtectedRoute>
+                <AdminCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association" 
             element={
               <ProtectedRoute>
                 <AssociationDashboard />
@@ -69,7 +89,15 @@ const App = () => (
             } 
           />
           <Route 
-            path="/company/*" 
+            path="/association/companies" 
+            element={
+              <ProtectedRoute>
+                <AssociationCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company" 
             element={
               <ProtectedRoute>
                 <CompanyDashboard />
@@ -77,10 +105,18 @@ const App = () => (
             } 
           />
           <Route 
-            path="/member/*" 
+            path="/member" 
             element={
               <ProtectedRoute>
                 <MemberDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/companies" 
+            element={
+              <ProtectedRoute>
+                <MemberCompanies />
               </ProtectedRoute>
             } 
           />

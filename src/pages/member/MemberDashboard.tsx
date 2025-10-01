@@ -140,8 +140,8 @@ export default function MemberDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Button variant="outline" className="w-full" onClick={() => navigate('/companies')}>
-                <Users className="w-4 h-4 mr-2" />
+              <Button className="w-full" onClick={() => navigate('/companies')}>
+                <Building2 className="w-4 h-4 mr-2" />
                 Browse Companies
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/chat')}>
