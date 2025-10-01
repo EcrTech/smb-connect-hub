@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,50 @@ import { useToast } from '@/hooks/use-toast';
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [stats, setStats] = useState({
+    totalAssociations: 0,
+    totalCompanies: 0,
+    totalUsers: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      // Load associations count
+      const { count: associationsCount } = await supabase
+        .from('associations')
+        .select('*', { count: 'exact', head: true });
+
+      // Load companies count
+      const { count: companiesCount } = await supabase
+        .from('companies')
+        .select('*', { count: 'exact', head: true });
+
+      // Load users count from profiles
+      const { count: usersCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      setStats({
+        totalAssociations: associationsCount || 0,
+        totalCompanies: companiesCount || 0,
+        totalUsers: usersCount || 0
+      });
+    } catch (error: any) {
+      console.error('Error loading stats:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard statistics',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -64,8 +109,14 @@ export default function AdminDashboard() {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Across platform</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalAssociations}</div>
+                  <p className="text-xs text-muted-foreground">Across platform</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -75,8 +126,14 @@ export default function AdminDashboard() {
               <Building2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">All companies</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+                  <p className="text-xs text-muted-foreground">All companies</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -86,8 +143,14 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Platform users</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                  <p className="text-xs text-muted-foreground">Platform users</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
