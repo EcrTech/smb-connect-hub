@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_super_admin: boolean | null
+          permissions: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_super_admin?: boolean | null
+          permissions?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_super_admin?: boolean | null
+          permissions?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           company_id: string | null
@@ -54,6 +84,47 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_managers: {
+        Row: {
+          association_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          permissions: Json | null
+          role: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          association_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          association_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          permissions?: Json | null
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_managers_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
             referencedColumns: ["id"]
           },
         ]
@@ -516,6 +587,7 @@ export type Database = {
           avatar: string | null
           bio: string | null
           created_at: string | null
+          current_context: string | null
           first_name: string
           id: string
           last_name: string
@@ -526,6 +598,7 @@ export type Database = {
           avatar?: string | null
           bio?: string | null
           created_at?: string | null
+          current_context?: string | null
           first_name: string
           id: string
           last_name: string
@@ -536,6 +609,7 @@ export type Database = {
           avatar?: string | null
           bio?: string | null
           created_at?: string | null
+          current_context?: string | null
           first_name?: string
           id?: string
           last_name?: string
@@ -549,6 +623,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_role_context: {
+        Args: { check_user_id: string }
+        Returns: string
+      }
       gtrgm_compress: {
         Args: { "": unknown }
         Returns: unknown
@@ -568,6 +646,18 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      is_admin: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
+      is_association_manager: {
+        Args: { check_association_id: string; check_user_id: string }
+        Returns: boolean
+      }
+      is_company_admin: {
+        Args: { check_company_id: string; check_user_id: string }
+        Returns: boolean
       }
       set_limit: {
         Args: { "": number }
