@@ -26,6 +26,7 @@ import AdminEmailLists from "./pages/admin/AdminEmailLists";
 import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
 import AdminWhatsAppLists from "./pages/admin/AdminWhatsAppLists";
 import AdminWhatsAppListDetail from "./pages/admin/AdminWhatsAppListDetail";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
@@ -202,6 +203,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <AdminWhatsAppListDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/analytics" 
+            element={
+              <ProtectedRoute>
+                <AdminAnalytics />
               </ProtectedRoute>
             } 
           />
