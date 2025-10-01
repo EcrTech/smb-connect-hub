@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Building2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -85,9 +85,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-8 h-8 text-primary" />
-            </div>
+            <img src={logo} alt="SMB Connect" className="h-16 object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold">Welcome to SMB Connect</CardTitle>
           <CardDescription>

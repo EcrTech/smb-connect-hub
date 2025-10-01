@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 const requestSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -127,9 +128,7 @@ export default function RequestAssociation() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
+            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">Request Association</h1>
               <p className="text-sm text-muted-foreground">

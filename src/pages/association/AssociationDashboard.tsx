@@ -7,6 +7,7 @@ import { Building2, Users, LogOut, Settings, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 export default function AssociationDashboard() {
   const navigate = useNavigate();
@@ -124,9 +125,7 @@ export default function AssociationDashboard() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
+            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">Association Dashboard</h1>
               <p className="text-sm text-muted-foreground">

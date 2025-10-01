@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Building2, Users, MessageSquare, TrendingUp } from "lucide-react";
+import { Users, MessageSquare, TrendingUp } from "lucide-react";
+import logo from "@/assets/smb-connect-logo.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -11,10 +12,7 @@ const Index = () => {
       <header className="container mx-auto px-4 py-6">
         <nav className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary" />
-            </div>
-            <span className="text-xl font-bold">SMB Connect</span>
+            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => navigate('/auth/login')}>

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Check, X, Clock, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 interface ConnectionWithDetails {
   id: string;
@@ -270,10 +271,13 @@ export default function MemberConnections() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <img src={logo} alt="SMB Connect" className="h-8 object-contain" />
+            <h1 className="text-xl font-bold">My Connections</h1>
+          </div>
         </div>
       </header>
 

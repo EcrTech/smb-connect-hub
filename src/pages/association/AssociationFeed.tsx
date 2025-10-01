@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { Input } from '@/components/ui/input';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 interface Post {
   id: string;
@@ -286,6 +287,7 @@ export default function AssociationFeed() {
               <Button variant="ghost" size="sm" onClick={() => navigate('/association/dashboard')}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
+              <img src={logo} alt="SMB Connect" className="h-8 object-contain" />
               <h1 className="text-2xl font-bold">Association Feed</h1>
             </div>
           </div>
