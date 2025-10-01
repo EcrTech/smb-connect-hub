@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
+import Setup from "./pages/Setup";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
@@ -26,6 +27,14 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
+          <Route 
+            path="/setup" 
+            element={
+              <ProtectedRoute>
+                <Setup />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/dashboard" 
             element={
