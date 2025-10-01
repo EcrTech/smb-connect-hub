@@ -26,9 +26,23 @@ export default function MemberDashboard() {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      setProfile(profileData);
+      if (profileData) {
+        setProfile(profileData);
+      }
+
+      // Load member data to check company affiliation
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('*, company:companies(*)')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (memberData?.company) {
+        // Member has a company
+        setProfile((prev: any) => ({ ...prev, company: memberData.company }));
+      }
     } catch (error: any) {
       console.error('Error loading profile:', error);
     }
@@ -79,9 +93,9 @@ export default function MemberDashboard() {
             Welcome back, {profile?.first_name || 'User'}!
           </h2>
           <p className="text-muted-foreground">
-            {userData?.company 
-              ? `You're part of ${userData.company.name}` 
-              : 'Complete your profile to get started'}
+            {profile?.company 
+              ? `You're part of ${profile.company.name}` 
+              : 'Independent member - Connect with others in your network'}
           </p>
         </div>
 

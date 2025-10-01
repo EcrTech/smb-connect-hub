@@ -51,7 +51,7 @@ export function useUserRole() {
         return;
       }
 
-      // Check if company owner/admin
+      // Check if company owner/admin or member
       const { data: memberData } = await supabase
         .from('members')
         .select('*, company:companies(*, association:associations(*))')
@@ -59,14 +59,16 @@ export function useUserRole() {
         .eq('is_active', true)
         .maybeSingle();
 
-      if (memberData && ['owner', 'admin'].includes(memberData.role)) {
-        setRole('company');
-        setUserData({ ...memberData, type: 'company' });
-        setLoading(false);
-        return;
-      }
-
       if (memberData) {
+        // If member has company and is owner/admin, set as company role
+        if (memberData.company_id && ['owner', 'admin'].includes(memberData.role)) {
+          setRole('company');
+          setUserData({ ...memberData, type: 'company' });
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise, set as member (with or without company)
         setRole('member');
         setUserData({ ...memberData, type: 'member' });
         setLoading(false);

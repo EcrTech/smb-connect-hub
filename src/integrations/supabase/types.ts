@@ -557,7 +557,7 @@ export type Database = {
       }
       members: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string | null
           department: string | null
           designation: string | null
@@ -570,7 +570,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string | null
           department?: string | null
           designation?: string | null
@@ -583,7 +583,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string | null
           department?: string | null
           designation?: string | null
