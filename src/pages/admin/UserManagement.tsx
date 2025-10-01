@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Building2, Users, Search, Plus, Upload, Trash2 } from 'lucide-react';
@@ -66,6 +67,9 @@ export default function UserManagement() {
   const [memberRole, setMemberRole] = useState<string>('member');
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteNotes, setDeleteNotes] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const { toast } = useToast();
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -286,7 +290,44 @@ export default function UserManagement() {
   };
 
   const handleDeleteMember = async (user: User) => {
+    if (!deletePassword.trim() || !deleteNotes.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Password and notes are required',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsVerifying(true);
     try {
+      // Re-authenticate user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser?.email) {
+        toast({
+          title: 'Error',
+          description: 'User email not found',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: deletePassword
+      });
+
+      if (authError) {
+        toast({
+          title: 'Error',
+          description: 'Invalid password. Deletion cancelled.',
+          variant: 'destructive'
+        });
+        setIsVerifying(false);
+        return;
+      }
+
+      // Proceed with deletion
       const { error } = await supabase
         .from('members')
         .delete()
@@ -294,11 +335,25 @@ export default function UserManagement() {
 
       if (error) throw error;
 
+      // Log the deletion for audit
+      await supabase.from('audit_logs').insert({
+        user_id: currentUser.id,
+        action: 'delete',
+        resource: 'member',
+        resource_id: user.id,
+        changes: { 
+          deleted_member: user.email,
+          deletion_notes: deleteNotes 
+        }
+      });
+
       toast({
         title: 'Success',
         description: 'Member deleted successfully'
       });
       setDeletingUser(null);
+      setDeletePassword('');
+      setDeleteNotes('');
       loadData();
     } catch (error: any) {
       toast({
@@ -306,6 +361,8 @@ export default function UserManagement() {
         description: error.message,
         variant: 'destructive'
       });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -559,22 +616,56 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
-      <AlertDialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
+      <AlertDialog open={!!deletingUser} onOpenChange={(open) => {
+        if (!open) {
+          setDeletingUser(null);
+          setDeletePassword('');
+          setDeleteNotes('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Member</AlertDialogTitle>
+            <AlertDialogTitle>Delete Member - Re-authentication Required</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete member "{deletingUser?.email}"? This action cannot be undone.
+              You are about to delete member "{deletingUser?.email}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="delete-notes">Reason for Deletion *</Label>
+              <Textarea
+                id="delete-notes"
+                placeholder="Explain why this member needs to be deleted..."
+                value={deleteNotes}
+                onChange={(e) => setDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delete-password">Confirm Your Password *</Label>
+              <Input
+                id="delete-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this critical action
+              </p>
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={() => deletingUser && handleDeleteMember(deletingUser)}
+              disabled={!deletePassword.trim() || !deleteNotes.trim() || isVerifying}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
-            </AlertDialogAction>
+              {isVerifying ? 'Verifying...' : 'Delete Member'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

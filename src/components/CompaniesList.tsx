@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Building, Mail, Phone, Globe, MapPin, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +47,9 @@ export function CompaniesList() {
   const [hasMore, setHasMore] = useState(true);
   const [deletingCompany, setDeletingCompany] = useState<Company | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteNotes, setDeleteNotes] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -144,7 +149,32 @@ export function CompaniesList() {
   };
 
   const handleDelete = async (company: Company) => {
+    if (!deletePassword.trim() || !deleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsVerifying(true);
     try {
+      // Re-authenticate user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error('User email not found');
+        return;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword
+      });
+
+      if (authError) {
+        toast.error('Invalid password. Deletion cancelled.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Proceed with deletion
       const { error } = await supabase
         .from('companies')
         .delete()
@@ -152,12 +182,28 @@ export function CompaniesList() {
 
       if (error) throw error;
 
+      // Log the deletion for audit
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'delete',
+        resource: 'company',
+        resource_id: company.id,
+        changes: { 
+          deleted_company: company.name,
+          deletion_notes: deleteNotes 
+        }
+      });
+
       toast.success('Company deleted successfully');
       setDeletingCompany(null);
+      setDeletePassword('');
+      setDeleteNotes('');
       loadCompanies();
     } catch (error: any) {
       console.error('Error deleting company:', error);
       toast.error(error.message || 'Failed to delete company');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -274,22 +320,56 @@ export function CompaniesList() {
         </div>
       )}
 
-      <AlertDialog open={!!deletingCompany} onOpenChange={(open) => !open && setDeletingCompany(null)}>
+      <AlertDialog open={!!deletingCompany} onOpenChange={(open) => {
+        if (!open) {
+          setDeletingCompany(null);
+          setDeletePassword('');
+          setDeleteNotes('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Company</AlertDialogTitle>
+            <AlertDialogTitle>Delete Company - Re-authentication Required</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingCompany?.name}"? This action cannot be undone and will also delete all associated members.
+              You are about to delete "{deletingCompany?.name}". This action cannot be undone and will also delete all associated members.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="delete-notes">Reason for Deletion *</Label>
+              <Textarea
+                id="delete-notes"
+                placeholder="Explain why this company needs to be deleted..."
+                value={deleteNotes}
+                onChange={(e) => setDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delete-password">Confirm Your Password *</Label>
+              <Input
+                id="delete-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this critical action
+              </p>
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={() => deletingCompany && handleDelete(deletingCompany)}
+              disabled={!deletePassword.trim() || !deleteNotes.trim() || isVerifying}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
-            </AlertDialogAction>
+              {isVerifying ? 'Verifying...' : 'Delete Company'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

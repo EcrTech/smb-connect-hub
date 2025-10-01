@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Building2, Mail, Phone, Globe, MapPin, Edit, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditAssociationDialog } from './association/EditAssociationDialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +47,9 @@ export function AssociationsList() {
   const [editingAssociation, setEditingAssociation] = useState<Association | null>(null);
   const [deletingAssociation, setDeletingAssociation] = useState<Association | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteNotes, setDeleteNotes] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -139,7 +144,32 @@ export function AssociationsList() {
   };
 
   const handleDelete = async (association: Association) => {
+    if (!deletePassword.trim() || !deleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsVerifying(true);
     try {
+      // Re-authenticate user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error('User email not found');
+        return;
+      }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: deletePassword
+      });
+
+      if (authError) {
+        toast.error('Invalid password. Deletion cancelled.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Proceed with deletion
       const { error } = await supabase
         .from('associations')
         .delete()
@@ -147,12 +177,28 @@ export function AssociationsList() {
 
       if (error) throw error;
 
+      // Log the deletion for audit
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        action: 'delete',
+        resource: 'association',
+        resource_id: association.id,
+        changes: { 
+          deleted_association: association.name,
+          deletion_notes: deleteNotes 
+        }
+      });
+
       toast.success('Association deleted successfully');
       setDeletingAssociation(null);
+      setDeletePassword('');
+      setDeleteNotes('');
       loadAssociations();
     } catch (error: any) {
       console.error('Error deleting association:', error);
       toast.error(error.message || 'Failed to delete association');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -282,22 +328,56 @@ export function AssociationsList() {
         />
       )}
 
-      <AlertDialog open={!!deletingAssociation} onOpenChange={(open) => !open && setDeletingAssociation(null)}>
+      <AlertDialog open={!!deletingAssociation} onOpenChange={(open) => {
+        if (!open) {
+          setDeletingAssociation(null);
+          setDeletePassword('');
+          setDeleteNotes('');
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Association</AlertDialogTitle>
+            <AlertDialogTitle>Delete Association - Re-authentication Required</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deletingAssociation?.name}"? This action cannot be undone and will also delete all associated companies and members.
+              You are about to delete "{deletingAssociation?.name}". This action cannot be undone and will also delete all associated companies and members.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="delete-notes">Reason for Deletion *</Label>
+              <Textarea
+                id="delete-notes"
+                placeholder="Explain why this association needs to be deleted..."
+                value={deleteNotes}
+                onChange={(e) => setDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="delete-password">Confirm Your Password *</Label>
+              <Input
+                id="delete-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this critical action
+              </p>
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={() => deletingAssociation && handleDelete(deletingAssociation)}
+              disabled={!deletePassword.trim() || !deleteNotes.trim() || isVerifying}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Delete
-            </AlertDialogAction>
+              {isVerifying ? 'Verifying...' : 'Delete Association'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
