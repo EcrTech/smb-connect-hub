@@ -1341,12 +1341,28 @@ export type Database = {
         Args: { check_association_id: string; check_user_id: string }
         Returns: boolean
       }
+      is_association_manager_of_user: {
+        Args: { target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
       is_company_admin: {
         Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
+      is_company_admin_of_user: {
+        Args: { target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
       is_company_admin_safe: {
         Args: { check_company_id: string; check_user_id: string }
+        Returns: boolean
+      }
+      is_connected_to: {
+        Args: { target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
+      is_same_company: {
+        Args: { target_user_id: string; viewer_id: string }
         Returns: boolean
       }
       is_super_admin: {
