@@ -592,11 +592,12 @@ export default function UserManagement() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
-                    {isSuperAdmin && user.roles.some(role => role.startsWith('Company')) && (
+                    {isSuperAdmin && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeletingUser(user)}
+                        title="Delete member"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
