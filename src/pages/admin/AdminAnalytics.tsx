@@ -364,81 +364,93 @@ const AdminAnalytics = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-primary/10 to-primary/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Users className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalMembers}</div>
+            <div className="text-3xl font-bold text-primary">{stats.totalMembers}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-secondary/10 to-secondary/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-secondary/20 flex items-center justify-center">
+              <Activity className="h-5 w-5 text-secondary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeUsers}</div>
+            <div className="text-3xl font-bold text-secondary">{stats.activeUsers}</div>
             <p className="text-xs text-muted-foreground">Last 7 days</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-accent/10 to-accent/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-accent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+            <div className="text-3xl font-bold text-accent">{stats.totalCompanies}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-primary/10 to-primary/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Associations</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAssociations}</div>
+            <div className="text-3xl font-bold text-primary">{stats.totalAssociations}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-secondary/10 to-secondary/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
-            <Mail className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-secondary/20 flex items-center justify-center">
+              <Mail className="h-5 w-5 text-secondary" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEmails}</div>
+            <div className="text-3xl font-bold text-secondary">{stats.totalEmails}</div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-accent/10 to-accent/5 hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">WhatsApp Sent</CardTitle>
-            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-accent" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalWhatsApp}</div>
+            <div className="text-3xl font-bold text-accent">{stats.totalWhatsApp}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Growth Trends */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <Card className="border-none shadow-lg hover:shadow-xl transition-all">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5">
+          <CardTitle className="flex items-center gap-2 text-primary">
             <TrendingUp className="h-5 w-5" />
             Platform Growth Trends
           </CardTitle>
           <CardDescription>Member, company, and association growth over time</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={growthData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis 
                 dataKey="date" 
                 tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -448,9 +460,9 @@ const AdminAnalytics = () => {
                 labelFormatter={(date) => new Date(date).toLocaleDateString()}
               />
               <Legend />
-              <Line type="monotone" dataKey="members" stroke="#8884d8" name="Members" />
-              <Line type="monotone" dataKey="companies" stroke="#82ca9d" name="Companies" />
-              <Line type="monotone" dataKey="associations" stroke="#ffc658" name="Associations" />
+              <Line type="monotone" dataKey="members" stroke="hsl(var(--primary))" strokeWidth={2} name="Members" />
+              <Line type="monotone" dataKey="companies" stroke="hsl(var(--secondary))" strokeWidth={2} name="Companies" />
+              <Line type="monotone" dataKey="associations" stroke="hsl(var(--accent))" strokeWidth={2} name="Associations" />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -458,15 +470,15 @@ const AdminAnalytics = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Communication Volume */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Communication Volume</CardTitle>
+        <Card className="border-none shadow-lg hover:shadow-xl transition-all">
+          <CardHeader className="bg-gradient-to-r from-secondary/5 to-accent/5">
+            <CardTitle className="text-secondary">Communication Volume</CardTitle>
             <CardDescription>Email and WhatsApp messages sent over time</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={communicationData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis 
                   dataKey="date"
                   tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -476,20 +488,20 @@ const AdminAnalytics = () => {
                   labelFormatter={(date) => new Date(date).toLocaleDateString()}
                 />
                 <Legend />
-                <Bar dataKey="emails" fill="#8884d8" name="Emails" />
-                <Bar dataKey="whatsapp" fill="#82ca9d" name="WhatsApp" />
+                <Bar dataKey="emails" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} name="Emails" />
+                <Bar dataKey="whatsapp" fill="hsl(var(--secondary))" radius={[8, 8, 0, 0]} name="WhatsApp" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Role Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>User Role Distribution</CardTitle>
+        <Card className="border-none shadow-lg hover:shadow-xl transition-all">
+          <CardHeader className="bg-gradient-to-r from-accent/5 to-primary/5">
+            <CardTitle className="text-accent">User Role Distribution</CardTitle>
             <CardDescription>Active users by role type</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -499,7 +511,7 @@ const AdminAnalytics = () => {
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="hsl(var(--primary))"
                   dataKey="value"
                 >
                   {roleDistribution.map((entry, index) => (
@@ -514,17 +526,19 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Top Associations */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top Associations by Member Count</CardTitle>
+      <Card className="border-none shadow-lg hover:shadow-xl transition-all">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+          <CardTitle className="text-primary">Top Associations by Member Count</CardTitle>
           <CardDescription>Most active associations on the platform</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="space-y-4">
             {topAssociations.map((assoc, index) => (
-              <div key={assoc.name} className="flex items-center justify-between p-4 border rounded-lg">
+              <div key={assoc.name} className="flex items-center justify-between p-4 bg-gradient-to-r from-muted/50 to-muted/30 hover:from-primary/5 hover:to-secondary/5 rounded-lg transition-all shadow-sm hover:shadow-md">
                 <div className="flex items-center gap-4">
-                  <div className="text-2xl font-bold text-muted-foreground">#{index + 1}</div>
+                  <div className="bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg shadow-md">
+                    {index + 1}
+                  </div>
                   <div>
                     <div className="font-semibold">{assoc.name}</div>
                     <div className="text-sm text-muted-foreground">
@@ -533,8 +547,8 @@ const AdminAnalytics = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold">{assoc.memberCount}</div>
-                  <div className="text-sm text-muted-foreground">members</div>
+                  <div className="text-2xl font-bold text-primary">{assoc.memberCount}</div>
+                  <div className="text-xs text-muted-foreground">members</div>
                 </div>
               </div>
             ))}
