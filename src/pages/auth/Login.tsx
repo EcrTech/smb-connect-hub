@@ -82,9 +82,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Hero Image */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+    <div className="min-h-screen relative flex items-center justify-end p-4 lg:p-8">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
         <img 
           src={heroImage} 
           alt="SMB Connect Network" 
@@ -92,9 +92,8 @@ export default function Login() {
         />
       </div>
       
-      {/* Right side - Login Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md border-0 shadow-none lg:shadow-lg lg:border">
+      {/* Login Form Container */}
+      <Card className="w-full max-w-md relative z-10 bg-background/95 backdrop-blur-sm lg:mr-16">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <img src={logo} alt="SMB Connect" className="h-16 object-contain" />
@@ -183,7 +182,6 @@ export default function Login() {
           </div>
         </CardFooter>
       </Card>
-      </div>
     </div>
   );
 }
