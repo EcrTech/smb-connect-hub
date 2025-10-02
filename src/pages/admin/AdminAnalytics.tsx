@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import logo from '@/assets/smb-connect-logo.jpg';
 import {
   LineChart,
   Line,
@@ -48,6 +50,8 @@ const AdminAnalytics = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
+  const [profile, setProfile] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   
   const [stats, setStats] = useState({
     totalMembers: 0,
@@ -65,7 +69,39 @@ const AdminAnalytics = () => {
 
   useEffect(() => {
     loadAnalytics();
+    loadProfile();
   }, [timeRange]);
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      setCurrentUserId(user.id);
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+    } catch (error: any) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('You have been logged out');
+      navigate('/auth/login');
+    } catch (error: any) {
+      toast.error('Failed to logout');
+    }
+  };
 
   const getDaysAgo = (days: number) => {
     const date = new Date();
@@ -277,19 +313,46 @@ const AdminAnalytics = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Platform Analytics</h1>
-            <p className="text-muted-foreground">Comprehensive platform insights and trends</p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
+            <div>
+              <h1 className="text-2xl font-bold">Platform Analytics</h1>
+              <p className="text-sm text-muted-foreground">Comprehensive Platform Insights</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {profile && currentUserId && (
+              <Avatar 
+                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+                onClick={() => navigate(`/profile/${currentUserId}`)}
+              >
+                <AvatarImage src={profile.avatar || undefined} />
+                <AvatarFallback>
+                  {profile.first_name?.[0]}{profile.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/admin/actions')}>
-            <Settings className="h-4 w-4 mr-2" />
-            Admin Actions
-          </Button>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => navigate('/admin/actions')}>
+              <Settings className="h-4 w-4 mr-2" />
+              Admin Actions
+            </Button>
+          </div>
           <Tabs value={timeRange} onValueChange={(v) => setTimeRange(v as any)}>
             <TabsList>
               <TabsTrigger value="7d">7 Days</TabsTrigger>
@@ -298,7 +361,6 @@ const AdminAnalytics = () => {
             </TabsList>
           </Tabs>
         </div>
-      </div>
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -479,6 +541,7 @@ const AdminAnalytics = () => {
           </div>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 };
