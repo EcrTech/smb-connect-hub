@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import logo from '@/assets/smb-connect-logo.jpg';
+import heroImage from '@/assets/login-hero.png';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -81,8 +82,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex">
+      {/* Left side - Hero Image */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src={heroImage} 
+          alt="SMB Connect Network" 
+          className="w-full h-full object-cover"
+        />
+      </div>
+      
+      {/* Right side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md border-0 shadow-none lg:shadow-lg lg:border">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <img src={logo} alt="SMB Connect" className="h-16 object-contain" />
@@ -171,6 +183,7 @@ export default function Login() {
           </div>
         </CardFooter>
       </Card>
+      </div>
     </div>
   );
 }
