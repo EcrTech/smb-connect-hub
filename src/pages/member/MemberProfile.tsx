@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -87,7 +88,7 @@ export default function MemberProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const { profile, loading: profileLoading, refresh: refreshProfile } = useProfile(userId);
   const [workExperience, setWorkExperience] = useState<WorkExperience[]>([]);
   const [education, setEducation] = useState<Education[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -247,15 +248,8 @@ export default function MemberProfile() {
     try {
       setLoading(true);
 
-      // Load profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-      setProfile(profileData);
+      // Refresh profile from the hook
+      await refreshProfile();
 
       // Load work experience
       const { data: workData } = await supabase
