@@ -14,7 +14,7 @@ export default function BulkUploadCompanies() {
 
   const downloadTemplate = () => {
     const csvContent = 'association_email,name,description,email,phone,website,address,city,state,country,postal_code,gst_number,pan_number,business_type,industry_type\n' +
-      'association@example.com,Example Company,"Sample company",company@example.com,+91-9876543210,https://company.com,"456 Business Rd",Mumbai,Maharashtra,India,400002,22AAAAA0000A1Z5,AAAAA0000A,Private Limited,Technology\n';
+      ',Example Company,"Sample company",company@example.com,+91-9876543210,https://company.com,"456 Business Rd",Mumbai,Maharashtra,India,400002,22AAAAA0000A1Z5,AAAAA0000A,Private Limited,Technology\n';
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -100,9 +100,9 @@ export default function BulkUploadCompanies() {
         <Alert className="mb-6">
           <FileText className="h-4 w-4" />
           <AlertDescription>
-            Upload a CSV file to create multiple companies. Companies will be linked to associations via email.
+            Upload a CSV file to create multiple companies. Companies can optionally be linked to associations via email.
             <br />
-            <strong>Required fields:</strong> association_email, name, email
+            <strong>Required fields:</strong> name, email
           </AlertDescription>
         </Alert>
 

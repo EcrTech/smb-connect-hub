@@ -15,7 +15,7 @@ export default function BulkUploadUsers() {
 
   const downloadTemplate = () => {
     const csvContent = 'email,first_name,last_name,phone,company_email,role,designation,department,password\n' +
-      'user@example.com,John,Doe,+91-9999999999,company@example.com,admin,Manager,Operations,SecurePass123!\n';
+      'user@example.com,John,Doe,+91-9999999999,,admin,Manager,Operations,SecurePass123!\n';
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -116,9 +116,9 @@ export default function BulkUploadUsers() {
         <Alert className="mb-6">
           <FileText className="h-4 w-4" />
           <AlertDescription>
-            Upload a CSV file to create user accounts. Users will be automatically linked to companies and receive email invitations.
+            Upload a CSV file to create user accounts. Users can optionally be linked to companies and will receive email invitations.
             <br />
-            <strong>Required fields:</strong> email, first_name, last_name, company_email
+            <strong>Required fields:</strong> email, first_name, last_name
           </AlertDescription>
         </Alert>
 

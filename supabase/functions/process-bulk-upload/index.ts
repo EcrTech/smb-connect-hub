@@ -76,21 +76,25 @@ Deno.serve(async (req) => {
             if (values[index]) record[header] = values[index];
           });
 
-          // Find association by email
-          const { data: association, error: assocError } = await supabaseClient
-            .from('associations')
-            .select('id')
-            .eq('contact_email', record.association_email)
-            .single();
+          // Find association by email if provided
+          let associationId = null;
+          if (record.association_email && record.association_email.trim() !== '') {
+            const { data: association, error: assocError } = await supabaseClient
+              .from('associations')
+              .select('id')
+              .eq('contact_email', record.association_email)
+              .single();
 
-          if (assocError || !association) {
-            throw new Error(`Association not found with email: ${record.association_email}`);
+            if (assocError || !association) {
+              throw new Error(`Association not found with email: ${record.association_email}`);
+            }
+            associationId = association.id;
           }
 
           const { error } = await supabaseClient
             .from('companies')
             .insert({
-              association_id: association.id,
+              association_id: associationId,
               name: record.name,
               description: record.description || null,
               email: record.email,
@@ -146,15 +150,19 @@ Deno.serve(async (req) => {
           if (authError) throw authError;
           console.log(`Created user auth: ${record.email}`);
 
-          // Find company by email
-          const { data: company, error: companyError } = await supabaseClient
-            .from('companies')
-            .select('id')
-            .eq('email', record.company_email)
-            .single();
+          // Find company by email if provided
+          let companyId = null;
+          if (record.company_email && record.company_email.trim() !== '') {
+            const { data: company, error: companyError } = await supabaseClient
+              .from('companies')
+              .select('id')
+              .eq('email', record.company_email)
+              .single();
 
-          if (companyError || !company) {
-            throw new Error(`Company not found with email: ${record.company_email}`);
+            if (companyError || !company) {
+              throw new Error(`Company not found with email: ${record.company_email}`);
+            }
+            companyId = company.id;
           }
 
           // Create member record
@@ -162,7 +170,7 @@ Deno.serve(async (req) => {
             .from('members')
             .insert({
               user_id: authUser.user.id,
-              company_id: company.id,
+              company_id: companyId,
               role: record.role || 'member',
               designation: record.designation || null,
               department: record.department || null,

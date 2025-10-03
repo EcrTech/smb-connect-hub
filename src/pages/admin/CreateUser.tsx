@@ -17,7 +17,7 @@ const userSchema = z.object({
   first_name: z.string().min(2, 'First name must be at least 2 characters'),
   last_name: z.string().min(2, 'Last name must be at least 2 characters'),
   phone: z.string().optional(),
-  company_id: z.string().min(1, 'Company is required'),
+  company_id: z.string().optional(),
   role: z.string().default('member'),
   designation: z.string().optional(),
   department: z.string().optional(),
@@ -90,7 +90,7 @@ export default function CreateUser() {
         .from('members')
         .insert([{
           user_id: authUser.user.id,
-          company_id: data.company_id,
+          company_id: data.company_id || null,
           role: data.role,
           designation: data.designation || null,
           department: data.department || null,
@@ -192,10 +192,10 @@ export default function CreateUser() {
               </div>
 
               <div>
-                <Label htmlFor="company_id">Company *</Label>
+                <Label htmlFor="company_id">Company</Label>
                 <Select onValueChange={(value) => setValue('company_id', value)} disabled={loading}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select company" />
+                    <SelectValue placeholder="Select company (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map((company) => (
