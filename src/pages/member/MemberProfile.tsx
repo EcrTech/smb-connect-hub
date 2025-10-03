@@ -457,7 +457,7 @@ export default function MemberProfile() {
                 </div>
 
                 {/* Text content - no overlap */}
-              <div className="flex-1 sm:mb-4 pt-24 sm:pt-6">
+              <div className="flex-1 sm:mb-4 pt-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <h1 className="text-3xl font-bold">{fullName}</h1>
