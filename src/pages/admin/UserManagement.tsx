@@ -150,34 +150,49 @@ export default function UserManagement() {
         .select('id, first_name, last_name, created_at')
         .order('created_at', { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        throw profilesError;
+      }
 
-      // Get user emails from auth metadata (we'll need to query separately)
-      // For now, we'll use user IDs as identifiers
+      console.log('Loaded profiles:', profiles?.length, profiles);
+
+      // Get user IDs
       const userIds = profiles?.map(p => p.id) || [];
 
       // Load role assignments for these users
       const [adminData, associationManagerData, memberData] = await Promise.all([
-        supabase.from('admin_users').select('user_id').in('user_id', userIds),
-        supabase.from('association_managers').select('user_id').in('user_id', userIds),
-        supabase.from('members').select('user_id, role').in('user_id', userIds)
+        supabase.from('admin_users').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('association_managers').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('members').select('user_id, role').in('user_id', userIds).eq('is_active', true)
       ]);
+
+      console.log('Admin users:', adminData.data?.length);
+      console.log('Association managers:', associationManagerData.data?.length);
+      console.log('Company members:', memberData.data?.length);
 
       const adminUsers = new Set(adminData.data?.map(a => a.user_id) || []);
       const associationManagers = new Set(associationManagerData.data?.map(a => a.user_id) || []);
       const companyMembers = new Map((memberData.data || []).map(m => [m.user_id, m.role]));
 
-      const usersWithRoles = (profiles || []).map(profile => ({
-        id: profile.id,
-        email: `${profile.first_name} ${profile.last_name}`, // Display name instead of email
-        created_at: profile.created_at,
-        roles: [
-          ...(adminUsers.has(profile.id) ? ['Admin'] : []),
-          ...(associationManagers.has(profile.id) ? ['Association Manager'] : []),
-          ...(companyMembers.has(profile.id) ? [`Company ${companyMembers.get(profile.id)}`] : [])
-        ]
-      }));
+      const usersWithRoles = (profiles || []).map(profile => {
+        const displayName = [profile.first_name, profile.last_name]
+          .filter(Boolean)
+          .join(' ') || 'Unknown User';
+        
+        return {
+          id: profile.id,
+          email: displayName,
+          created_at: profile.created_at,
+          roles: [
+            ...(adminUsers.has(profile.id) ? ['Admin'] : []),
+            ...(associationManagers.has(profile.id) ? ['Association Manager'] : []),
+            ...(companyMembers.has(profile.id) ? [`Company ${companyMembers.get(profile.id)}`] : [])
+          ]
+        };
+      });
 
+      console.log('Users with roles:', usersWithRoles.length);
       setUsers(usersWithRoles);
       setFilteredUsers(usersWithRoles);
 
