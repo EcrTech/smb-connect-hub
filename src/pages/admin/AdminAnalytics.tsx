@@ -59,6 +59,9 @@ const AdminAnalytics = () => {
     totalEmails: 0,
     totalWhatsApp: 0,
     activeUsers: 0,
+    newUsers1Day: 0,
+    newUsers7Days: 0,
+    newUsers30Days: 0,
   });
   
   const [growthData, setGrowthData] = useState<TimeSeriesData[]>([]);
@@ -135,6 +138,17 @@ const AdminAnalytics = () => {
         .select('*', { count: 'exact', head: true })
         .gte('updated_at', getDaysAgo(7));
 
+      // Calculate new users in different time periods
+      const [
+        { count: newUsers1Day },
+        { count: newUsers7Days },
+        { count: newUsers30Days },
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', getDaysAgo(1)),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', getDaysAgo(7)),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', getDaysAgo(30)),
+      ]);
+
       setStats({
         totalMembers: membersCount || 0,
         totalCompanies: companiesCount || 0,
@@ -142,6 +156,9 @@ const AdminAnalytics = () => {
         totalEmails: emailsCount || 0,
         totalWhatsApp: whatsappCount || 0,
         activeUsers: activeCount || 0,
+        newUsers1Day: newUsers1Day || 0,
+        newUsers7Days: newUsers7Days || 0,
+        newUsers30Days: newUsers30Days || 0,
       });
 
       // Load growth data
@@ -363,6 +380,9 @@ const AdminAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-primary">{stats.totalMembers}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              +{stats.newUsers1Day} today, +{stats.newUsers7Days} this week, +{stats.newUsers30Days} this month
+            </p>
           </CardContent>
         </Card>
 

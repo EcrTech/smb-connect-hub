@@ -16,11 +16,19 @@ export default function CompanyDashboard() {
   const [company, setCompany] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    newMembers1Day: 0,
+    newMembers7Days: 0,
+    newMembers30Days: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
     if (userData?.company) {
       setCompany(userData.company);
+      loadStats(userData.company.id);
     }
   }, [userData]);
 
@@ -42,6 +50,57 @@ export default function CompanyDashboard() {
       }
     } catch (error: any) {
       console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadStats = async (companyId: string) => {
+    try {
+      const [
+        { count: membersCount },
+        { count: new1Day },
+        { count: new7Days },
+        { count: new30Days },
+      ] = await Promise.all([
+        supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('is_active', true),
+        supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+      ]);
+
+      setStats({
+        totalMembers: membersCount || 0,
+        newMembers1Day: new1Day || 0,
+        newMembers7Days: new7Days || 0,
+        newMembers30Days: new30Days || 0,
+      });
+    } catch (error: any) {
+      console.error('Error loading stats:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load dashboard statistics',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,8 +173,16 @@ export default function CompanyDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Active members</p>
+              {loading ? (
+                <div className="h-8 w-16 animate-pulse bg-muted rounded"></div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stats.totalMembers}</div>
+                  <p className="text-xs text-muted-foreground">
+                    +{stats.newMembers1Day} today, +{stats.newMembers7Days} this week, +{stats.newMembers30Days} this month
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 

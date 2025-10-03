@@ -17,7 +17,10 @@ export default function AssociationDashboard() {
   const [stats, setStats] = useState({
     totalCompanies: 0,
     totalMembers: 0,
-    pendingInvitations: 0
+    pendingInvitations: 0,
+    newMembers1Day: 0,
+    newMembers7Days: 0,
+    newMembers30Days: 0,
   });
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -69,13 +72,48 @@ export default function AssociationDashboard() {
         .eq('is_active', true);
 
       let totalMembers = 0;
-      if (companies) {
-        const { count: membersCount } = await supabase
-          .from('members')
-          .select('*', { count: 'exact', head: true })
-          .in('company_id', companies.map(c => c.id))
-          .eq('is_active', true);
+      let newMembers1Day = 0;
+      let newMembers7Days = 0;
+      let newMembers30Days = 0;
+
+      if (companies && companies.length > 0) {
+        const companyIds = companies.map(c => c.id);
+        
+        const [
+          { count: membersCount },
+          { count: new1Day },
+          { count: new7Days },
+          { count: new30Days },
+        ] = await Promise.all([
+          supabase
+            .from('members')
+            .select('*', { count: 'exact', head: true })
+            .in('company_id', companyIds)
+            .eq('is_active', true),
+          supabase
+            .from('members')
+            .select('*', { count: 'exact', head: true })
+            .in('company_id', companyIds)
+            .eq('is_active', true)
+            .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+          supabase
+            .from('members')
+            .select('*', { count: 'exact', head: true })
+            .in('company_id', companyIds)
+            .eq('is_active', true)
+            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+          supabase
+            .from('members')
+            .select('*', { count: 'exact', head: true })
+            .in('company_id', companyIds)
+            .eq('is_active', true)
+            .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+        ]);
+
         totalMembers = membersCount || 0;
+        newMembers1Day = new1Day || 0;
+        newMembers7Days = new7Days || 0;
+        newMembers30Days = new30Days || 0;
       }
 
       // Load pending invitations count
@@ -88,7 +126,10 @@ export default function AssociationDashboard() {
       setStats({
         totalCompanies: companiesCount || 0,
         totalMembers,
-        pendingInvitations: invitationsCount || 0
+        pendingInvitations: invitationsCount || 0,
+        newMembers1Day,
+        newMembers7Days,
+        newMembers30Days,
       });
     } catch (error: any) {
       console.error('Error loading stats:', error);
@@ -193,7 +234,9 @@ export default function AssociationDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats.totalMembers}</div>
-                  <p className="text-xs text-muted-foreground">Active members</p>
+                  <p className="text-xs text-muted-foreground">
+                    +{stats.newMembers1Day} today, +{stats.newMembers7Days} this week, +{stats.newMembers30Days} this month
+                  </p>
                 </>
               )}
             </CardContent>
