@@ -238,12 +238,14 @@ export default function CompanyDashboard() {
         </Card>
 
         {/* Event Requisition Form */}
-        <div className="mt-8">
-          <EventRequisitionForm 
-            requesterType="company" 
-            entityId={userData?.company_id}
-          />
-        </div>
+        {userData?.company_id && (
+          <div className="mt-8">
+            <EventRequisitionForm 
+              requesterType="company" 
+              entityId={userData.company_id}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

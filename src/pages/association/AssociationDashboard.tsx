@@ -289,12 +289,14 @@ export default function AssociationDashboard() {
         </Card>
 
         {/* Event Requisition Form */}
-        <div className="mt-8">
-          <EventRequisitionForm 
-            requesterType="association" 
-            entityId={userData?.association_id}
-          />
-        </div>
+        {userData?.association_id && (
+          <div className="mt-8">
+            <EventRequisitionForm 
+              requesterType="association" 
+              entityId={userData.association_id}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

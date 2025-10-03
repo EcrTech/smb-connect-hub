@@ -32,6 +32,10 @@ interface EventRequisitionFormProps {
 export function EventRequisitionForm({ requesterType, entityId, onSuccess }: EventRequisitionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  if (!entityId) {
+    return null;
+  }
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
