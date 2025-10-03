@@ -5,11 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Building2, Mail, Phone, Globe, MapPin, Edit, Search, Trash2 } from 'lucide-react';
+import { Building2, Mail, Phone, Globe, MapPin, Edit, Search, Trash2, Download, LayoutGrid, Table as TableIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { EditAssociationDialog } from './association/EditAssociationDialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +58,7 @@ export function AssociationsList() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteNotes, setDeleteNotes] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -202,6 +211,36 @@ export function AssociationsList() {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['Association Name', 'Email', 'Phone', 'Website', 'City', 'State', 'Country', 'Status'];
+    const csvData = filteredAssociations.map(association => [
+      association.name,
+      association.contact_email || '',
+      association.contact_phone || '',
+      association.website || '',
+      association.city || '',
+      association.state || '',
+      association.country || '',
+      association.is_active ? 'Active' : 'Inactive'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `associations_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Associations exported successfully');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -219,99 +258,195 @@ export function AssociationsList() {
             {filteredAssociations.length} of {associations.length} associations
           </p>
         </div>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search associations..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search associations..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('card')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('table')}
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportToCSV}
+              title="Export to CSV"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {displayedAssociations.map((association) => (
-          <Card 
-            key={association.id} 
-            className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => navigate(`/admin/associations/${association.id}`)}
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <Building2 className="h-8 w-8 text-primary" />
-                <div className="flex items-center gap-2">
-                  <Badge variant={association.is_active ? 'default' : 'secondary'}>
-                    {association.is_active ? 'Active' : 'Inactive'}
-                  </Badge>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingAssociation(association);
-                    }}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  {isSuperAdmin && (
+      {viewMode === 'card' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {displayedAssociations.map((association) => (
+            <Card 
+              key={association.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/admin/associations/${association.id}`)}
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <Building2 className="h-8 w-8 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <Badge variant={association.is_active ? 'default' : 'secondary'}>
+                      {association.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                     <Button 
                       size="sm" 
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setDeletingAssociation(association);
+                        setEditingAssociation(association);
                       }}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Edit className="h-4 w-4" />
                     </Button>
-                  )}
+                    {isSuperAdmin && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingAssociation(association);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <CardTitle className="mt-2">{association.name}</CardTitle>
-              <CardDescription className="line-clamp-2">
-                {association.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {association.contact_email && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="truncate">{association.contact_email}</span>
-                </div>
-              )}
-              {association.contact_phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{association.contact_phone}</span>
-                </div>
-              )}
-              {association.website && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  <a
-                    href={association.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline truncate"
-                  >
-                    {association.website}
-                  </a>
-                </div>
-              )}
-              {association.city && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>
+                <CardTitle className="mt-2">{association.name}</CardTitle>
+                <CardDescription className="line-clamp-2">
+                  {association.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {association.contact_email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{association.contact_email}</span>
+                  </div>
+                )}
+                {association.contact_phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{association.contact_phone}</span>
+                  </div>
+                )}
+                {association.website && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <a
+                      href={association.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline truncate"
+                    >
+                      {association.website}
+                    </a>
+                  </div>
+                )}
+                {association.city && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {association.city}
+                      {association.state && `, ${association.state}`}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Association</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayedAssociations.map((association) => (
+                <TableRow 
+                  key={association.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/admin/associations/${association.id}`)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      {association.name}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate">{association.contact_email}</TableCell>
+                  <TableCell>{association.contact_phone}</TableCell>
+                  <TableCell>
                     {association.city}
                     {association.state && `, ${association.state}`}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={association.is_active ? 'default' : 'secondary'}>
+                      {association.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingAssociation(association);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      {isSuperAdmin && (
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingAssociation(association);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {hasMore && (
         <div ref={loadMoreRef} className="flex justify-center py-4">
