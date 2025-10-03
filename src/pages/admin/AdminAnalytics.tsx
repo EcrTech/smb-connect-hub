@@ -495,31 +495,38 @@ const AdminAnalytics = () => {
           </CardHeader>
           <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={roleDistribution}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="hsl(var(--primary))"
-                  dataKey="value"
-                >
-                  {roleDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
+              <BarChart
+                data={[{
+                  name: 'Users',
+                  'Super Admins': roleDistribution.find((r: any) => r.name === 'Super Admins')?.value || 0,
+                  'Association Admins': roleDistribution.find((r: any) => r.name === 'Association Admins')?.value || 0,
+                  'Company Admins': roleDistribution.find((r: any) => r.name === 'Company Admins')?.value || 0,
+                  'Members': roleDistribution.find((r: any) => r.name === 'Members')?.value || 0,
+                }]}
+                layout="vertical"
+                margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  formatter={(value, entry: any) => {
-                    const dataEntry = roleDistribution.find(d => d.name === value);
+                  formatter={(value) => {
+                    const dataEntry = roleDistribution.find((d: any) => d.name === value);
                     return `${value}: ${dataEntry?.value || 0}`;
                   }}
                 />
-              </PieChart>
+                <Bar dataKey="Super Admins" stackId="roles" fill={COLORS[0]} />
+                <Bar dataKey="Association Admins" stackId="roles" fill={COLORS[1]} />
+                <Bar dataKey="Company Admins" stackId="roles" fill={COLORS[2]} />
+                <Bar dataKey="Members" stackId="roles" fill={COLORS[3]} radius={[0, 4, 4, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
