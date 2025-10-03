@@ -56,7 +56,17 @@ Deno.serve(async (req) => {
           .eq('user_id', userId);
         
         if (assocError) {
-          console.log(`Error deleting association manager for ${userId}:`, assocError.message);
+          console.log(`Error deleting association admin for ${userId}:`, assocError.message);
+        }
+
+        // Hard delete from company_admins table
+        const { error: companyAdminError } = await supabaseClient
+          .from('company_admins')
+          .delete()
+          .eq('user_id', userId);
+        
+        if (companyAdminError) {
+          console.log(`Error deleting company admin for ${userId}:`, companyAdminError.message);
         }
 
         // Hard delete from profiles table

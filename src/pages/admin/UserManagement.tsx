@@ -164,19 +164,22 @@ export default function UserManagement() {
       const userIds = profiles?.map(p => p.id) || [];
 
       // Load role assignments for these users
-      const [adminData, associationManagerData, memberData] = await Promise.all([
+      const [adminData, associationAdminData, companyAdminData, memberData] = await Promise.all([
         supabase.from('admin_users').select('user_id').in('user_id', userIds).eq('is_active', true),
         supabase.from('association_managers').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('company_admins').select('user_id').in('user_id', userIds).eq('is_active', true),
         supabase.from('members').select('user_id, role').in('user_id', userIds).eq('is_active', true)
       ]);
 
       console.log('Admin users:', adminData.data?.length);
-      console.log('Association managers:', associationManagerData.data?.length);
+      console.log('Association admins:', associationAdminData.data?.length);
+      console.log('Company admins:', companyAdminData.data?.length);
       console.log('Company members:', memberData.data?.length);
 
       const adminUsers = new Set(adminData.data?.map(a => a.user_id) || []);
-      const associationManagers = new Set(associationManagerData.data?.map(a => a.user_id) || []);
-      const companyMembers = new Map((memberData.data || []).map(m => [m.user_id, m.role]));
+      const associationAdmins = new Set(associationAdminData.data?.map(a => a.user_id) || []);
+      const companyAdmins = new Set(companyAdminData.data?.map(a => a.user_id) || []);
+      const companyMembers = new Map((memberData.data || []).filter(m => m.role === 'member').map(m => [m.user_id, m.role]));
 
       const usersWithRoles = (profiles || []).map(profile => {
         const displayName = [profile.first_name, profile.last_name]
@@ -189,8 +192,9 @@ export default function UserManagement() {
           created_at: profile.created_at,
           roles: [
             ...(adminUsers.has(profile.id) ? ['Admin'] : []),
-            ...(associationManagers.has(profile.id) ? ['Association Manager'] : []),
-            ...(companyMembers.has(profile.id) ? [`Company ${companyMembers.get(profile.id)}`] : [])
+            ...(associationAdmins.has(profile.id) ? ['Association Admin'] : []),
+            ...(companyAdmins.has(profile.id) ? ['Company Admin'] : []),
+            ...(companyMembers.has(profile.id) ? ['Member'] : [])
           ]
         };
       });
@@ -257,7 +261,7 @@ export default function UserManagement() {
           if (adminError) throw adminError;
           break;
 
-        case 'association_manager':
+        case 'association_admin':
           if (!selectedAssociation) {
             toast({ title: 'Error', description: 'Please select an association', variant: 'destructive' });
             return;
@@ -270,6 +274,21 @@ export default function UserManagement() {
               role: 'manager'
             });
           if (assocError) throw assocError;
+          break;
+
+        case 'company_admin':
+          if (!selectedCompany) {
+            toast({ title: 'Error', description: 'Please select a company', variant: 'destructive' });
+            return;
+          }
+          const { error: companyAdminError } = await supabase
+            .from('company_admins')
+            .insert({ 
+              user_id: selectedUser.id, 
+              company_id: selectedCompany,
+              is_active: true
+            });
+          if (companyAdminError) throw companyAdminError;
           break;
 
         case 'company_member':
@@ -375,8 +394,19 @@ export default function UserManagement() {
         .eq('user_id', user.id);
 
       if (assocError) {
-        console.error('Error deleting association_manager:', assocError);
-        // Continue even if association manager deletion fails (might not exist)
+        console.error('Error deleting association_admin:', assocError);
+        // Continue even if association admin deletion fails (might not exist)
+      }
+
+      // Delete from company_admins table
+      const { error: companyAdminError } = await supabase
+        .from('company_admins')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (companyAdminError) {
+        console.error('Error deleting company_admin:', companyAdminError);
+        // Continue even if company admin deletion fails (might not exist)
       }
 
       // Log the deletion for audit
@@ -431,7 +461,7 @@ export default function UserManagement() {
   const handleHardDeleteSelected = async () => {
     if (selectedUserIds.size === 0) return;
 
-    if (!confirm(`Are you sure you want to PERMANENTLY DELETE ${selectedUserIds.size} user(s)? This will remove them from all tables including auth, profiles, members, admin_users, and association_managers. THIS CANNOT BE UNDONE.`)) {
+    if (!confirm(`Are you sure you want to PERMANENTLY DELETE ${selectedUserIds.size} user(s)? This will remove them from all tables including auth, profiles, members, admin_users, association_managers, and company_admins. THIS CANNOT BE UNDONE.`)) {
       return;
     }
 
@@ -607,10 +637,16 @@ export default function UserManagement() {
                                     Admin
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="association_manager">
+                                <SelectItem value="association_admin">
                                   <div className="flex items-center gap-2">
                                     <Building2 className="h-4 w-4" />
-                                    Association Manager
+                                    Association Admin
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="company_admin">
+                                  <div className="flex items-center gap-2">
+                                    <Building2 className="h-4 w-4" />
+                                    Company Admin
                                   </div>
                                 </SelectItem>
                                 <SelectItem value="company_member">
@@ -623,7 +659,7 @@ export default function UserManagement() {
                             </Select>
                           </div>
 
-                          {roleType === 'association_manager' && (
+                          {roleType === 'association_admin' && (
                             <div className="space-y-2">
                               <Label>Association</Label>
                               <Select value={selectedAssociation} onValueChange={setSelectedAssociation}>
@@ -637,6 +673,28 @@ export default function UserManagement() {
                                     associations.map((assoc) => (
                                       <SelectItem key={assoc.id} value={assoc.id}>
                                         {assoc.name}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {roleType === 'company_admin' && (
+                            <div className="space-y-2">
+                              <Label>Company</Label>
+                              <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                                <SelectTrigger className="bg-background">
+                                  <SelectValue placeholder="Select company" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  {companies.length === 0 ? (
+                                    <SelectItem value="none" disabled>No companies found</SelectItem>
+                                  ) : (
+                                    companies.map((company) => (
+                                      <SelectItem key={company.id} value={company.id}>
+                                        {company.name}
                                       </SelectItem>
                                     ))
                                   )}

@@ -514,6 +514,48 @@ export type Database = {
           },
         ]
       }
+      company_admins: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_admins_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_admins_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_invitations: {
         Row: {
           accepted_at: string | null
@@ -1699,6 +1741,10 @@ export type Database = {
       }
       is_company_admin_of_user: {
         Args: { target_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
+      is_company_admin_role: {
+        Args: { check_company_id: string; check_user_id: string }
         Returns: boolean
       }
       is_company_admin_safe: {

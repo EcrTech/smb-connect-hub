@@ -44,7 +44,7 @@ export default function Setup() {
               <div className="flex items-start gap-3 p-3 bg-card rounded-lg border">
                 <Building2 className="w-5 h-5 text-primary mt-0.5" />
                 <div>
-                  <p className="font-medium">Association Manager</p>
+                  <p className="font-medium">Association Admin</p>
                   <p className="text-sm text-muted-foreground">Manage companies within your association</p>
                 </div>
               </div>

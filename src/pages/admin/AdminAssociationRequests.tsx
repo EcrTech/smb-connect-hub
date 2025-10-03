@@ -102,7 +102,7 @@ export default function AdminAssociationRequests() {
 
         if (associationError) throw associationError;
 
-        // Make the user an association manager
+        // Make the user an association admin
         const { error: managerError } = await supabase
           .from('association_managers')
           .insert({
@@ -275,7 +275,7 @@ export default function AdminAssociationRequests() {
             </DialogTitle>
             <DialogDescription>
               {reviewDialog.action === 'approve' 
-                ? 'This will create the association and make the user an association manager.'
+                ? 'This will create the association and make the user an association admin.'
                 : 'This will reject the association request.'
               }
             </DialogDescription>

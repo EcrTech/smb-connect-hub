@@ -157,7 +157,7 @@ export default function AssociationDashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">
-            Welcome, Association Manager!
+            Welcome, Association Admin!
           </h2>
           <p className="text-muted-foreground">
             Manage your association and member companies
