@@ -1,7 +1,6 @@
-import { Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import logo from '@/assets/smb-connect-logo.jpg';
 
 export const HomeButton = () => {
   const navigate = useNavigate();
@@ -10,16 +9,18 @@ export const HomeButton = () => {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={() => navigate('/dashboard')}
-            className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all bg-primary text-primary-foreground hover:bg-primary/90"
+            className="fixed top-4 left-4 z-50 transition-all hover:scale-105"
           >
-            <Home className="h-5 w-5" />
-          </Button>
+            <img 
+              src={logo} 
+              alt="SMB Connect" 
+              className="h-12 w-auto rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            />
+          </button>
         </TooltipTrigger>
-        <TooltipContent side="left">
+        <TooltipContent side="right">
           <p>Go to Dashboard</p>
         </TooltipContent>
       </Tooltip>
