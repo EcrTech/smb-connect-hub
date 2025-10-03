@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
-  'en-US': require('date-fns/locale/en-US'),
+  'en-US': enUS,
 };
 
 const localizer = dateFnsLocalizer({
