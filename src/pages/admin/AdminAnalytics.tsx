@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import logo from '@/assets/smb-connect-logo.jpg';
 import {
   LineChart,
   Line,
@@ -309,8 +308,7 @@ const AdminAnalytics = () => {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
+          <div className="flex items-center gap-3 ml-20">
             <div>
               <h1 className="text-2xl font-bold">Platform Analytics</h1>
               <p className="text-sm text-muted-foreground">Comprehensive Platform Insights</p>
