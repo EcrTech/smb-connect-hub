@@ -496,19 +496,18 @@ const AdminAnalytics = () => {
           <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
-                data={[{
-                  name: 'Users',
-                  'Super Admins': roleDistribution.find((r: any) => r.name === 'Super Admins')?.value || 0,
-                  'Association Admins': roleDistribution.find((r: any) => r.name === 'Association Admins')?.value || 0,
-                  'Company Admins': roleDistribution.find((r: any) => r.name === 'Company Admins')?.value || 0,
-                  'Members': roleDistribution.find((r: any) => r.name === 'Members')?.value || 0,
-                }]}
-                layout="vertical"
-                margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
+                data={roleDistribution}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-                <YAxis type="category" dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <XAxis 
+                  dataKey="name" 
+                  stroke="hsl(var(--muted-foreground))"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--background))', 
@@ -517,15 +516,16 @@ const AdminAnalytics = () => {
                   }}
                 />
                 <Legend 
-                  formatter={(value) => {
+                  formatter={(value, entry: any) => {
                     const dataEntry = roleDistribution.find((d: any) => d.name === value);
                     return `${value}: ${dataEntry?.value || 0}`;
                   }}
                 />
-                <Bar dataKey="Super Admins" stackId="roles" fill={COLORS[0]} />
-                <Bar dataKey="Association Admins" stackId="roles" fill={COLORS[1]} />
-                <Bar dataKey="Company Admins" stackId="roles" fill={COLORS[2]} />
-                <Bar dataKey="Members" stackId="roles" fill={COLORS[3]} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]}>
+                  {roleDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
