@@ -343,7 +343,6 @@ export default function BrowseMembers() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <img src={logo} alt="SMB Connect" className="h-8 object-contain" />
             <h1 className="text-xl font-bold">Browse Members</h1>
           </div>
         </div>

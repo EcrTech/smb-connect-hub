@@ -67,7 +67,6 @@ export default function MemberMessages() {
             <Button variant="ghost" size="icon" onClick={() => navigate('/member')}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">Messaging</h1>
               <p className="text-sm text-muted-foreground">Stay connected</p>

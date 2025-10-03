@@ -126,7 +126,6 @@ export default function AssociationDashboard() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">Association Dashboard</h1>
               <p className="text-sm text-muted-foreground">
