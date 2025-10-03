@@ -491,7 +491,11 @@ export default function MemberProfile() {
                         </div>
                       )}
                     </div>
-                    {isOwnProfile && <EditProfileDialog profile={profile} onSave={loadProfile} />}
+                    {isOwnProfile && (
+                      <div className="relative z-10">
+                        <EditProfileDialog profile={profile} onSave={loadProfile} />
+                      </div>
+                    )}
                   </div>
 
                   {/* Contact & Social Links */}
@@ -544,7 +548,11 @@ export default function MemberProfile() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold">About</h2>
-              {isOwnProfile && !profile.bio && <EditProfileDialog profile={profile} onSave={loadProfile} />}
+              {isOwnProfile && !profile.bio && (
+                <div className="relative z-10">
+                  <EditProfileDialog profile={profile} onSave={loadProfile} />
+                </div>
+              )}
             </div>
             {profile.bio ? (
               <p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>
