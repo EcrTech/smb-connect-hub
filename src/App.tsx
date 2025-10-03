@@ -22,6 +22,7 @@ import CreateUser from "./pages/admin/CreateUser";
 import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
 import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
 import BulkUploadUsers from "./pages/admin/BulkUploadUsers";
+import DeleteTestUsers from "./pages/admin/DeleteTestUsers";
 import AdminEmailLists from "./pages/admin/AdminEmailLists";
 import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
 import AdminWhatsAppLists from "./pages/admin/AdminWhatsAppLists";
@@ -183,7 +184,15 @@ const App = () => (
             } 
           />
           <Route 
-            path="/admin/email-lists" 
+            path="/admin/delete-test-users" 
+            element={
+              <ProtectedRoute>
+                <DeleteTestUsers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/email-lists"
             element={
               <ProtectedRoute>
                 <AdminEmailLists />

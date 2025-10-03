@@ -91,10 +91,16 @@ export default function BulkUploadUsers() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Button variant="ghost" onClick={() => navigate('/admin/users')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Users
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => navigate('/admin/delete-test-users')}
+          >
+            Delete Test Users
           </Button>
         </div>
       </header>
