@@ -596,15 +596,26 @@ export default function UserManagement() {
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
-                      {user.roles.length > 0 ? (
-                        user.roles.map((role, idx) => (
-                          <Badge key={idx} variant="secondary">
-                            {role}
+                      {(() => {
+                        // Show only the highest priority role
+                        const highestRole = user.roles.includes('Admin') ? 'Admin' :
+                                          user.roles.includes('Association Admin') ? 'Association Admin' :
+                                          user.roles.includes('Company Admin') ? 'Company Admin' :
+                                          user.roles.includes('Member') ? 'Member' :
+                                          null;
+                        
+                        return highestRole ? (
+                          <Badge variant={
+                            highestRole === 'Admin' ? 'default' :
+                            highestRole === 'Association Admin' ? 'secondary' :
+                            'outline'
+                          }>
+                            {highestRole}
                           </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="outline">No roles</Badge>
-                      )}
+                        ) : (
+                          <Badge variant="outline">No roles</Badge>
+                        );
+                      })()}
                     </div>
                   </TableCell>
                   <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
