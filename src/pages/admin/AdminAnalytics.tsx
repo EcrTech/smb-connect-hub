@@ -308,7 +308,7 @@ const AdminAnalytics = () => {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 ml-20">
+          <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-bold">Platform Analytics</h1>
               <p className="text-sm text-muted-foreground">Comprehensive Platform Insights</p>

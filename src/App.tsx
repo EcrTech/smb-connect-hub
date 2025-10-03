@@ -54,7 +54,17 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const hideHomeButton = ['/', '/auth/login', '/auth/register'].includes(location.pathname);
+  const hideHomeButton = [
+    '/', 
+    '/auth/login', 
+    '/auth/register',
+    '/admin',
+    '/admin/actions',
+    '/admin/users',
+    '/admin/associations',
+    '/admin/companies',
+    '/admin/analytics'
+  ].includes(location.pathname) || location.pathname.startsWith('/admin/');
 
   return (
     <>
