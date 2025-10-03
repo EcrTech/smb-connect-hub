@@ -1,10 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, Mail, MessageCircle } from 'lucide-react';
 import { AssociationsList } from '@/components/AssociationsList';
+import { BulkSendAssociationsDialog } from '@/components/admin/BulkSendAssociationsDialog';
+import { useState } from 'react';
 
 export default function AdminAssociations() {
   const navigate = useNavigate();
+  const [selectedAssociations, setSelectedAssociations] = useState<string[]>([]);
+  const [showBulkSendDialog, setShowBulkSendDialog] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -19,6 +23,15 @@ export default function AdminAssociations() {
               Back to Dashboard
             </Button>
             <div className="flex gap-2">
+              {selectedAssociations.length > 0 && (
+                <Button 
+                  variant="default" 
+                  onClick={() => setShowBulkSendDialog(true)}
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send to Selected ({selectedAssociations.length})
+                </Button>
+              )}
               <Button variant="outline" onClick={() => navigate('/admin/bulk-upload-associations')}>
                 <Upload className="w-4 h-4 mr-2" />
                 Bulk Upload
@@ -33,8 +46,17 @@ export default function AdminAssociations() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <AssociationsList />
+        <AssociationsList 
+          onSelectionChange={setSelectedAssociations}
+          selectedIds={selectedAssociations}
+        />
       </main>
+
+      <BulkSendAssociationsDialog
+        open={showBulkSendDialog}
+        onOpenChange={setShowBulkSendDialog}
+        associationIds={selectedAssociations}
+      />
     </div>
   );
 }

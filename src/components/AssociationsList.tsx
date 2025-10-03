@@ -43,7 +43,12 @@ interface Association {
   is_active: boolean;
 }
 
-export function AssociationsList() {
+interface AssociationsListProps {
+  onSelectionChange?: (selectedIds: string[]) => void;
+  selectedIds?: string[];
+}
+
+export function AssociationsList({ onSelectionChange, selectedIds = [] }: AssociationsListProps = {}) {
   const navigate = useNavigate();
   const [associations, setAssociations] = useState<Association[]>([]);
   const [filteredAssociations, setFilteredAssociations] = useState<Association[]>([]);
@@ -270,14 +275,15 @@ export function AssociationsList() {
       newSelection.add(associationId);
     }
     setSelectedAssociations(newSelection);
+    onSelectionChange?.(Array.from(newSelection));
   };
 
   const toggleSelectAll = () => {
-    if (selectedAssociations.size === displayedAssociations.length) {
-      setSelectedAssociations(new Set());
-    } else {
-      setSelectedAssociations(new Set(displayedAssociations.map(a => a.id)));
-    }
+    const newSelection = selectedAssociations.size === displayedAssociations.length 
+      ? new Set<string>() 
+      : new Set(displayedAssociations.map(a => a.id));
+    setSelectedAssociations(newSelection);
+    onSelectionChange?.(Array.from(newSelection));
   };
 
   const handleBulkHardDelete = async () => {

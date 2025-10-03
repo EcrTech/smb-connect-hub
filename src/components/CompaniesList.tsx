@@ -46,7 +46,12 @@ interface Company {
   };
 }
 
-export function CompaniesList() {
+interface CompaniesListProps {
+  onSelectionChange?: (selectedIds: string[]) => void;
+  selectedIds?: string[];
+}
+
+export function CompaniesList({ onSelectionChange, selectedIds = [] }: CompaniesListProps = {}) {
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
@@ -277,14 +282,15 @@ export function CompaniesList() {
       newSelection.add(companyId);
     }
     setSelectedCompanies(newSelection);
+    onSelectionChange?.(Array.from(newSelection));
   };
 
   const toggleSelectAll = () => {
-    if (selectedCompanies.size === displayedCompanies.length) {
-      setSelectedCompanies(new Set());
-    } else {
-      setSelectedCompanies(new Set(displayedCompanies.map(c => c.id)));
-    }
+    const newSelection = selectedCompanies.size === displayedCompanies.length 
+      ? new Set<string>() 
+      : new Set(displayedCompanies.map(c => c.id));
+    setSelectedCompanies(newSelection);
+    onSelectionChange?.(Array.from(newSelection));
   };
 
   const handleBulkHardDelete = async () => {
