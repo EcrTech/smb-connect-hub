@@ -55,7 +55,7 @@ interface Company {
 export default function BrowseMembers() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userData } = useUserRole();
+  const { userData, loading: userLoading } = useUserRole();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
   const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
@@ -79,9 +79,11 @@ export default function BrowseMembers() {
   const [selectedCountry, setSelectedCountry] = useState<string>('');
 
   useEffect(() => {
-    loadMembers();
-    loadFiltersData();
-  }, []);
+    if (!userLoading && userData) {
+      loadMembers();
+      loadFiltersData();
+    }
+  }, [userLoading, userData]);
 
   useEffect(() => {
     applyFilters();
@@ -184,7 +186,12 @@ export default function BrowseMembers() {
   const loadMembers = async () => {
     try {
       setLoading(true);
-      if (!userData?.id) return;
+      if (!userData?.id) {
+        console.log('No userData.id found, userData:', userData);
+        return;
+      }
+
+      console.log('Loading members, current userData.id:', userData.id);
 
       // Load all members except current user with company and association details
       const { data: membersData, error: membersError } = await supabase
@@ -206,6 +213,8 @@ export default function BrowseMembers() {
         `)
         .neq('id', userData.id)
         .eq('is_active', true);
+
+      console.log('Members query result:', { membersData, membersError, count: membersData?.length });
 
       if (membersError) throw membersError;
 
@@ -253,6 +262,8 @@ export default function BrowseMembers() {
         return { ...member, connectionStatus };
       });
 
+      console.log('Final members with status:', { count: membersWithStatus.length, sample: membersWithStatus[0] });
+      
       setMembers(membersWithStatus);
       setFilteredMembers(membersWithStatus);
     } catch (error: any) {
@@ -333,6 +344,22 @@ export default function BrowseMembers() {
         );
     }
   };
+
+  if (userLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Please log in to browse members</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
