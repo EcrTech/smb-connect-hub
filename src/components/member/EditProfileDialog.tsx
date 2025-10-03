@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -53,12 +53,37 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
     open_to_work: profile.open_to_work || false,
   });
 
+  // Sync formData when profile changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        headline: profile.headline || '',
+        bio: profile.bio || '',
+        location: profile.location || '',
+        phone: profile.phone || '',
+        linkedin_url: profile.linkedin_url || '',
+        twitter_url: profile.twitter_url || '',
+        website_url: profile.website_url || '',
+        employment_status: profile.employment_status || '',
+        open_to_work: profile.open_to_work || false,
+      });
+    }
+  }, [open, profile]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      console.log('Updating profile with data:', {
+        id: profile.id,
+        bio: formData.bio,
+        bioLength: formData.bio.length
+      });
+
+      const { data, error } = await supabase
         .from('profiles')
         .update({
           first_name: formData.first_name,
@@ -73,9 +98,15 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
           employment_status: formData.employment_status || null,
           open_to_work: formData.open_to_work,
         })
-        .eq('id', profile.id);
+        .eq('id', profile.id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      console.log('Update successful:', data);
 
       toast({
         title: 'Success',
@@ -84,9 +115,10 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
       setOpen(false);
       onSave();
     } catch (error: any) {
+      console.error('Profile update failed:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update profile',
+        description: error.message || 'Failed to update profile',
         variant: 'destructive',
       });
     } finally {
