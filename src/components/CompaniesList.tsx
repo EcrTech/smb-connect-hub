@@ -61,6 +61,10 @@ export function CompaniesList() {
   const [deleteNotes, setDeleteNotes] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [hardDeletingCompany, setHardDeletingCompany] = useState<Company | null>(null);
+  const [hardDeletePassword, setHardDeletePassword] = useState('');
+  const [hardDeleteNotes, setHardDeleteNotes] = useState('');
+  const [isHardDeleting, setIsHardDeleting] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -218,6 +222,47 @@ export function CompaniesList() {
     }
   };
 
+  const handleHardDelete = async (company: Company) => {
+    if (!hardDeletePassword.trim() || !hardDeleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsHardDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('hard-delete-companies', {
+        body: {
+          companyIds: [company.id],
+          password: hardDeletePassword,
+          notes: hardDeleteNotes
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.failed > 0) {
+        toast.error(`Failed to hard delete company: ${data.errors?.[0] || 'Unknown error'}`);
+      } else {
+        toast.success('Company permanently deleted');
+        setHardDeletingCompany(null);
+        setHardDeletePassword('');
+        setHardDeleteNotes('');
+        loadCompanies();
+      }
+    } catch (error: any) {
+      console.error('Error hard deleting company:', error);
+      toast.error(error.message || 'Failed to hard delete company');
+    } finally {
+      setIsHardDeleting(false);
+    }
+  };
+
   const exportToCSV = () => {
     const headers = ['Company Name', 'Association', 'Email', 'Phone', 'Website', 'City', 'State', 'Status', 'Verified'];
     const csvData = filteredCompanies.map(company => [
@@ -322,16 +367,30 @@ export function CompaniesList() {
                     <Badge variant="outline">Verified</Badge>
                   )}
                   {isSuperAdmin && (
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingCompany(company);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingCompany(company);
+                        }}
+                        title="Soft Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHardDeletingCompany(company);
+                        }}
+                        title="Hard Delete (Permanent)"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive fill-destructive" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -436,16 +495,30 @@ export function CompaniesList() {
                   </TableCell>
                   {isSuperAdmin && (
                     <TableCell className="text-right">
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingCompany(company);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingCompany(company);
+                          }}
+                          title="Soft Delete"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHardDeletingCompany(company);
+                          }}
+                          title="Hard Delete (Permanent)"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive fill-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   )}
                 </TableRow>
@@ -510,6 +583,60 @@ export function CompaniesList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isVerifying ? 'Verifying...' : 'Delete Company'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!hardDeletingCompany} onOpenChange={(open) => {
+        if (!open) {
+          setHardDeletingCompany(null);
+          setHardDeletePassword('');
+          setHardDeleteNotes('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ HARD DELETE - PERMANENT DELETION</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to PERMANENTLY delete "{hardDeletingCompany?.name}" and ALL associated data including members, admins, and records. This action CANNOT be undone and the data CANNOT be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="hard-delete-notes">Reason for Permanent Deletion *</Label>
+              <Textarea
+                id="hard-delete-notes"
+                placeholder="Explain why this company needs to be permanently deleted..."
+                value={hardDeleteNotes}
+                onChange={(e) => setHardDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hard-delete-password">Confirm Your Password *</Label>
+              <Input
+                id="hard-delete-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={hardDeletePassword}
+                onChange={(e) => setHardDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this PERMANENT action
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => hardDeletingCompany && handleHardDelete(hardDeletingCompany)}
+              disabled={!hardDeletePassword.trim() || !hardDeleteNotes.trim() || isHardDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isHardDeleting ? 'Permanently Deleting...' : 'PERMANENTLY DELETE'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

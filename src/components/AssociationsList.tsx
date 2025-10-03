@@ -59,6 +59,10 @@ export function AssociationsList() {
   const [deleteNotes, setDeleteNotes] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [hardDeletingAssociation, setHardDeletingAssociation] = useState<Association | null>(null);
+  const [hardDeletePassword, setHardDeletePassword] = useState('');
+  const [hardDeleteNotes, setHardDeleteNotes] = useState('');
+  const [isHardDeleting, setIsHardDeleting] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -211,6 +215,47 @@ export function AssociationsList() {
     }
   };
 
+  const handleHardDelete = async (association: Association) => {
+    if (!hardDeletePassword.trim() || !hardDeleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsHardDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('hard-delete-associations', {
+        body: {
+          associationIds: [association.id],
+          password: hardDeletePassword,
+          notes: hardDeleteNotes
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.failed > 0) {
+        toast.error(`Failed to hard delete association: ${data.errors?.[0] || 'Unknown error'}`);
+      } else {
+        toast.success('Association permanently deleted');
+        setHardDeletingAssociation(null);
+        setHardDeletePassword('');
+        setHardDeleteNotes('');
+        loadAssociations();
+      }
+    } catch (error: any) {
+      console.error('Error hard deleting association:', error);
+      toast.error(error.message || 'Failed to hard delete association');
+    } finally {
+      setIsHardDeleting(false);
+    }
+  };
+
   const exportToCSV = () => {
     const headers = ['Association Name', 'Email', 'Phone', 'Website', 'City', 'State', 'Country', 'Status'];
     const csvData = filteredAssociations.map(association => [
@@ -321,16 +366,30 @@ export function AssociationsList() {
                       <Edit className="h-4 w-4" />
                     </Button>
                     {isSuperAdmin && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingAssociation(association);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingAssociation(association);
+                          }}
+                          title="Soft Delete"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHardDeletingAssociation(association);
+                          }}
+                          title="Hard Delete (Permanent)"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive fill-destructive" />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -428,16 +487,30 @@ export function AssociationsList() {
                         <Edit className="h-4 w-4" />
                       </Button>
                       {isSuperAdmin && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingAssociation(association);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingAssociation(association);
+                            }}
+                            title="Soft Delete"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHardDeletingAssociation(association);
+                            }}
+                            title="Hard Delete (Permanent)"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive fill-destructive" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </TableCell>
@@ -512,6 +585,60 @@ export function AssociationsList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isVerifying ? 'Verifying...' : 'Delete Association'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!hardDeletingAssociation} onOpenChange={(open) => {
+        if (!open) {
+          setHardDeletingAssociation(null);
+          setHardDeletePassword('');
+          setHardDeleteNotes('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ HARD DELETE - PERMANENT DELETION</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to PERMANENTLY delete "{hardDeletingAssociation?.name}" and ALL associated data including companies, members, managers, and all records. This action CANNOT be undone and the data CANNOT be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="hard-delete-notes-assoc">Reason for Permanent Deletion *</Label>
+              <Textarea
+                id="hard-delete-notes-assoc"
+                placeholder="Explain why this association needs to be permanently deleted..."
+                value={hardDeleteNotes}
+                onChange={(e) => setHardDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="hard-delete-password-assoc">Confirm Your Password *</Label>
+              <Input
+                id="hard-delete-password-assoc"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={hardDeletePassword}
+                onChange={(e) => setHardDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this PERMANENT action
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={() => hardDeletingAssociation && handleHardDelete(hardDeletingAssociation)}
+              disabled={!hardDeletePassword.trim() || !hardDeleteNotes.trim() || isHardDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isHardDeleting ? 'Permanently Deleting...' : 'PERMANENTLY DELETE'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
