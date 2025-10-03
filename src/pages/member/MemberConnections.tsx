@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Check, X, Clock, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 interface ConnectionWithDetails {
   id: string;

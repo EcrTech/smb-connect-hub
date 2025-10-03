@@ -7,7 +7,6 @@ import { Building2, Users, MessageSquare, TrendingUp, LogOut, Building } from 'l
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 export default function MemberDashboard() {
   const navigate = useNavigate();

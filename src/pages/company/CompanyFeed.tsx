@@ -11,7 +11,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { Input } from '@/components/ui/input';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 interface Post {
   id: string;

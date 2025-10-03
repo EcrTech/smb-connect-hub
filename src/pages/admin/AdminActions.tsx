@@ -7,7 +7,6 @@ import { Building2, Users, Shield, LogOut, FileText, Plus, Upload, Mail, Message
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 export default function AdminActions() {
   const navigate = useNavigate();

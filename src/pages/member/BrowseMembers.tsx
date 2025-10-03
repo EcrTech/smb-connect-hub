@@ -14,7 +14,6 @@ import { ArrowLeft, UserPlus, Search, Check, Clock, X, Filter } from 'lucide-rea
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 interface Member {
   id: string;

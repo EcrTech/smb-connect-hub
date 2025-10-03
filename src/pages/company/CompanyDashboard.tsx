@@ -7,7 +7,6 @@ import { Building2, Users, MessageSquare, LogOut, Settings, Radio } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import logo from '@/assets/smb-connect-logo.jpg';
 import { EventRequisitionForm } from '@/components/EventRequisitionForm';
 
 export default function CompanyDashboard() {

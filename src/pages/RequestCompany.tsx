@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Building2, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 const requestSchema = z.object({
   association_id: z.string().optional(),
@@ -164,7 +163,6 @@ export default function RequestCompany() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="SMB Connect" className="h-10 object-contain" />
             <div>
               <h1 className="text-2xl font-bold">Request Company</h1>
               <p className="text-sm text-muted-foreground">

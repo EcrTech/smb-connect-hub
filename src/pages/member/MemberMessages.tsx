@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageThread } from '@/components/messages/MessageThread';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 export default function MemberMessages() {
   const navigate = useNavigate();

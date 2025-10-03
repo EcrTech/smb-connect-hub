@@ -26,7 +26,6 @@ import {
   Users
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import logo from '@/assets/smb-connect-logo.jpg';
 
 interface Post {
   id: string;
