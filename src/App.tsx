@@ -64,7 +64,7 @@ const AppContent = () => {
       {!hideHomeButton && <HomeButton />}
       {showEventRequisition && <FloatingEventRequisition />}
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<Login />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
         <Route 
