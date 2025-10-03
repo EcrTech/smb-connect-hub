@@ -993,6 +993,91 @@ export type Database = {
         }
         Relationships: []
       }
+      event_requisitions: {
+        Row: {
+          admin_notes: string | null
+          association_id: string | null
+          budget_estimate: number | null
+          company_id: string | null
+          created_at: string | null
+          event_date: string | null
+          event_description: string | null
+          event_location: string | null
+          event_name: string
+          event_type: string | null
+          expected_attendees: number | null
+          id: string
+          requester_id: string
+          requester_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          association_id?: string | null
+          budget_estimate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_description?: string | null
+          event_location?: string | null
+          event_name: string
+          event_type?: string | null
+          expected_attendees?: number | null
+          id?: string
+          requester_id: string
+          requester_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          association_id?: string | null
+          budget_estimate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          event_description?: string | null
+          event_location?: string | null
+          event_name?: string
+          event_type?: string | null
+          expected_attendees?: number | null
+          id?: string
+          requester_id?: string
+          requester_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_requisitions_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_requisitions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_requisitions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       key_functionaries: {
         Row: {
           association_id: string

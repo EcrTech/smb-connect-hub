@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import logo from '@/assets/smb-connect-logo.jpg';
+import { EventRequisitionForm } from '@/components/EventRequisitionForm';
 
 export default function AssociationDashboard() {
   const navigate = useNavigate();
@@ -245,6 +246,14 @@ export default function AssociationDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Event Requisition Form */}
+        <div className="mt-8">
+          <EventRequisitionForm 
+            requesterType="association" 
+            entityId={userData?.association_id}
+          />
+        </div>
       </main>
     </div>
   );
