@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Download, Upload, FileText } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 export default function BulkUploadUsers() {
   const navigate = useNavigate();
@@ -145,6 +146,13 @@ export default function BulkUploadUsers() {
                   disabled={uploading}
                 />
               </label>
+              
+              {uploading && (
+                <div className="mt-6">
+                  <Progress value={undefined} className="w-full" />
+                  <p className="text-sm text-muted-foreground mt-2">Processing users...</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
