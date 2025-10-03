@@ -10,11 +10,13 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import RequestAssociation from "./pages/RequestAssociation";
+import RequestCompany from "./pages/RequestCompany";
 import AdminActions from "./pages/admin/AdminActions";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAssociations from "./pages/admin/AdminAssociations";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
+import AdminCompanyRequests from "./pages/admin/AdminCompanyRequests";
 import AssociationProfileView from "./pages/admin/AssociationProfileView";
 import CreateAssociation from "./pages/admin/CreateAssociation";
 import CreateCompany from "./pages/admin/CreateCompany";
@@ -136,6 +138,14 @@ const App = () => (
             } 
           />
           <Route 
+            path="/admin/company-requests" 
+            element={
+              <ProtectedRoute>
+                <AdminCompanyRequests />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/admin/create-association" 
             element={
               <ProtectedRoute>
@@ -236,6 +246,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <RequestAssociation />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/request-company"
+            element={
+              <ProtectedRoute>
+                <RequestCompany />
               </ProtectedRoute>
             } 
           />

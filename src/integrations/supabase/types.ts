@@ -603,6 +603,98 @@ export type Database = {
           },
         ]
       }
+      company_requests: {
+        Row: {
+          address: string | null
+          admin_notes: string | null
+          annual_turnover: number | null
+          association_id: string | null
+          business_type: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          description: string | null
+          email: string
+          employee_count: number | null
+          gst_number: string | null
+          id: string
+          industry_type: string | null
+          name: string
+          pan_number: string | null
+          phone: string | null
+          postal_code: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_notes?: string | null
+          annual_turnover?: number | null
+          association_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          email: string
+          employee_count?: number | null
+          gst_number?: string | null
+          id?: string
+          industry_type?: string | null
+          name: string
+          pan_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_notes?: string | null
+          annual_turnover?: number | null
+          association_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string
+          employee_count?: number | null
+          gst_number?: string | null
+          id?: string
+          industry_type?: string | null
+          name?: string
+          pan_number?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_requests_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connections: {
         Row: {
           created_at: string | null

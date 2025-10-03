@@ -16,7 +16,8 @@ export default function AdminActions() {
     totalAssociations: 0,
     totalCompanies: 0,
     totalUsers: 0,
-    pendingRequests: 0
+    pendingAssociationRequests: 0,
+    pendingCompanyRequests: 0
   });
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -65,9 +66,15 @@ export default function AdminActions() {
         .from('profiles')
         .select('*', { count: 'exact', head: true });
 
-      // Load pending requests count
-      const { count: requestsCount } = await supabase
+      // Load pending association requests count
+      const { count: associationRequestsCount } = await supabase
         .from('association_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      // Load pending company requests count
+      const { count: companyRequestsCount } = await supabase
+        .from('company_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
@@ -75,7 +82,8 @@ export default function AdminActions() {
         totalAssociations: associationsCount || 0,
         totalCompanies: companiesCount || 0,
         totalUsers: usersCount || 0,
-        pendingRequests: requestsCount || 0
+        pendingAssociationRequests: associationRequestsCount || 0,
+        pendingCompanyRequests: companyRequestsCount || 0
       });
     } catch (error: any) {
       console.error('Error loading stats:', error);
@@ -221,13 +229,26 @@ export default function AdminActions() {
               <Button 
                 className="w-full relative" 
                 onClick={() => navigate('/admin/requests')}
-                variant={stats.pendingRequests > 0 ? 'default' : 'outline'}
+                variant={stats.pendingAssociationRequests > 0 ? 'default' : 'outline'}
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Association Requests
-                {stats.pendingRequests > 0 && (
+                {stats.pendingAssociationRequests > 0 && (
                   <Badge className="ml-2 bg-destructive text-destructive-foreground">
-                    {stats.pendingRequests}
+                    {stats.pendingAssociationRequests}
+                  </Badge>
+                )}
+              </Button>
+              <Button 
+                className="w-full relative" 
+                onClick={() => navigate('/admin/company-requests')}
+                variant={stats.pendingCompanyRequests > 0 ? 'default' : 'outline'}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Company Requests
+                {stats.pendingCompanyRequests > 0 && (
+                  <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                    {stats.pendingCompanyRequests}
                   </Badge>
                 )}
               </Button>
