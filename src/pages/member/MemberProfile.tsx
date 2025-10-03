@@ -429,8 +429,8 @@ export default function MemberProfile() {
 
             {/* Profile Info */}
             <CardContent className="pt-0">
-              <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-end -mt-16 sm:-mt-20">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row gap-6 items-start">
+                <div className="relative -mt-16 sm:-mt-20">
                   <Avatar className="w-32 h-32 border-4 border-card">
                     <AvatarImage src={profile.avatar || undefined} />
                     <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
@@ -455,7 +455,7 @@ export default function MemberProfile() {
                   )}
                 </div>
 
-              <div className="flex-1">
+              <div className="flex-1 pt-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <h1 className="text-3xl font-bold">{fullName}</h1>
