@@ -13,8 +13,8 @@ export default function BulkUploadUsers() {
   const [uploading, setUploading] = useState(false);
 
   const downloadTemplate = () => {
-    const csvContent = 'email,first_name,last_name,phone,company_email,role,designation,department\n' +
-      'user@example.com,John,Doe,+91-9999999999,company@example.com,admin,Manager,Operations\n';
+    const csvContent = 'email,first_name,last_name,phone,company_email,role,designation,department,password\n' +
+      'user@example.com,John,Doe,+91-9999999999,company@example.com,admin,Manager,Operations,SecurePass123!\n';
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -110,7 +110,7 @@ export default function BulkUploadUsers() {
           <CardHeader>
             <CardTitle>Upload Users CSV</CardTitle>
             <CardDescription>
-              The CSV file should include: email, first_name, last_name, phone, company_email, role, designation, department
+              The CSV file should include: email, first_name, last_name, phone, company_email, role, designation, department, password (optional)
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

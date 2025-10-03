@@ -21,6 +21,7 @@ const userSchema = z.object({
   role: z.string().default('member'),
   designation: z.string().optional(),
   department: z.string().optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
 });
 
 type UserFormData = z.infer<typeof userSchema>;
@@ -66,11 +67,14 @@ export default function CreateUser() {
     try {
       setLoading(true);
 
-      // Create auth user with temporary password
-      const tempPassword = `Temp${Math.random().toString(36).substring(7)}!`;
+      // Use provided password or generate temporary one
+      const password = data.password && data.password.trim() !== '' 
+        ? data.password 
+        : `Temp${Math.random().toString(36).substring(7)}!`;
+      
       const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
         email: data.email,
-        password: tempPassword,
+        password: password,
         email_confirm: true,
         user_metadata: {
           first_name: data.first_name,
@@ -95,12 +99,16 @@ export default function CreateUser() {
 
       if (memberError) throw memberError;
 
-      // Send invitation email
-      await supabase.auth.admin.inviteUserByEmail(data.email);
+      // Send invitation email only if no password was set
+      if (!data.password || data.password.trim() === '') {
+        await supabase.auth.admin.inviteUserByEmail(data.email);
+      }
 
       toast({
         title: 'Success',
-        description: 'User created successfully. Invitation email sent.',
+        description: data.password && data.password.trim() !== '' 
+          ? 'User created successfully with the provided password.'
+          : 'User created successfully. Invitation email sent.',
       });
       navigate('/admin/users');
     } catch (error: any) {
@@ -164,6 +172,23 @@ export default function CreateUser() {
               <div>
                 <Label htmlFor="phone">Phone</Label>
                 <Input {...register('phone')} id="phone" type="tel" placeholder="+91-9999999999" disabled={loading} />
+              </div>
+
+              <div>
+                <Label htmlFor="password">Password (optional)</Label>
+                <Input 
+                  {...register('password')} 
+                  id="password" 
+                  type="password" 
+                  placeholder="Leave empty to send invitation email" 
+                  disabled={loading} 
+                />
+                {errors.password && (
+                  <p className="text-sm text-destructive mt-1">{errors.password.message}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  If left empty, user will receive an invitation email to set their password
+                </p>
               </div>
 
               <div>

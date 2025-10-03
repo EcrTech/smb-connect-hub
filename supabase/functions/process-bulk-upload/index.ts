@@ -127,11 +127,14 @@ Deno.serve(async (req) => {
             if (values[index]) record[header] = values[index];
           });
 
-          // Create auth user
-          const tempPassword = `Temp${Math.random().toString(36).substring(7)}!`;
+          // Create auth user with provided password or generate temporary one
+          const password = record.password && record.password.trim() !== '' 
+            ? record.password 
+            : `Temp${Math.random().toString(36).substring(7)}!`;
+          
           const { data: authUser, error: authError } = await supabaseClient.auth.admin.createUser({
             email: record.email,
-            password: tempPassword,
+            password: password,
             email_confirm: true,
             user_metadata: {
               first_name: record.first_name,
@@ -168,8 +171,10 @@ Deno.serve(async (req) => {
 
           if (memberError) throw memberError;
 
-          // Send password reset email
-          await supabaseClient.auth.admin.inviteUserByEmail(record.email);
+          // Send invitation email only if no password was provided
+          if (!record.password || record.password.trim() === '') {
+            await supabaseClient.auth.admin.inviteUserByEmail(record.email);
+          }
 
           successCount++;
           console.log(`Created user and member: ${record.email}`);
