@@ -377,14 +377,8 @@ export default function MemberFeed() {
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
-            {/* Left - Logo and Search */}
+            {/* Left - Search */}
             <div className="flex items-center gap-4 flex-1 max-w-2xl">
-              <img 
-                src={logo} 
-                alt="SMB Connect" 
-                className="h-8 object-contain cursor-pointer" 
-                onClick={() => navigate('/feed')}
-              />
               <div className="flex-1 max-w-md">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
