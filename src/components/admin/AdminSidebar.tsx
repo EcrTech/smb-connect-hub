@@ -47,8 +47,8 @@ export function AdminSidebar() {
     isActive ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50";
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar>
+      <SidebarContent className="gap-0">
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel>
