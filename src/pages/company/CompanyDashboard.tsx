@@ -7,7 +7,7 @@ import { Building2, Users, MessageSquare, LogOut, Settings, Radio } from 'lucide
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { EventRequisitionForm } from '@/components/EventRequisitionForm';
+
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
@@ -236,16 +236,6 @@ export default function CompanyDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Event Requisition Form */}
-        {userData?.company_id && (
-          <div className="mt-8">
-            <EventRequisitionForm 
-              requesterType="company" 
-              entityId={userData.company_id}
-            />
-          </div>
-        )}
       </main>
     </div>
   );

@@ -7,7 +7,7 @@ import { Building2, Users, LogOut, Settings, Radio } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { EventRequisitionForm } from '@/components/EventRequisitionForm';
+
 
 export default function AssociationDashboard() {
   const navigate = useNavigate();
@@ -287,16 +287,6 @@ export default function AssociationDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Event Requisition Form */}
-        {userData?.association_id && (
-          <div className="mt-8">
-            <EventRequisitionForm 
-              requesterType="association" 
-              entityId={userData.association_id}
-            />
-          </div>
-        )}
       </main>
     </div>
   );

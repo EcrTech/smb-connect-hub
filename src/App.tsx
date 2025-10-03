@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HomeButton } from "./components/HomeButton";
+import { FloatingEventRequisition } from "./components/FloatingEventRequisition";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -55,10 +56,12 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const hideHomeButton = ['/', '/auth/login', '/auth/register'].includes(location.pathname);
+  const showEventRequisition = !['/auth/login', '/auth/register', '/'].includes(location.pathname);
 
   return (
     <>
       {!hideHomeButton && <HomeButton />}
+      {showEventRequisition && <FloatingEventRequisition />}
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth/login" element={<Login />} />
