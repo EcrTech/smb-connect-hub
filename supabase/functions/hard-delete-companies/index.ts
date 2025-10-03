@@ -71,14 +71,19 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify password by checking if we can sign in
-    const { error: authError } = await supabaseClient.auth.signInWithPassword({
+    // Verify password by creating a fresh client to test authentication
+    const authTestClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+    
+    const { error: authError } = await authTestClient.auth.signInWithPassword({
       email: user.email!,
       password: password
     });
 
     if (authError) {
-      console.error('Password verification failed:', authError);
+      console.error('Password verification failed:', authError.message);
       return new Response(
         JSON.stringify({ error: 'Invalid password' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
