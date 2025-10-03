@@ -503,7 +503,7 @@ const AdminAnalytics = () => {
                   data={roleDistribution}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
+                  labelLine={true}
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="hsl(var(--primary))"
@@ -514,6 +514,14 @@ const AdminAnalytics = () => {
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value, entry: any) => {
+                    const dataEntry = roleDistribution.find(d => d.name === value);
+                    return `${value}: ${dataEntry?.value || 0}`;
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
