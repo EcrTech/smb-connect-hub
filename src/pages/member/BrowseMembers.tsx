@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, UserPlus, Search, Check, Clock, X, Filter } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowLeft, UserPlus, Search, Check, Clock, X, Filter, Building2, MapPin, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -530,64 +531,109 @@ export default function BrowseMembers() {
         </Card>
 
         {loading ? (
-          <p>Loading members...</p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredMembers.map(member => {
-              const fullName = `${member.profile.first_name} ${member.profile.last_name}`;
-              const initials = `${member.profile.first_name[0]}${member.profile.last_name[0]}`;
-
-              return (
-                <Card 
-                  key={member.id} 
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/profile/${member.user_id}`)}
-                >
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col items-center text-center">
-                      <Avatar className="w-16 h-16 mb-3">
-                        <AvatarImage src={member.profile.avatar || undefined} />
-                        <AvatarFallback>{initials}</AvatarFallback>
-                      </Avatar>
-                      <h3 className="font-semibold text-lg">{fullName}</h3>
-                      {member.company && (
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">{member.company.name}</p>
-                          {member.company.association && (
-                            <p className="text-xs text-muted-foreground">
-                              {member.company.association.name}
-                            </p>
-                          )}
-                          {(member.company.city || member.company.state) && (
-                            <p className="text-xs text-muted-foreground">
-                              {[member.company.city, member.company.state].filter(Boolean).join(', ')}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      {member.profile.bio && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                          {member.profile.bio}
-                        </p>
-                      )}
-                      <div 
-                        className="mt-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {getConnectionButton(member)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="flex justify-center py-12">
+            <p className="text-muted-foreground">Loading members...</p>
           </div>
-        )}
-
-        {filteredMembers.length === 0 && !loading && (
+        ) : (
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">No members found</p>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50 hover:bg-muted/50">
+                    <TableHead className="w-[300px] font-semibold">Name</TableHead>
+                    <TableHead className="font-semibold">Company</TableHead>
+                    <TableHead className="font-semibold">Location</TableHead>
+                    <TableHead className="text-right font-semibold">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMembers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-32 text-center">
+                        <p className="text-muted-foreground">No members available</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredMembers.map(member => {
+                      const fullName = `${member.profile.first_name} ${member.profile.last_name}`;
+                      const initials = `${member.profile.first_name[0]}${member.profile.last_name[0]}`;
+
+                      return (
+                        <TableRow 
+                          key={member.id} 
+                          className="hover:bg-muted/30 transition-colors"
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={member.profile.avatar || undefined} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex flex-col">
+                                <button
+                                  onClick={() => navigate(`/profile/${member.user_id}`)}
+                                  className="font-semibold text-base hover:text-primary hover:underline text-left transition-colors"
+                                >
+                                  {fullName}
+                                </button>
+                                {member.profile.bio && (
+                                  <span className="text-sm text-muted-foreground line-clamp-1 max-w-[250px]">
+                                    {member.profile.bio}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {member.company ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                  <span className="font-medium text-sm">{member.company.name}</span>
+                                </div>
+                                {member.company.association && (
+                                  <span className="text-xs text-muted-foreground pl-6">
+                                    {member.company.association.name}
+                                  </span>
+                                )}
+                                {member.company.employee_count && (
+                                  <div className="flex items-center gap-1 pl-6 text-xs text-muted-foreground">
+                                    <Users className="h-3 w-3" />
+                                    <span>{member.company.employee_count} employees</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {member.company?.city || member.company?.state || member.company?.country ? (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm">
+                                  {[
+                                    member.company.city,
+                                    member.company.state,
+                                    member.company.country
+                                  ].filter(Boolean).join(', ')}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {getConnectionButton(member)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         )}
