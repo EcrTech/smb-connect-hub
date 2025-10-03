@@ -9,6 +9,7 @@ import { FloatingEventRequisition } from "./components/FloatingEventRequisition"
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import ResetPassword from "./pages/auth/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import RequestAssociation from "./pages/RequestAssociation";
@@ -67,6 +68,7 @@ const AppContent = () => {
         <Route path="/" element={<Login />} />
         <Route path="/auth/login" element={<Login />} />
         <Route path="/auth/register" element={<Register />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route 
           path="/setup" 
           element={
