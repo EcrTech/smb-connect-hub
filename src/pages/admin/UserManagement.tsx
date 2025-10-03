@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Building2, Users, Search, Plus, Upload, Trash2 } from 'lucide-react';
+import { Shield, Building2, Users, Search, Plus, Upload, Trash2, UserX } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -70,6 +71,8 @@ export default function UserManagement() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteNotes, setDeleteNotes] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [isHardDeleting, setIsHardDeleting] = useState(false);
   const { toast } = useToast();
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -407,6 +410,59 @@ export default function UserManagement() {
     }
   };
 
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUserIds);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUserIds(newSelection);
+  };
+
+  const toggleAllUsers = () => {
+    if (selectedUserIds.size === displayedUsers.length) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(displayedUsers.map(u => u.id)));
+    }
+  };
+
+  const handleHardDeleteSelected = async () => {
+    if (selectedUserIds.size === 0) return;
+
+    if (!confirm(`Are you sure you want to PERMANENTLY DELETE ${selectedUserIds.size} user(s)? This will remove them from all tables including auth, profiles, members, admin_users, and association_managers. THIS CANNOT BE UNDONE.`)) {
+      return;
+    }
+
+    setIsHardDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('hard-delete-users', {
+        body: {
+          userIds: Array.from(selectedUserIds),
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Hard Delete Complete',
+        description: `Successfully deleted ${data.success} user(s). ${data.failed || 0} failed.`,
+      });
+
+      setSelectedUserIds(new Set());
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to hard delete users',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsHardDeleting(false);
+    }
+  };
+
   const filteredCompanies = selectedAssociation
     ? companies.filter(c => c.association_id === selectedAssociation)
     : companies;
@@ -444,7 +500,7 @@ export default function UserManagement() {
           <CardDescription>View and assign roles to users</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
+          <div className="mb-4 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -454,11 +510,34 @@ export default function UserManagement() {
                 className="pl-10"
               />
             </div>
+            
+            {selectedUserIds.size > 0 && (
+              <div className="flex items-center justify-between bg-muted p-3 rounded-lg">
+                <span className="text-sm font-medium">
+                  {selectedUserIds.size} user(s) selected
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleHardDeleteSelected}
+                  disabled={isHardDeleting}
+                >
+                  <UserX className="h-4 w-4 mr-2" />
+                  {isHardDeleting ? 'Deleting...' : 'Hard Delete Selected'}
+                </Button>
+              </div>
+            )}
           </div>
 
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedUserIds.size === displayedUsers.length && displayedUsers.length > 0}
+                    onCheckedChange={toggleAllUsers}
+                  />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Created</TableHead>
@@ -468,6 +547,12 @@ export default function UserManagement() {
             <TableBody>
               {displayedUsers.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedUserIds.has(user.id)}
+                      onCheckedChange={() => toggleUserSelection(user.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
