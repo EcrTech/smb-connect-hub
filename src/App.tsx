@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminLayout } from "./components/admin/AdminLayout";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -81,163 +82,35 @@ const App = () => (
               </ProtectedRoute>
             } 
           />
+          {/* Admin Routes - All wrapped in AdminLayout */}
           <Route 
-            path="/admin"
+            path="/admin/*"
             element={
               <ProtectedRoute>
-                <AdminAnalytics />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/actions"
-            element={
-              <ProtectedRoute>
-                <AdminActions />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/admin/users" 
-            element={
-              <ProtectedRoute>
-                <UserManagement />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/associations" 
-            element={
-              <ProtectedRoute>
-                <AdminAssociations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/associations/:id" 
-            element={
-              <ProtectedRoute>
-                <AssociationProfileView />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/companies"
-            element={
-              <ProtectedRoute>
-                <AdminCompanies />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/requests" 
-            element={
-              <ProtectedRoute>
-                <AdminAssociationRequests />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/company-requests" 
-            element={
-              <ProtectedRoute>
-                <AdminCompanyRequests />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/create-association" 
-            element={
-              <ProtectedRoute>
-                <CreateAssociation />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/create-company" 
-            element={
-              <ProtectedRoute>
-                <CreateCompany />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/create-user" 
-            element={
-              <ProtectedRoute>
-                <CreateUser />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/bulk-upload-associations" 
-            element={
-              <ProtectedRoute>
-                <BulkUploadAssociations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/bulk-upload-companies" 
-            element={
-              <ProtectedRoute>
-                <BulkUploadCompanies />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/bulk-upload-users" 
-            element={
-              <ProtectedRoute>
-                <BulkUploadUsers />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/delete-test-users" 
-            element={
-              <ProtectedRoute>
-                <DeleteTestUsers />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/email-lists"
-            element={
-              <ProtectedRoute>
-                <AdminEmailLists />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/email-lists/:listId" 
-            element={
-              <ProtectedRoute>
-                <AdminEmailListDetail />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/whatsapp-lists" 
-            element={
-              <ProtectedRoute>
-                <AdminWhatsAppLists />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/whatsapp-lists/:listId" 
-            element={
-              <ProtectedRoute>
-                <AdminWhatsAppListDetail />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin/analytics" 
-            element={
-              <ProtectedRoute>
-                <AdminAnalytics />
+                <AdminLayout>
+                  <Routes>
+                    <Route index element={<AdminAnalytics />} />
+                    <Route path="actions" element={<AdminActions />} />
+                    <Route path="users" element={<UserManagement />} />
+                    <Route path="associations" element={<AdminAssociations />} />
+                    <Route path="associations/:id" element={<AssociationProfileView />} />
+                    <Route path="companies" element={<AdminCompanies />} />
+                    <Route path="requests" element={<AdminAssociationRequests />} />
+                    <Route path="company-requests" element={<AdminCompanyRequests />} />
+                    <Route path="create-association" element={<CreateAssociation />} />
+                    <Route path="create-company" element={<CreateCompany />} />
+                    <Route path="create-user" element={<CreateUser />} />
+                    <Route path="bulk-upload-associations" element={<BulkUploadAssociations />} />
+                    <Route path="bulk-upload-companies" element={<BulkUploadCompanies />} />
+                    <Route path="bulk-upload-users" element={<BulkUploadUsers />} />
+                    <Route path="delete-test-users" element={<DeleteTestUsers />} />
+                    <Route path="email-lists" element={<AdminEmailLists />} />
+                    <Route path="email-lists/:listId" element={<AdminEmailListDetail />} />
+                    <Route path="whatsapp-lists" element={<AdminWhatsAppLists />} />
+                    <Route path="whatsapp-lists/:listId" element={<AdminWhatsAppListDetail />} />
+                    <Route path="analytics" element={<AdminAnalytics />} />
+                  </Routes>
+                </AdminLayout>
               </ProtectedRoute>
             } 
           />
