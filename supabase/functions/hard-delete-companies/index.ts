@@ -57,6 +57,13 @@ Deno.serve(async (req) => {
 
     const { companyIds, password, notes }: HardDeleteRequest = await req.json();
     
+    if (!companyIds || !Array.isArray(companyIds) || companyIds.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Company IDs array is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     if (!password || !notes) {
       return new Response(
         JSON.stringify({ error: 'Password and notes are required' }),
@@ -64,13 +71,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify password
+    // Verify password by checking if we can sign in
     const { error: authError } = await supabaseClient.auth.signInWithPassword({
       email: user.email!,
       password: password
     });
 
     if (authError) {
+      console.error('Password verification failed:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid password' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
