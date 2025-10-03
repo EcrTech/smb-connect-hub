@@ -251,7 +251,8 @@ export function AssociationsList() {
         setHardDeletingAssociation(null);
         setHardDeletePassword('');
         setHardDeleteNotes('');
-        loadAssociations();
+        setSelectedAssociations(new Set());
+        await loadAssociations();
       }
     } catch (error: any) {
       console.error('Error hard deleting association:', error);
@@ -313,7 +314,7 @@ export function AssociationsList() {
       setBulkDeletePassword('');
       setBulkDeleteNotes('');
       setSelectedAssociations(new Set());
-      loadAssociations();
+      await loadAssociations();
     } catch (error: any) {
       console.error('Error bulk deleting associations:', error);
       toast.error(error.message || 'Failed to bulk delete associations');
