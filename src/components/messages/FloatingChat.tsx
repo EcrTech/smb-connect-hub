@@ -159,7 +159,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
       <Button
         onClick={() => setIsOpen(true)}
         size="lg"
-        className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all z-50"
+        className="fixed bottom-20 right-6 rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all z-50"
       >
         <MessageCircle className="w-6 h-6" />
       </Button>
@@ -168,7 +168,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
 
   if (isMinimized) {
     return (
-      <Card className="fixed bottom-6 right-6 w-72 shadow-xl z-50">
+      <Card className="fixed bottom-20 right-6 w-72 shadow-xl z-50">
         <div className="flex items-center justify-between p-3 bg-primary text-primary-foreground">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5" />
@@ -198,7 +198,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-xl z-50 flex flex-col">
+    <Card className="fixed bottom-20 right-6 w-96 h-[600px] shadow-xl z-50 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
         <div className="flex items-center gap-2">
