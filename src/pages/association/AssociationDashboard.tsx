@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, LogOut, Settings, Radio } from 'lucide-react';
+import { Building2, Users, LogOut, Settings, Radio, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -267,7 +267,7 @@ export default function AssociationDashboard() {
             <CardDescription>Manage your association and companies</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Button className="w-full" onClick={() => navigate('/association/feed')}>
                 <Radio className="w-4 h-4 mr-2" />
                 Association Feed
@@ -279,6 +279,10 @@ export default function AssociationDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/invitations')}>
                 <Users className="w-4 h-4 mr-2" />
                 Send Invitations
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/calendar')}>
+                <Calendar className="w-4 h-4 mr-2" />
+                Event Calendar
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />
