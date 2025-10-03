@@ -11,6 +11,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { FloatingChat } from '@/components/messages/FloatingChat';
+import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
 import { 
   ArrowLeft, 
   Heart, 
@@ -376,7 +377,9 @@ export default function MemberFeed() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <MemberOnboarding />
+      <div className="min-h-screen bg-background">
       {/* Header - LinkedIn style */}
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4">
@@ -403,6 +406,7 @@ export default function MemberFeed() {
                 size="sm"
                 className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
                 onClick={() => navigate('/feed')}
+                data-tour="feed"
               >
                 <MessageSquare className="w-5 h-5" />
                 <span className="text-xs">Feed</span>
@@ -412,6 +416,7 @@ export default function MemberFeed() {
                 size="sm"
                 className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
                 onClick={() => navigate('/members')}
+                data-tour="browse-members"
               >
                 <Users className="w-5 h-5" />
                 <span className="text-xs">Members</span>
@@ -421,6 +426,7 @@ export default function MemberFeed() {
                 size="sm"
                 className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
                 onClick={() => navigate('/messages')}
+                data-tour="messages"
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-xs">Messages</span>
@@ -430,6 +436,7 @@ export default function MemberFeed() {
                 size="sm"
                 className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
                 onClick={() => navigate('/calendar')}
+                data-tour="calendar"
               >
                 <Calendar className="w-5 h-5" />
                 <span className="text-xs">Calendar</span>
@@ -666,5 +673,6 @@ export default function MemberFeed() {
       {/* Floating Chat Widget */}
       <FloatingChat currentUserId={currentUserId} />
     </div>
+    </>
   );
 }

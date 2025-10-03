@@ -276,7 +276,12 @@ export default function AssociationDashboard() {
                 <Building2 className="w-4 h-4 mr-2" />
                 Manage Companies
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/association/invitations')}>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => navigate('/association/invitations')}
+                data-tour="send-invitations"
+              >
                 <Users className="w-4 h-4 mr-2" />
                 Send Invitations
               </Button>

@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { AdminOnboarding } from '@/components/onboarding/AdminOnboarding';
+import { AssociationOnboarding } from '@/components/onboarding/AssociationOnboarding';
+import { CompanyOnboarding } from '@/components/onboarding/CompanyOnboarding';
+import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
 import AdminAnalytics from './admin/AdminAnalytics';
 import AssociationDashboard from './association/AssociationDashboard';
 import CompanyDashboard from './company/CompanyDashboard';
@@ -46,14 +50,29 @@ export default function Dashboard() {
   // Route to appropriate dashboard based on role
   switch (role) {
     case 'admin':
-      return <AdminAnalytics />;
+      return (
+        <>
+          <AdminOnboarding />
+          <AdminAnalytics />
+        </>
+      );
     case 'association':
-      return <AssociationDashboard />;
+      return (
+        <>
+          <AssociationOnboarding />
+          <AssociationDashboard />
+        </>
+      );
     case 'company':
-      return <CompanyDashboard />;
+      return (
+        <>
+          <CompanyOnboarding />
+          <CompanyDashboard />
+        </>
+      );
     case 'member':
       navigate('/feed');
-      return null;
+      return <MemberOnboarding />;
     default:
       return null;
   }
