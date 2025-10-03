@@ -140,14 +140,27 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">About</Label>
+            <Label htmlFor="bio">
+              About
+              <span className="text-xs text-muted-foreground ml-2">
+                ({formData.bio.length}/155 characters)
+              </span>
+            </Label>
             <Textarea
               id="bio"
               placeholder="Tell us about yourself..."
               value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+              onChange={(e) => {
+                if (e.target.value.length <= 155) {
+                  setFormData({ ...formData, bio: e.target.value });
+                }
+              }}
+              maxLength={155}
               rows={4}
             />
+            {formData.bio.length >= 155 && (
+              <p className="text-xs text-destructive">Maximum character limit reached</p>
+            )}
           </div>
 
           <div className="space-y-2">
