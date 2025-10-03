@@ -7,6 +7,7 @@ export function useUserRole() {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     loadUserRole();
@@ -32,6 +33,7 @@ export function useUserRole() {
       if (adminData) {
         setRole('admin');
         setUserData({ ...adminData, type: 'admin' });
+        setIsSuperAdmin(adminData.is_super_admin || false);
         setLoading(false);
         return;
       }
@@ -90,5 +92,5 @@ export function useUserRole() {
     }
   };
 
-  return { role, loading, userData, refreshRole: loadUserRole };
+  return { role, loading, userData, refreshRole: loadUserRole, isSuperAdmin };
 }

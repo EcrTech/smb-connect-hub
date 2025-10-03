@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Setup from "./pages/Setup";
 import RequestAssociation from "./pages/RequestAssociation";
 import RequestCompany from "./pages/RequestCompany";
+import EventsCalendar from "./pages/EventsCalendar";
 import AdminActions from "./pages/admin/AdminActions";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminAssociations from "./pages/admin/AdminAssociations";
@@ -83,7 +84,15 @@ const AppContent = () => {
             } 
           />
           <Route 
-            path="/dashboard/messages" 
+            path="/calendar" 
+            element={
+              <ProtectedRoute>
+                <EventsCalendar />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard/messages"
             element={
               <ProtectedRoute>
                 <MemberMessages />

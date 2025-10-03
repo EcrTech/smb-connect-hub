@@ -23,7 +23,8 @@ import {
   X,
   Search,
   MessageSquare,
-  Users
+  Users,
+  Calendar
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -423,6 +424,15 @@ export default function MemberFeed() {
               >
                 <MessageCircle className="w-5 h-5" />
                 <span className="text-xs">Messages</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                onClick={() => navigate('/calendar')}
+              >
+                <Calendar className="w-5 h-5" />
+                <span className="text-xs">Calendar</span>
               </Button>
               <Button 
                 variant="ghost" 
