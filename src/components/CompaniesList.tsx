@@ -1,13 +1,22 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Building, Mail, Phone, Globe, MapPin, Search, Trash2 } from 'lucide-react';
+import { Building, Mail, Phone, Globe, MapPin, Search, Trash2, Download, LayoutGrid, Table as TableIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +47,7 @@ interface Company {
 }
 
 export function CompaniesList() {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [displayedCompanies, setDisplayedCompanies] = useState<Company[]>([]);
@@ -50,6 +60,7 @@ export function CompaniesList() {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteNotes, setDeleteNotes] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -207,6 +218,37 @@ export function CompaniesList() {
     }
   };
 
+  const exportToCSV = () => {
+    const headers = ['Company Name', 'Association', 'Email', 'Phone', 'Website', 'City', 'State', 'Status', 'Verified'];
+    const csvData = filteredCompanies.map(company => [
+      company.name,
+      company.associations?.name || '',
+      company.email || '',
+      company.phone || '',
+      company.website || '',
+      company.city || '',
+      company.state || '',
+      company.is_active ? 'Active' : 'Inactive',
+      company.is_verified ? 'Yes' : 'No'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `companies_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Companies exported successfully');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -224,21 +266,52 @@ export function CompaniesList() {
             {filteredCompanies.length} of {companies.length} companies
           </p>
         </div>
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search companies..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search companies..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('card')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'outline'}
+              size="icon"
+              onClick={() => setViewMode('table')}
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={exportToCSV}
+              title="Export to CSV"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {displayedCompanies.map((company) => (
-          <Card key={company.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
+      {viewMode === 'card' ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {displayedCompanies.map((company) => (
+            <Card 
+              key={company.id} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/admin/companies/${company.id}`)}
+            >
+              <CardHeader>
               <div className="flex items-start justify-between">
                 <Building className="h-8 w-8 text-primary" />
                 <div className="flex gap-1 items-center">
@@ -312,7 +385,75 @@ export function CompaniesList() {
             </CardContent>
           </Card>
         ))}
-      </div>
+        </div>
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Company</TableHead>
+                <TableHead>Association</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+                {isSuperAdmin && <TableHead className="text-right">Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {displayedCompanies.map((company) => (
+                <TableRow 
+                  key={company.id}
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/admin/companies/${company.id}`)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      {company.name}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {company.associations?.name}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate">{company.email}</TableCell>
+                  <TableCell>{company.phone}</TableCell>
+                  <TableCell>
+                    {company.city}
+                    {company.state && `, ${company.state}`}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Badge variant={company.is_active ? 'default' : 'secondary'}>
+                        {company.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {company.is_verified && (
+                        <Badge variant="outline">Verified</Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  {isSuperAdmin && (
+                    <TableCell className="text-right">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingCompany(company);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {hasMore && (
         <div ref={loadMoreRef} className="flex justify-center py-4">
