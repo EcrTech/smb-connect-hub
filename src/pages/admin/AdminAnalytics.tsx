@@ -276,13 +276,11 @@ const AdminAnalytics = () => {
       const [
         { count: adminCount },
         { count: associationCount },
-        { count: companyOwnerCount },
         { count: companyAdminCount },
         { count: memberCount },
       ] = await Promise.all([
         supabase.from('admin_users').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('association_managers').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('members').select('*', { count: 'exact', head: true }).eq('role', 'owner').eq('is_active', true),
         supabase.from('members').select('*', { count: 'exact', head: true }).eq('role', 'admin').eq('is_active', true),
         supabase.from('members').select('*', { count: 'exact', head: true }).eq('role', 'member').eq('is_active', true),
       ]);
@@ -290,7 +288,6 @@ const AdminAnalytics = () => {
       setRoleDistribution([
         { name: 'Super Admins', value: adminCount || 0 },
         { name: 'Association Managers', value: associationCount || 0 },
-        { name: 'Company Owners', value: companyOwnerCount || 0 },
         { name: 'Company Admins', value: companyAdminCount || 0 },
         { name: 'Members', value: memberCount || 0 },
       ]);
