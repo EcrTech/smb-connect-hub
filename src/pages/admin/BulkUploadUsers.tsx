@@ -58,10 +58,19 @@ export default function BulkUploadUsers() {
 
         if (error) throw error;
 
-        toast({
-          title: 'Success',
-          description: `Successfully processed ${data.success} records. ${data.failed || 0} failed. Users will receive email invitations.`,
-        });
+        if (data.failed > 0) {
+          toast({
+            title: 'Partial Success',
+            description: `${data.success} users created successfully. ${data.failed} failed. Check console for details.`,
+            variant: 'default',
+          });
+          console.error('Upload errors:', data.errors);
+        } else {
+          toast({
+            title: 'Success',
+            description: `Successfully created ${data.success} users. Users will receive email invitations.`,
+          });
+        }
 
         event.target.value = '';
       };
