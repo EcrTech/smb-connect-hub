@@ -258,7 +258,8 @@ export function CompaniesList() {
         setHardDeletingCompany(null);
         setHardDeletePassword('');
         setHardDeleteNotes('');
-        loadCompanies();
+        setSelectedCompanies(new Set());
+        await loadCompanies();
       }
     } catch (error: any) {
       console.error('Error hard deleting company:', error);
@@ -320,7 +321,7 @@ export function CompaniesList() {
       setBulkDeletePassword('');
       setBulkDeleteNotes('');
       setSelectedCompanies(new Set());
-      loadCompanies();
+      await loadCompanies();
     } catch (error: any) {
       console.error('Error bulk deleting companies:', error);
       toast.error(error.message || 'Failed to bulk delete companies');
