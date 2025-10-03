@@ -21,6 +21,10 @@ import AdminCompanyRequests from "./pages/admin/AdminCompanyRequests";
 import AdminEventRequests from "./pages/admin/AdminEventRequests";
 import AssociationProfileView from "./pages/admin/AssociationProfileView";
 import CreateAssociation from "./pages/admin/CreateAssociation";
+import BrowseCompanies from "./pages/member/BrowseCompanies";
+import BrowseAssociations from "./pages/member/BrowseAssociations";
+import CompanyProfileView from "./pages/member/CompanyProfileView";
+import MemberAssociationProfileView from "./pages/member/AssociationProfileView";
 import CreateCompany from "./pages/admin/CreateCompany";
 import CreateUser from "./pages/admin/CreateUser";
 import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
@@ -320,6 +324,38 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <BrowseMembers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/member/browse-companies" 
+            element={
+              <ProtectedRoute>
+                <BrowseCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/member/browse-associations" 
+            element={
+              <ProtectedRoute>
+                <BrowseAssociations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/member/company/:id" 
+            element={
+              <ProtectedRoute>
+                <CompanyProfileView />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/member/association/:id" 
+            element={
+              <ProtectedRoute>
+                <MemberAssociationProfileView />
               </ProtectedRoute>
             } 
           />

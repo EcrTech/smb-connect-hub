@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, MessageSquare, TrendingUp, LogOut } from 'lucide-react';
+import { Building2, Users, MessageSquare, TrendingUp, LogOut, Building } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -182,9 +182,13 @@ export default function MemberDashboard() {
                 <Users className="w-4 h-4 mr-2" />
                 Find Members
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/companies')}>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/member/browse-companies')}>
                 <Building2 className="w-4 h-4 mr-2" />
                 Browse Companies
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/member/browse-associations')}>
+                <Building className="w-4 h-4 mr-2" />
+                Browse Associations
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/connections')}>
                 <Users className="w-4 h-4 mr-2" />
