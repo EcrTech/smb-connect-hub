@@ -43,7 +43,27 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Delete the user (this will cascade delete member records due to foreign key constraints)
+        // Hard delete from members table first
+        const { error: memberError } = await supabaseClient
+          .from('members')
+          .delete()
+          .eq('user_id', user.id);
+        
+        if (memberError) {
+          console.log(`Error deleting member record for ${email}:`, memberError.message);
+        }
+
+        // Hard delete from profiles table
+        const { error: profileError } = await supabaseClient
+          .from('profiles')
+          .delete()
+          .eq('id', user.id);
+        
+        if (profileError) {
+          console.log(`Error deleting profile for ${email}:`, profileError.message);
+        }
+
+        // Finally, delete the auth user
         const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(user.id);
 
         if (deleteError) throw deleteError;
