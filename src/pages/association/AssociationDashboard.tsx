@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, LogOut, Settings, Radio, Calendar } from 'lucide-react';
+import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,6 +21,10 @@ export default function AssociationDashboard() {
     newMembers1Day: 0,
     newMembers7Days: 0,
     newMembers30Days: 0,
+    onboardingTotal: 0,
+    onboardingCompleted: 0,
+    onboardingInProgress: 0,
+    onboardingCompletionRate: 0,
   });
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -123,6 +127,35 @@ export default function AssociationDashboard() {
         .eq('association_id', associationId)
         .eq('status', 'pending');
 
+      // Load onboarding stats for association members
+      const { data: memberUserIds } = await supabase
+        .from('members')
+        .select('user_id')
+        .in('company_id', companies?.map(c => c.id) || [])
+        .eq('is_active', true);
+
+      const userIds = memberUserIds?.map(m => m.user_id) || [];
+      
+      const [
+        { count: onboardingTotal },
+        { count: onboardingCompleted },
+      ] = await Promise.all([
+        supabase
+          .from('user_onboarding')
+          .select('*', { count: 'exact', head: true })
+          .in('user_id', userIds.length > 0 ? userIds : ['']),
+        supabase
+          .from('user_onboarding')
+          .select('*', { count: 'exact', head: true })
+          .in('user_id', userIds.length > 0 ? userIds : [''])
+          .eq('is_completed', true),
+      ]);
+
+      const onboardingInProgress = (onboardingTotal || 0) - (onboardingCompleted || 0);
+      const onboardingCompletionRate = onboardingTotal && onboardingTotal > 0
+        ? Math.round((onboardingCompleted || 0) / onboardingTotal * 100)
+        : 0;
+
       setStats({
         totalCompanies: companiesCount || 0,
         totalMembers,
@@ -130,6 +163,10 @@ export default function AssociationDashboard() {
         newMembers1Day,
         newMembers7Days,
         newMembers30Days,
+        onboardingTotal: onboardingTotal || 0,
+        onboardingCompleted: onboardingCompleted || 0,
+        onboardingInProgress,
+        onboardingCompletionRate,
       });
     } catch (error: any) {
       console.error('Error loading stats:', error);
@@ -259,6 +296,64 @@ export default function AssociationDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Onboarding Stats Section */}
+        <Card className="border-none shadow-lg">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              <CardTitle>Member Onboarding Analytics</CardTitle>
+            </div>
+            <CardDescription>Track how members in your association are completing onboarding</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-20 animate-pulse bg-muted rounded"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span className="text-sm">Total Members</span>
+                  </div>
+                  <div className="text-3xl font-bold">{stats.onboardingTotal}</div>
+                  <p className="text-xs text-muted-foreground">Started onboarding</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <span className="text-sm">Completed</span>
+                  </div>
+                  <div className="text-3xl font-bold text-green-600">{stats.onboardingCompleted}</div>
+                  <p className="text-xs text-muted-foreground">Finished onboarding</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm">In Progress</span>
+                  </div>
+                  <div className="text-3xl font-bold text-orange-600">{stats.onboardingInProgress}</div>
+                  <p className="text-xs text-muted-foreground">Currently onboarding</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm">Completion Rate</span>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-600">{stats.onboardingCompletionRate}%</div>
+                  <p className="text-xs text-muted-foreground">Overall completion</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <Card>

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings, LogOut } from "lucide-react";
+import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings, LogOut, GraduationCap, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -62,6 +62,10 @@ const AdminAnalytics = () => {
     newUsers1Day: 0,
     newUsers7Days: 0,
     newUsers30Days: 0,
+    onboardingTotal: 0,
+    onboardingCompleted: 0,
+    onboardingInProgress: 0,
+    onboardingCompletionRate: 0,
   });
   
   const [growthData, setGrowthData] = useState<TimeSeriesData[]>([]);
@@ -124,12 +128,16 @@ const AdminAnalytics = () => {
         { count: associationsCount },
         { count: emailsCount },
         { count: whatsappCount },
+        { count: onboardingTotal },
+        { count: onboardingCompleted },
       ] = await Promise.all([
         supabase.from('profiles').select('*', { count: 'exact', head: true }),
         supabase.from('companies').select('*', { count: 'exact', head: true }),
         supabase.from('associations').select('*', { count: 'exact', head: true }),
         supabase.from('email_messages').select('*', { count: 'exact', head: true }),
         supabase.from('whatsapp_messages').select('*', { count: 'exact', head: true }),
+        supabase.from('user_onboarding').select('*', { count: 'exact', head: true }),
+        supabase.from('user_onboarding').select('*', { count: 'exact', head: true }).eq('is_completed', true),
       ]);
 
       // Calculate active users (users who have logged in the last 7 days)
@@ -149,6 +157,11 @@ const AdminAnalytics = () => {
         supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', getDaysAgo(30)),
       ]);
 
+      const onboardingInProgress = (onboardingTotal || 0) - (onboardingCompleted || 0);
+      const onboardingCompletionRate = onboardingTotal && onboardingTotal > 0 
+        ? Math.round((onboardingCompleted || 0) / onboardingTotal * 100) 
+        : 0;
+
       setStats({
         totalMembers: membersCount || 0,
         totalCompanies: companiesCount || 0,
@@ -159,6 +172,10 @@ const AdminAnalytics = () => {
         newUsers1Day: newUsers1Day || 0,
         newUsers7Days: newUsers7Days || 0,
         newUsers30Days: newUsers30Days || 0,
+        onboardingTotal: onboardingTotal || 0,
+        onboardingCompleted: onboardingCompleted || 0,
+        onboardingInProgress,
+        onboardingCompletionRate,
       });
 
       // Load growth data
@@ -447,6 +464,56 @@ const AdminAnalytics = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Onboarding Stats Section */}
+      <Card className="border-none shadow-lg" data-tour="analytics">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            <CardTitle>User Onboarding Analytics</CardTitle>
+          </div>
+          <CardDescription>Track how users are completing their onboarding journey</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">Total Users</span>
+              </div>
+              <div className="text-3xl font-bold">{stats.onboardingTotal}</div>
+              <p className="text-xs text-muted-foreground">Started onboarding</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <span className="text-sm">Completed</span>
+              </div>
+              <div className="text-3xl font-bold text-green-600">{stats.onboardingCompleted}</div>
+              <p className="text-xs text-muted-foreground">Finished onboarding</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4 text-orange-600" />
+                <span className="text-sm">In Progress</span>
+              </div>
+              <div className="text-3xl font-bold text-orange-600">{stats.onboardingInProgress}</div>
+              <p className="text-xs text-muted-foreground">Currently onboarding</p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <span className="text-sm">Completion Rate</span>
+              </div>
+              <div className="text-3xl font-bold text-blue-600">{stats.onboardingCompletionRate}%</div>
+              <p className="text-xs text-muted-foreground">Overall completion</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Growth Trends */}
       <Card className="border-none shadow-lg hover:shadow-xl transition-all">
