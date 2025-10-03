@@ -241,14 +241,18 @@ export default function MemberFeed() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    // Validate image upload
+    const { validateImageUpload } = await import('@/lib/uploadValidation');
+    const validation = await validateImageUpload(file);
+    
+    if (!validation.valid) {
       toast({
-        title: 'Error',
-        description: 'Please select an image file',
+        title: 'Validation Error',
+        description: validation.error,
         variant: 'destructive',
       });
       return;

@@ -67,19 +67,14 @@ export function BulkSendAssociationsDialog({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
+    // Validate image upload
+    const { validateImageUpload } = await import('@/lib/uploadValidation');
+    const validation = await validateImageUpload(file);
+    
+    if (!validation.valid) {
       toast({
-        title: 'Error',
-        description: 'Please upload an image file',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'Error',
-        description: 'Image size should be less than 5MB',
+        title: 'Validation Error',
+        description: validation.error,
         variant: 'destructive',
       });
       return;

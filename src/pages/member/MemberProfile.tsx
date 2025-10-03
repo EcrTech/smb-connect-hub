@@ -306,6 +306,22 @@ export default function MemberProfile() {
 
     try {
       setUploading(true);
+
+      // Validate based on type
+      const { validateAvatarUpload, validateCoverImageUpload } = await import('@/lib/uploadValidation');
+      const validation = type === 'avatar' 
+        ? await validateAvatarUpload(file)
+        : await validateCoverImageUpload(file);
+
+      if (!validation.valid) {
+        toast({
+          title: 'Validation Error',
+          description: validation.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${currentUser}/${type}-${Date.now()}.${fileExt}`;
 
