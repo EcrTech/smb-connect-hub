@@ -15,6 +15,7 @@ import { ArrowLeft, UserPlus, Search, Check, Clock, X, Filter, Building2, MapPin
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RoleNavigation } from '@/components/RoleNavigation';
 
 interface Member {
   id: string;
@@ -376,6 +377,8 @@ export default function BrowseMembers() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <RoleNavigation />
+        
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Browse Members</h1>
           <p className="text-muted-foreground">Connect with professionals in your network</p>

@@ -12,6 +12,7 @@ import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { FloatingChat } from '@/components/messages/FloatingChat';
 import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
+import { RoleNavigation } from '@/components/RoleNavigation';
 import { 
   ArrowLeft, 
   Heart, 
@@ -474,6 +475,8 @@ export default function MemberFeed() {
       </header>
 
       <main className="container mx-auto px-4 py-6 max-w-3xl">
+        <RoleNavigation />
+        
         {/* Create Post Card */}
         <Card className="mb-6">
           <CardContent className="pt-6 pb-4">

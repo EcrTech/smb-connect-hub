@@ -7,6 +7,7 @@ import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, Che
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { RoleNavigation } from '@/components/RoleNavigation';
 
 
 export default function AssociationDashboard() {
@@ -232,6 +233,8 @@ export default function AssociationDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        <RoleNavigation />
+        
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">
             Welcome, Association Admin!
