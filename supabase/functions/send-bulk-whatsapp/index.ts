@@ -54,16 +54,22 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    // Send WhatsApp messages in batches to avoid rate limits
-    const batchSize = 10;
+    // Send WhatsApp messages in batches with timeout protection
+    const BATCH_SIZE = 15;
+    const REQUEST_TIMEOUT = 30000;
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
     const auth = btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
 
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
       
       await Promise.all(
         batch.map(async (recipient) => {
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
+          );
+          
+          const sendPromise = (async () => {
           try {
             const formData = new URLSearchParams();
             formData.append('From', `whatsapp:${TWILIO_WHATSAPP_FROM}`);
@@ -92,12 +98,20 @@ serve(async (req) => {
             results.failed++;
             results.errors.push(`${recipient.phone}: ${error.message}`);
           }
+          })();
+
+          try {
+            await Promise.race([sendPromise, timeoutPromise]);
+          } catch (error: any) {
+            results.failed++;
+            results.errors.push(`${recipient.phone}: ${error.message}`);
+          }
         })
       );
 
-      // Add delay between batches to respect rate limits
-      if (i + batchSize < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add delay between batches
+      if (i + BATCH_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 

@@ -73,6 +73,9 @@ export default function UserManagement() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [isHardDeleting, setIsHardDeleting] = useState(false);
+  const [hardDeletePassword, setHardDeletePassword] = useState('');
+  const [hardDeleteNotes, setHardDeleteNotes] = useState('');
+  const [showHardDeleteDialog, setShowHardDeleteDialog] = useState(false);
   const { toast } = useToast();
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -461,7 +464,12 @@ export default function UserManagement() {
   const handleHardDeleteSelected = async () => {
     if (selectedUserIds.size === 0) return;
 
-    if (!confirm(`Are you sure you want to PERMANENTLY DELETE ${selectedUserIds.size} user(s)? This will remove them from all tables including auth, profiles, members, admin_users, association_managers, and company_admins. THIS CANNOT BE UNDONE.`)) {
+    if (!hardDeletePassword || !hardDeleteNotes) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password and deletion notes are required',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -470,6 +478,8 @@ export default function UserManagement() {
       const { data, error } = await supabase.functions.invoke('hard-delete-users', {
         body: {
           userIds: Array.from(selectedUserIds),
+          password: hardDeletePassword,
+          notes: hardDeleteNotes,
         },
       });
 
@@ -549,11 +559,11 @@ export default function UserManagement() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleHardDeleteSelected}
+                  onClick={() => setShowHardDeleteDialog(true)}
                   disabled={isHardDeleting}
                 >
                   <UserX className="h-4 w-4 mr-2" />
-                  {isHardDeleting ? 'Deleting...' : 'Hard Delete Selected'}
+                  Hard Delete Selected
                 </Button>
               </div>
             )}
@@ -854,6 +864,53 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Hard Delete Confirmation Dialog */}
+      <Dialog open={showHardDeleteDialog} onOpenChange={setShowHardDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Hard Delete</DialogTitle>
+            <DialogDescription>
+              You are about to permanently delete {selectedUserIds.size} user(s). This will remove them from all tables.
+              THIS ACTION CANNOT BE UNDONE.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="hard-delete-password">Your Password</Label>
+              <Input
+                id="hard-delete-password"
+                type="password"
+                value={hardDeletePassword}
+                onChange={(e) => setHardDeletePassword(e.target.value)}
+                placeholder="Enter your password"
+              />
+            </div>
+            <div>
+              <Label htmlFor="hard-delete-notes">Deletion Notes (Required)</Label>
+              <Textarea
+                id="hard-delete-notes"
+                value={hardDeleteNotes}
+                onChange={(e) => setHardDeleteNotes(e.target.value)}
+                placeholder="Reason for deletion..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHardDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleHardDeleteSelected}
+              disabled={!hardDeletePassword || !hardDeleteNotes || isHardDeleting}
+            >
+              {isHardDeleting ? 'Deleting...' : 'Confirm Hard Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

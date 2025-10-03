@@ -53,13 +53,20 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    // Send emails in batches to avoid rate limits
-    const batchSize = 10;
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
+    // Send emails in batches with timeout protection
+    const BATCH_SIZE = 20;
+    const REQUEST_TIMEOUT = 30000; // 30 seconds per request
+    
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
       
       await Promise.all(
         batch.map(async (recipient) => {
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
+          );
+          
+          const sendPromise = (async () => {
           try {
             const senderResponse = await fetch('https://api.sender.net/v2/email', {
               method: 'POST',
@@ -100,12 +107,20 @@ serve(async (req) => {
             results.failed++;
             results.errors.push(`${recipient.email}: ${error.message}`);
           }
+          })();
+
+          try {
+            await Promise.race([sendPromise, timeoutPromise]);
+          } catch (error: any) {
+            results.failed++;
+            results.errors.push(`${recipient.email}: ${error.message}`);
+          }
         })
       );
 
-      // Add delay between batches to respect rate limits
-      if (i + batchSize < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+      // Add delay between batches
+      if (i + BATCH_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 

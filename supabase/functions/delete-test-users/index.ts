@@ -21,60 +21,59 @@ Deno.serve(async (req) => {
     );
 
     const { emails }: DeleteUsersRequest = await req.json();
+    
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'Emails array is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     console.log(`Deleting ${emails.length} users...`);
+
+    // Fetch all users once (avoid N+1 problem)
+    const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers();
+    if (listError) throw listError;
+
+    // Create email to user ID map
+    const emailToUser = new Map(users?.map(u => [u.email, u]) || []);
 
     let successCount = 0;
     let failCount = 0;
     const errors: string[] = [];
 
-    for (const email of emails) {
-      try {
-        // Get user by email
-        const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers();
-        
-        if (listError) throw listError;
+    // Process in batches
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE);
+      
+      await Promise.all(batch.map(async (email) => {
+        try {
+          const user = emailToUser.get(email);
+          
+          if (!user) {
+            failCount++;
+            errors.push(`User not found: ${email}`);
+            return;
+          }
 
-        const user = users?.find(u => u.email === email);
-        
-        if (!user) {
-          console.log(`User not found: ${email}`);
+          // Delete in parallel
+          await Promise.all([
+            supabaseClient.from('members').delete().eq('user_id', user.id),
+            supabaseClient.from('profiles').delete().eq('id', user.id),
+          ]);
+
+          const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(user.id);
+          if (deleteError) throw deleteError;
+
+          successCount++;
+          console.log(`Deleted user: ${email}`);
+        } catch (error: any) {
           failCount++;
-          errors.push(`User not found: ${email}`);
-          continue;
+          errors.push(`${email}: ${error.message}`);
+          console.error(`Failed to delete user ${email}:`, error);
         }
-
-        // Hard delete from members table first
-        const { error: memberError } = await supabaseClient
-          .from('members')
-          .delete()
-          .eq('user_id', user.id);
-        
-        if (memberError) {
-          console.log(`Error deleting member record for ${email}:`, memberError.message);
-        }
-
-        // Hard delete from profiles table
-        const { error: profileError } = await supabaseClient
-          .from('profiles')
-          .delete()
-          .eq('id', user.id);
-        
-        if (profileError) {
-          console.log(`Error deleting profile for ${email}:`, profileError.message);
-        }
-
-        // Finally, delete the auth user
-        const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(user.id);
-
-        if (deleteError) throw deleteError;
-
-        successCount++;
-        console.log(`Deleted user: ${email}`);
-      } catch (error: any) {
-        failCount++;
-        errors.push(`${email}: ${error.message}`);
-        console.error(`Failed to delete user ${email}:`, error);
-      }
+      }));
     }
 
     console.log(`Deletion complete: ${successCount} deleted, ${failCount} failed`);
