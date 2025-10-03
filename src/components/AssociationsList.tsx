@@ -63,6 +63,11 @@ export function AssociationsList() {
   const [hardDeletePassword, setHardDeletePassword] = useState('');
   const [hardDeleteNotes, setHardDeleteNotes] = useState('');
   const [isHardDeleting, setIsHardDeleting] = useState(false);
+  const [selectedAssociations, setSelectedAssociations] = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeletePassword, setBulkDeletePassword] = useState('');
+  const [bulkDeleteNotes, setBulkDeleteNotes] = useState('');
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -256,6 +261,67 @@ export function AssociationsList() {
     }
   };
 
+  const toggleAssociationSelection = (associationId: string) => {
+    const newSelection = new Set(selectedAssociations);
+    if (newSelection.has(associationId)) {
+      newSelection.delete(associationId);
+    } else {
+      newSelection.add(associationId);
+    }
+    setSelectedAssociations(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedAssociations.size === displayedAssociations.length) {
+      setSelectedAssociations(new Set());
+    } else {
+      setSelectedAssociations(new Set(displayedAssociations.map(a => a.id)));
+    }
+  };
+
+  const handleBulkHardDelete = async () => {
+    if (!bulkDeletePassword.trim() || !bulkDeleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('hard-delete-associations', {
+        body: {
+          associationIds: Array.from(selectedAssociations),
+          password: bulkDeletePassword,
+          notes: bulkDeleteNotes
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.failed > 0) {
+        toast.error(`${data.success} deleted, ${data.failed} failed`);
+      } else {
+        toast.success(`${data.success} associations permanently deleted`);
+      }
+      
+      setShowBulkDelete(false);
+      setBulkDeletePassword('');
+      setBulkDeleteNotes('');
+      setSelectedAssociations(new Set());
+      loadAssociations();
+    } catch (error: any) {
+      console.error('Error bulk deleting associations:', error);
+      toast.error(error.message || 'Failed to bulk delete associations');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const exportToCSV = () => {
     const headers = ['Association Name', 'Email', 'Phone', 'Website', 'City', 'State', 'Country', 'Status'];
     const csvData = filteredAssociations.map(association => [
@@ -301,6 +367,7 @@ export function AssociationsList() {
           <h2 className="text-2xl font-bold">Associations</h2>
           <p className="text-muted-foreground">
             {filteredAssociations.length} of {associations.length} associations
+            {selectedAssociations.size > 0 && ` • ${selectedAssociations.size} selected`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -314,6 +381,15 @@ export function AssociationsList() {
             />
           </div>
           <div className="flex gap-2">
+            {isSuperAdmin && selectedAssociations.size > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowBulkDelete(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2 fill-current" />
+                Hard Delete ({selectedAssociations.size})
+              </Button>
+            )}
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               size="icon"
@@ -442,6 +518,16 @@ export function AssociationsList() {
           <Table>
             <TableHeader>
               <TableRow>
+                {isSuperAdmin && (
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedAssociations.size === displayedAssociations.length && displayedAssociations.length > 0}
+                      onChange={toggleSelectAll}
+                      className="cursor-pointer"
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Association</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
@@ -457,6 +543,16 @@ export function AssociationsList() {
                   className="cursor-pointer"
                   onClick={() => navigate(`/admin/associations/${association.id}`)}
                 >
+                  {isSuperAdmin && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedAssociations.has(association.id)}
+                        onChange={() => toggleAssociationSelection(association.id)}
+                        className="cursor-pointer"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -585,6 +681,60 @@ export function AssociationsList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isVerifying ? 'Verifying...' : 'Delete Association'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDelete} onOpenChange={(open) => {
+        if (!open) {
+          setShowBulkDelete(false);
+          setBulkDeletePassword('');
+          setBulkDeleteNotes('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ BULK HARD DELETE - PERMANENT DELETION</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to PERMANENTLY delete {selectedAssociations.size} associations and ALL their associated data including companies, members, managers, and all records. This action CANNOT be undone and the data CANNOT be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-delete-notes-assoc">Reason for Permanent Deletion *</Label>
+              <Textarea
+                id="bulk-delete-notes-assoc"
+                placeholder="Explain why these associations need to be permanently deleted..."
+                value={bulkDeleteNotes}
+                onChange={(e) => setBulkDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulk-delete-password-assoc">Confirm Your Password *</Label>
+              <Input
+                id="bulk-delete-password-assoc"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={bulkDeletePassword}
+                onChange={(e) => setBulkDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this PERMANENT action
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={handleBulkHardDelete}
+              disabled={!bulkDeletePassword.trim() || !bulkDeleteNotes.trim() || isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? 'Permanently Deleting...' : `PERMANENTLY DELETE ${selectedAssociations.size} ASSOCIATIONS`}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

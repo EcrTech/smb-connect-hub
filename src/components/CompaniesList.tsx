@@ -65,6 +65,11 @@ export function CompaniesList() {
   const [hardDeletePassword, setHardDeletePassword] = useState('');
   const [hardDeleteNotes, setHardDeleteNotes] = useState('');
   const [isHardDeleting, setIsHardDeleting] = useState(false);
+  const [selectedCompanies, setSelectedCompanies] = useState<Set<string>>(new Set());
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
+  const [bulkDeletePassword, setBulkDeletePassword] = useState('');
+  const [bulkDeleteNotes, setBulkDeleteNotes] = useState('');
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
@@ -263,6 +268,67 @@ export function CompaniesList() {
     }
   };
 
+  const toggleCompanySelection = (companyId: string) => {
+    const newSelection = new Set(selectedCompanies);
+    if (newSelection.has(companyId)) {
+      newSelection.delete(companyId);
+    } else {
+      newSelection.add(companyId);
+    }
+    setSelectedCompanies(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCompanies.size === displayedCompanies.length) {
+      setSelectedCompanies(new Set());
+    } else {
+      setSelectedCompanies(new Set(displayedCompanies.map(c => c.id)));
+    }
+  };
+
+  const handleBulkHardDelete = async () => {
+    if (!bulkDeletePassword.trim() || !bulkDeleteNotes.trim()) {
+      toast.error('Password and notes are required');
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('hard-delete-companies', {
+        body: {
+          companyIds: Array.from(selectedCompanies),
+          password: bulkDeletePassword,
+          notes: bulkDeleteNotes
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.failed > 0) {
+        toast.error(`${data.success} deleted, ${data.failed} failed`);
+      } else {
+        toast.success(`${data.success} companies permanently deleted`);
+      }
+      
+      setShowBulkDelete(false);
+      setBulkDeletePassword('');
+      setBulkDeleteNotes('');
+      setSelectedCompanies(new Set());
+      loadCompanies();
+    } catch (error: any) {
+      console.error('Error bulk deleting companies:', error);
+      toast.error(error.message || 'Failed to bulk delete companies');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const exportToCSV = () => {
     const headers = ['Company Name', 'Association', 'Email', 'Phone', 'Website', 'City', 'State', 'Status', 'Verified'];
     const csvData = filteredCompanies.map(company => [
@@ -309,6 +375,7 @@ export function CompaniesList() {
           <h2 className="text-2xl font-bold">Companies</h2>
           <p className="text-muted-foreground">
             {filteredCompanies.length} of {companies.length} companies
+            {selectedCompanies.size > 0 && ` • ${selectedCompanies.size} selected`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -322,6 +389,15 @@ export function CompaniesList() {
             />
           </div>
           <div className="flex gap-2">
+            {isSuperAdmin && selectedCompanies.size > 0 && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowBulkDelete(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2 fill-current" />
+                Hard Delete ({selectedCompanies.size})
+              </Button>
+            )}
             <Button
               variant={viewMode === 'card' ? 'default' : 'outline'}
               size="icon"
@@ -450,6 +526,16 @@ export function CompaniesList() {
           <Table>
             <TableHeader>
               <TableRow>
+                {isSuperAdmin && (
+                  <TableHead className="w-12">
+                    <input
+                      type="checkbox"
+                      checked={selectedCompanies.size === displayedCompanies.length && displayedCompanies.length > 0}
+                      onChange={toggleSelectAll}
+                      className="cursor-pointer"
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Company</TableHead>
                 <TableHead>Association</TableHead>
                 <TableHead>Email</TableHead>
@@ -466,6 +552,16 @@ export function CompaniesList() {
                   className="cursor-pointer"
                   onClick={() => navigate(`/admin/companies/${company.id}`)}
                 >
+                  {isSuperAdmin && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedCompanies.has(company.id)}
+                        onChange={() => toggleCompanySelection(company.id)}
+                        className="cursor-pointer"
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <Building className="h-4 w-4 text-muted-foreground" />
@@ -583,6 +679,60 @@ export function CompaniesList() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isVerifying ? 'Verifying...' : 'Delete Company'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showBulkDelete} onOpenChange={(open) => {
+        if (!open) {
+          setShowBulkDelete(false);
+          setBulkDeletePassword('');
+          setBulkDeleteNotes('');
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ BULK HARD DELETE - PERMANENT DELETION</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to PERMANENTLY delete {selectedCompanies.size} companies and ALL their associated data including members, admins, and records. This action CANNOT be undone and the data CANNOT be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-delete-notes">Reason for Permanent Deletion *</Label>
+              <Textarea
+                id="bulk-delete-notes"
+                placeholder="Explain why these companies need to be permanently deleted..."
+                value={bulkDeleteNotes}
+                onChange={(e) => setBulkDeleteNotes(e.target.value)}
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulk-delete-password">Confirm Your Password *</Label>
+              <Input
+                id="bulk-delete-password"
+                type="password"
+                placeholder="Enter your password to confirm"
+                value={bulkDeletePassword}
+                onChange={(e) => setBulkDeletePassword(e.target.value)}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this PERMANENT action
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              onClick={handleBulkHardDelete}
+              disabled={!bulkDeletePassword.trim() || !bulkDeleteNotes.trim() || isBulkDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkDeleting ? 'Permanently Deleting...' : `PERMANENTLY DELETE ${selectedCompanies.size} COMPANIES`}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
