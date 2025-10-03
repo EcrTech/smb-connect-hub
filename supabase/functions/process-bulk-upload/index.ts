@@ -109,6 +109,8 @@ Deno.serve(async (req) => {
               pan_number: record.pan_number || null,
               business_type: record.business_type || null,
               industry_type: record.industry_type || null,
+              employee_count: record.employee_count ? parseInt(record.employee_count) : null,
+              annual_turnover: record.annual_turnover ? parseFloat(record.annual_turnover) : null,
               is_active: true,
               is_verified: false,
             });

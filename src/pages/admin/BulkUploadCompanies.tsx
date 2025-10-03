@@ -13,8 +13,8 @@ export default function BulkUploadCompanies() {
   const [uploading, setUploading] = useState(false);
 
   const downloadTemplate = () => {
-    const csvContent = 'association_email,name,description,email,phone,website,address,city,state,country,postal_code,gst_number,pan_number,business_type,industry_type\n' +
-      ',Example Company,"Sample company",company@example.com,+91-9876543210,https://company.com,"456 Business Rd",Mumbai,Maharashtra,India,400002,22AAAAA0000A1Z5,AAAAA0000A,Private Limited,Technology\n';
+    const csvContent = 'association_email,name,description,email,phone,website,address,city,state,country,postal_code,gst_number,pan_number,business_type,industry_type,employee_count,annual_turnover\n' +
+      ',Example Company,"Sample company",company@example.com,+91-9876543210,https://company.com,"456 Business Rd",Mumbai,Maharashtra,India,400002,22AAAAA0000A1Z5,AAAAA0000A,Private Limited,Technology,50,10000000\n';
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -110,7 +110,7 @@ export default function BulkUploadCompanies() {
           <CardHeader>
             <CardTitle>Upload Companies CSV</CardTitle>
             <CardDescription>
-              The CSV file should include: association_email, name, description, email, phone, website, address, city, state, country, postal_code, gst_number, pan_number, business_type, industry_type
+              The CSV file should include: association_email, name, description, email, phone, website, address, city, state, country, postal_code, gst_number, pan_number, business_type, industry_type, employee_count, annual_turnover
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
