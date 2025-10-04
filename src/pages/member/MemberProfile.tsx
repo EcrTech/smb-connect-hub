@@ -23,7 +23,8 @@ import {
   Phone,
   Edit,
   Camera,
-  MessageSquare
+  MessageSquare,
+  Building2
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
 import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperienceDialog';
@@ -84,6 +85,15 @@ interface Certification {
   credential_url: string | null;
 }
 
+interface Association {
+  id: string;
+  name: string;
+  description: string | null;
+  logo: string | null;
+  city: string | null;
+  state: string | null;
+}
+
 export default function MemberProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -93,6 +103,7 @@ export default function MemberProfile() {
   const [education, setEducation] = useState<Education[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -283,6 +294,44 @@ export default function MemberProfile() {
         .eq('user_id', userId)
         .order('issue_date', { ascending: false });
       setCertifications(certsData || []);
+
+      // Load associations - both direct (as manager) and indirect (via company)
+      const associationIds = new Set<string>();
+      
+      // Get associations where user is a manager
+      const { data: managerData } = await supabase
+        .from('association_managers')
+        .select('association_id')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+      
+      managerData?.forEach(m => associationIds.add(m.association_id));
+
+      // Get associations through company membership
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('company_id, companies!inner(association_id)')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      memberData?.forEach(m => {
+        const company = m.companies as any;
+        if (company?.association_id) {
+          associationIds.add(company.association_id);
+        }
+      });
+
+      // Fetch association details
+      if (associationIds.size > 0) {
+        const { data: associationsData } = await supabase
+          .from('associations')
+          .select('id, name, description, logo, city, state')
+          .in('id', Array.from(associationIds))
+          .eq('is_active', true)
+          .order('name');
+        
+        setAssociations(associationsData || []);
+      }
 
     } catch (error: any) {
       toast({
@@ -706,6 +755,57 @@ export default function MemberProfile() {
                   ))}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Associated Associations */}
+        {associations.length > 0 && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Building2 className="w-5 h-5" />
+                <h2 className="text-xl font-semibold">Associated Associations</h2>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {associations.map((association) => (
+                  <Card key={association.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/member/associations/${association.id}`)}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-start gap-3">
+                        {association.logo ? (
+                          <img 
+                            src={association.logo} 
+                            alt={association.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                            <Building2 className="w-6 h-6 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold truncate">{association.name}</h3>
+                          {association.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                              {association.description}
+                            </p>
+                          )}
+                          {(association.city || association.state) && (
+                            <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+                              <MapPin className="w-3 h-3" />
+                              <span className="truncate">
+                                {association.city}
+                                {association.city && association.state && ', '}
+                                {association.state}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
