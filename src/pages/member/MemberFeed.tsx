@@ -52,6 +52,12 @@ interface Post {
   user_liked: boolean;
 }
 
+interface Association {
+  id: string;
+  name: string;
+  logo: string | null;
+}
+
 export default function MemberFeed() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,6 +73,7 @@ export default function MemberFeed() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
+  const [associations, setAssociations] = useState<Association[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -109,6 +116,44 @@ export default function MemberFeed() {
 
       if (profileData) {
         setProfile(profileData);
+      }
+
+      // Load user's associations
+      const associationIds = new Set<string>();
+      
+      // Get associations where user is a manager
+      const { data: managerData } = await supabase
+        .from('association_managers')
+        .select('association_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      
+      managerData?.forEach(m => associationIds.add(m.association_id));
+
+      // Get associations through company membership
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('company_id, companies!inner(association_id)')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
+      memberData?.forEach(m => {
+        const company = m.companies as any;
+        if (company?.association_id) {
+          associationIds.add(company.association_id);
+        }
+      });
+
+      // Fetch association details
+      if (associationIds.size > 0) {
+        const { data: associationsData } = await supabase
+          .from('associations')
+          .select('id, name, logo')
+          .in('id', Array.from(associationIds))
+          .eq('is_active', true)
+          .order('name');
+        
+        setAssociations(associationsData || []);
       }
     } catch (error: any) {
       console.error('Error loading profile:', error);
@@ -476,6 +521,37 @@ export default function MemberFeed() {
 
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <RoleNavigation />
+        
+        {/* Associated Associations Ribbon */}
+        {associations.length > 0 && (
+          <Card className="mb-4">
+            <CardContent className="py-3">
+              <div className="flex items-center gap-3 overflow-x-auto">
+                <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Your Associations:</span>
+                <div className="flex items-center gap-3">
+                  {associations.map((association) => (
+                    <div
+                      key={association.id}
+                      onClick={() => navigate(`/member/associations/${association.id}`)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 cursor-pointer transition-colors whitespace-nowrap"
+                    >
+                      {association.logo ? (
+                        <img 
+                          src={association.logo} 
+                          alt={association.name}
+                          className="w-5 h-5 rounded-full object-cover"
+                        />
+                      ) : (
+                        <Building2 className="w-4 h-4 text-primary" />
+                      )}
+                      <span className="text-sm font-medium">{association.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Create Post Card */}
         <Card className="mb-6">
