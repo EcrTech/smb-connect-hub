@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, MessageSquare, LogOut, Settings, Radio, GraduationCap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
+import { Building2, Users, MessageSquare, LogOut, Settings, Radio, GraduationCap, CheckCircle2, Clock, TrendingUp, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -308,7 +308,7 @@ export default function CompanyDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Company Management</CardTitle>
             <CardDescription>Manage your company and team</CardDescription>
@@ -332,6 +332,20 @@ export default function CompanyDashboard() {
                 Settings
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Upload Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Upload</CardTitle>
+            <CardDescription>Upload team members using CSV file</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/company/bulk-upload-users')}>
+              <Upload className="w-4 h-4 mr-2" />
+              Bulk Upload Users
+            </Button>
           </CardContent>
         </Card>
       </main>

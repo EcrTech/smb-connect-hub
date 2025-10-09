@@ -41,7 +41,10 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationProfile from "./pages/association/AssociationProfile";
+import AssociationBulkUploadCompanies from "./pages/association/BulkUploadCompanies";
+import AssociationBulkUploadUsers from "./pages/association/BulkUploadUsers";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
+import CompanyBulkUploadUsers from "./pages/company/BulkUploadUsers";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
 import MemberConnections from "./pages/member/MemberConnections";
@@ -302,10 +305,34 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/association/bulk-upload-companies" 
+            element={
+              <ProtectedRoute>
+                <AssociationBulkUploadCompanies />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/bulk-upload-users" 
+            element={
+              <ProtectedRoute>
+                <AssociationBulkUploadUsers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/company" 
             element={
               <ProtectedRoute>
                 <CompanyDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/bulk-upload-users" 
+            element={
+              <ProtectedRoute>
+                <CompanyBulkUploadUsers />
               </ProtectedRoute>
             } 
           />

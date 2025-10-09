@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, CheckCircle2, Clock, TrendingUp } from 'lucide-react';
+import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, CheckCircle2, Clock, TrendingUp, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -359,7 +359,7 @@ export default function AssociationDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Association Management</CardTitle>
             <CardDescription>Manage your association and companies</CardDescription>
@@ -390,6 +390,26 @@ export default function AssociationDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Association Profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Upload Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Upload</CardTitle>
+            <CardDescription>Upload multiple records at once using CSV files</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/bulk-upload-companies')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload Companies
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/bulk-upload-users')}>
+                <Upload className="w-4 h-4 mr-2" />
+                Bulk Upload Users
               </Button>
             </div>
           </CardContent>

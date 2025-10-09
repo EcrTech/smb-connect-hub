@@ -8,6 +8,9 @@ const corsHeaders = {
 interface BulkUploadRequest {
   type: 'associations' | 'companies' | 'users';
   csvData: string;
+  associationId?: string;
+  companyId?: string;
+  userId?: string;
 }
 
 Deno.serve(async (req) => {
@@ -21,8 +24,8 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { type, csvData }: BulkUploadRequest = await req.json();
-    console.log(`Processing bulk upload of type: ${type}`);
+    const { type, csvData, associationId, companyId, userId }: BulkUploadRequest = await req.json();
+    console.log(`Processing bulk upload of type: ${type}, associationId: ${associationId}, companyId: ${companyId}, userId: ${userId}`);
 
     // Parse CSV
     const lines = csvData.trim().split('\n');
@@ -76,9 +79,11 @@ Deno.serve(async (req) => {
             if (values[index]) record[header] = values[index];
           });
 
-          // Find association by email if provided
-          let associationId = null;
-          if (record.association_email && record.association_email.trim() !== '') {
+          // Determine association ID based on context or CSV field
+          let finalAssociationId = associationId; // Use context association if provided
+          
+          // Only look up by email if no context association is provided
+          if (!finalAssociationId && record.association_email && record.association_email.trim() !== '') {
             const { data: association, error: assocError } = await supabaseClient
               .from('associations')
               .select('id')
@@ -88,13 +93,28 @@ Deno.serve(async (req) => {
             if (assocError || !association) {
               throw new Error(`Association not found with email: ${record.association_email}`);
             }
-            associationId = association.id;
+            finalAssociationId = association.id;
+          }
+          
+          // Validate association manager permission if context is provided
+          if (associationId && userId) {
+            const { data: managerCheck } = await supabaseClient
+              .from('association_managers')
+              .select('id')
+              .eq('association_id', associationId)
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .maybeSingle();
+            
+            if (!managerCheck) {
+              throw new Error('User is not authorized to create companies for this association');
+            }
           }
 
           const { error } = await supabaseClient
             .from('companies')
             .insert({
-              association_id: associationId,
+              association_id: finalAssociationId,
               name: record.name,
               description: record.description || null,
               email: record.email,
@@ -152,19 +172,57 @@ Deno.serve(async (req) => {
           if (authError) throw authError;
           console.log(`Created user auth: ${record.email}`);
 
-          // Find company by email if provided
-          let companyId = null;
-          if (record.company_email && record.company_email.trim() !== '') {
+          // Determine company ID based on context or CSV field
+          let finalCompanyId = companyId; // Use context company if provided
+          
+          // Only look up by email if no context company is provided
+          if (!finalCompanyId && record.company_email && record.company_email.trim() !== '') {
             const { data: company, error: companyError } = await supabaseClient
               .from('companies')
-              .select('id')
+              .select('id, association_id')
               .eq('email', record.company_email)
               .single();
 
             if (companyError || !company) {
               throw new Error(`Company not found with email: ${record.company_email}`);
             }
-            companyId = company.id;
+            
+            // If association context is provided, validate company belongs to that association
+            if (associationId && company.association_id !== associationId) {
+              throw new Error(`Company ${record.company_email} does not belong to the specified association`);
+            }
+            
+            finalCompanyId = company.id;
+          }
+          
+          // Validate permissions based on context
+          if (companyId && userId) {
+            // Company admin creating users - verify they are admin of this company
+            const { data: memberCheck } = await supabaseClient
+              .from('members')
+              .select('id')
+              .eq('company_id', companyId)
+              .eq('user_id', userId)
+              .in('role', ['owner', 'admin'])
+              .eq('is_active', true)
+              .maybeSingle();
+            
+            if (!memberCheck) {
+              throw new Error('User is not authorized to create users for this company');
+            }
+          } else if (associationId && userId && !companyId) {
+            // Association manager creating users - verify they manage this association
+            const { data: managerCheck } = await supabaseClient
+              .from('association_managers')
+              .select('id')
+              .eq('association_id', associationId)
+              .eq('user_id', userId)
+              .eq('is_active', true)
+              .maybeSingle();
+            
+            if (!managerCheck) {
+              throw new Error('User is not authorized to create users for this association');
+            }
           }
 
           // Create member record
@@ -172,7 +230,7 @@ Deno.serve(async (req) => {
             .from('members')
             .insert({
               user_id: authUser.user.id,
-              company_id: companyId,
+              company_id: finalCompanyId,
               role: record.role || 'member',
               designation: record.designation || null,
               department: record.department || null,
