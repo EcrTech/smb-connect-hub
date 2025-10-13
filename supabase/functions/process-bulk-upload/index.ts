@@ -25,6 +25,18 @@ Deno.serve(async (req) => {
     );
 
     const { type, csvData, associationId, companyId, userId }: BulkUploadRequest = await req.json();
+    
+    // Get auth header to extract user ID for created_by
+    const authHeader = req.headers.get('Authorization');
+    let createdBy: string | null = null;
+    if (authHeader) {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+        createdBy = user?.id || null;
+      } catch (error) {
+        console.log('Could not get user from auth header:', error);
+      }
+    }
     console.log(`Processing bulk upload of type: ${type}, associationId: ${associationId}, companyId: ${companyId}, userId: ${userId}`);
 
     // Parse CSV
@@ -59,6 +71,7 @@ Deno.serve(async (req) => {
               country: record.country || 'India',
               postal_code: record.postal_code || null,
               is_active: true,
+              created_by: createdBy,
             });
 
           if (error) throw error;
@@ -133,6 +146,7 @@ Deno.serve(async (req) => {
               annual_turnover: record.annual_turnover ? parseFloat(record.annual_turnover) : null,
               is_active: true,
               is_verified: false,
+              created_by: createdBy,
             });
 
           if (error) throw error;
@@ -235,6 +249,7 @@ Deno.serve(async (req) => {
               designation: record.designation || null,
               department: record.department || null,
               is_active: true,
+              created_by: createdBy,
             });
 
           if (memberError) throw memberError;

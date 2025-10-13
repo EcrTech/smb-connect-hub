@@ -35,8 +35,10 @@ import {
 interface User {
   id: string;
   email: string;
+  name: string;
   created_at: string;
   roles: string[];
+  created_by?: string;
 }
 
 interface Association {
@@ -166,12 +168,15 @@ export default function UserManagement() {
       // Get user IDs
       const userIds = profiles?.map(p => p.id) || [];
 
-      // Load role assignments for these users
+      // Get emails from auth metadata (requires service role, so we'll get what we can from profiles)
+      // For now, we'll use user IDs as identifiers since we can't access auth.users directly
+
+      // Load role assignments for these users with created_by info
       const [adminData, associationAdminData, companyAdminData, memberData] = await Promise.all([
         supabase.from('admin_users').select('user_id').in('user_id', userIds).eq('is_active', true),
         supabase.from('association_managers').select('user_id').in('user_id', userIds).eq('is_active', true),
         supabase.from('company_admins').select('user_id').in('user_id', userIds).eq('is_active', true),
-        supabase.from('members').select('user_id, role').in('user_id', userIds).eq('is_active', true)
+        supabase.from('members').select('user_id, role, created_by, created_at').in('user_id', userIds).eq('is_active', true)
       ]);
 
       console.log('Admin users:', adminData.data?.length);
@@ -182,17 +187,21 @@ export default function UserManagement() {
       const adminUsers = new Set(adminData.data?.map(a => a.user_id) || []);
       const associationAdmins = new Set(associationAdminData.data?.map(a => a.user_id) || []);
       const companyAdmins = new Set(companyAdminData.data?.map(a => a.user_id) || []);
-      const companyMembers = new Map((memberData.data || []).filter(m => m.role === 'member').map(m => [m.user_id, m.role]));
+      const companyMembers = new Map((memberData.data || []).filter(m => m.role === 'member').map(m => [m.user_id, m]));
 
       const usersWithRoles = (profiles || []).map(profile => {
         const displayName = [profile.first_name, profile.last_name]
           .filter(Boolean)
           .join(' ') || 'Unknown User';
         
+        const memberData = companyMembers.get(profile.id);
+        
         return {
           id: profile.id,
-          email: displayName,
-          created_at: profile.created_at,
+          email: profile.id.substring(0, 8) + '...', // Show partial UUID as identifier
+          name: displayName,
+          created_at: memberData?.created_at || profile.created_at,
+          created_by: memberData?.created_by,
           roles: [
             ...(adminUsers.has(profile.id) ? ['Admin'] : []),
             ...(associationAdmins.has(profile.id) ? ['Association Admin'] : []),
@@ -579,6 +588,7 @@ export default function UserManagement() {
                   />
                 </TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>User ID</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
@@ -593,7 +603,8 @@ export default function UserManagement() {
                       onCheckedChange={() => toggleUserSelection(user.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
                       {(() => {
@@ -634,7 +645,7 @@ export default function UserManagement() {
                         </DialogTrigger>
                         <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Assign Role to {user.email}</DialogTitle>
+                          <DialogTitle>Assign Role to {user.name}</DialogTitle>
                           <DialogDescription>
                             Select a role type and provide necessary details
                             <br />

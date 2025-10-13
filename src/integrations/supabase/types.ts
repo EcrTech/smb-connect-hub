@@ -207,6 +207,7 @@ export type Database = {
           contact_phone: string | null
           country: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           founded_year: number | null
           id: string
@@ -228,6 +229,7 @@ export type Database = {
           contact_phone?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           founded_year?: number | null
           id?: string
@@ -249,6 +251,7 @@ export type Database = {
           contact_phone?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           founded_year?: number | null
           id?: string
@@ -428,6 +431,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           email: string
           employee_count: number | null
@@ -456,6 +460,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           email: string
           employee_count?: number | null
@@ -484,6 +489,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           email?: string
           employee_count?: number | null
@@ -1174,6 +1180,7 @@ export type Database = {
         Row: {
           company_id: string | null
           created_at: string | null
+          created_by: string | null
           department: string | null
           designation: string | null
           id: string
@@ -1187,6 +1194,7 @@ export type Database = {
         Insert: {
           company_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           department?: string | null
           designation?: string | null
           id?: string
@@ -1200,6 +1208,7 @@ export type Database = {
         Update: {
           company_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           department?: string | null
           designation?: string | null
           id?: string

@@ -40,10 +40,13 @@ import AdminWhatsAppListDetail from "./pages/admin/AdminWhatsAppListDetail";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
+import AssociationInvitations from "./pages/association/AssociationInvitations";
+import AssociationMembers from "./pages/association/AssociationMembers";
 import AssociationProfile from "./pages/association/AssociationProfile";
 import AssociationBulkUploadCompanies from "./pages/association/BulkUploadCompanies";
 import AssociationBulkUploadUsers from "./pages/association/BulkUploadUsers";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
+import CompanyMembers from "./pages/company/CompanyMembers";
 import CompanyBulkUploadUsers from "./pages/company/BulkUploadUsers";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
@@ -297,6 +300,22 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/association/invitations" 
+            element={
+              <ProtectedRoute>
+                <AssociationInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/members" 
+            element={
+              <ProtectedRoute>
+                <AssociationMembers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/association/profile" 
             element={
               <ProtectedRoute>
@@ -325,6 +344,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <CompanyDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/members" 
+            element={
+              <ProtectedRoute>
+                <CompanyMembers />
               </ProtectedRoute>
             } 
           />
