@@ -45,6 +45,20 @@ serve(async (req) => {
       throw new Error('No recipients found in list');
     }
 
+    // Enforce 10,000 recipient limit
+    const MAX_RECIPIENTS = 10000;
+    if (recipients.length > MAX_RECIPIENTS) {
+      return new Response(
+        JSON.stringify({
+          error: `Recipient limit exceeded. Maximum ${MAX_RECIPIENTS} recipients allowed per send. You have ${recipients.length} recipients in this list.`
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     console.log(`Sending to ${recipients.length} recipients`);
 
     const results = {
@@ -77,8 +91,8 @@ serve(async (req) => {
               },
               body: JSON.stringify({
                 from: {
-                  email: emailData.senderEmail,
-                  name: emailData.senderName,
+                  email: 'noreply@smbconnect.in',
+                  name: emailData.senderName || 'SMB Connect',
                 },
                 to: [{
                   email: recipient.email,

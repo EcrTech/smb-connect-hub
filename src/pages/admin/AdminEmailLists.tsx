@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, Upload, Mail, Trash2, Users } from 'lucide-react';
 import { CreateEmailListDialog } from '@/components/admin/CreateEmailListDialog';
 import { BulkEmailDialog } from '@/components/admin/BulkEmailDialog';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface EmailList {
   id: string;
@@ -20,6 +21,7 @@ interface EmailList {
 export default function AdminEmailLists() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { role, isSuperAdmin } = useUserRole();
   const [lists, setLists] = useState<EmailList[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,8 +33,18 @@ export default function AdminEmailLists() {
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
 
   useEffect(() => {
+    // Check if user has permission to access email features
+    if (role && role !== 'admin' && role !== 'association' && role !== 'company') {
+      navigate('/');
+      toast({
+        title: 'Access Denied',
+        description: 'You do not have permission to access email features',
+        variant: 'destructive',
+      });
+      return;
+    }
     loadEmailLists();
-  }, []);
+  }, [role]);
 
   const loadEmailLists = async () => {
     try {
@@ -104,10 +116,12 @@ export default function AdminEmailLists() {
                 <p className="text-sm text-muted-foreground">Manage bulk email recipient lists</p>
               </div>
             </div>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create List
-            </Button>
+            {isSuperAdmin && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create List
+              </Button>
+            )}
           </div>
         </div>
       </header>

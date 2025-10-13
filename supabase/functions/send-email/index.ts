@@ -79,8 +79,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: {
-          email: emailData.senderEmail,
-          name: emailData.senderName,
+          email: 'noreply@smbconnect.in',
+          name: emailData.senderName || 'SMB Connect',
         },
         to: [{
           email: emailData.recipientEmail,

@@ -235,17 +235,27 @@ export function BulkEmailDialog({
           </AlertDescription>
         </Alert>
 
+        {recipientCount > 10000 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Recipient limit exceeded! Maximum 10,000 recipients allowed per send. You have selected {recipientCount} recipients.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Sender Email *</Label>
+              <Label>Reply-To Email *</Label>
               <Input
                 type="email"
                 value={senderEmail}
                 onChange={(e) => setSenderEmail(e.target.value)}
-                placeholder="noreply@yourdomain.com"
+                placeholder="your-email@domain.com"
                 disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">Replies will be sent to this email</p>
             </div>
 
             <div className="space-y-2">
@@ -325,7 +335,7 @@ export function BulkEmailDialog({
             >
               Cancel
             </Button>
-            <Button onClick={handleSend} disabled={loading || recipientCount === 0}>
+            <Button onClick={handleSend} disabled={loading || recipientCount === 0 || recipientCount > 10000}>
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

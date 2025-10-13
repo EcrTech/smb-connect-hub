@@ -1936,6 +1936,10 @@ export type Database = {
         Args: { check_chat_id: string; check_user_id: string }
         Returns: boolean
       }
+      can_send_emails: {
+        Args: { check_user_id: string }
+        Returns: boolean
+      }
       can_view_company_details: {
         Args: { target_company_id: string; viewer_id: string }
         Returns: boolean
