@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'admin' | 'association' | 'company' | 'member' | null;
+export type UserRole = 'admin' | 'god-admin' | 'association' | 'company' | 'member' | null;
 
 export function useUserRole() {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<any>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isGodAdmin, setIsGodAdmin] = useState(false);
 
   useEffect(() => {
     loadUserRole();
@@ -31,9 +32,11 @@ export function useUserRole() {
         .maybeSingle();
 
       if (adminData) {
-        setRole('admin');
-        setUserData({ ...adminData, type: 'admin' });
+        const isGod = adminData.is_super_admin && (adminData as any).is_hidden === true;
+        setRole(isGod ? 'god-admin' : 'admin');
+        setUserData({ ...adminData, type: isGod ? 'god-admin' : 'admin' });
         setIsSuperAdmin(adminData.is_super_admin || false);
+        setIsGodAdmin(isGod);
         setLoading(false);
         return;
       }
@@ -92,5 +95,5 @@ export function useUserRole() {
     }
   };
 
-  return { role, loading, userData, refreshRole: loadUserRole, isSuperAdmin };
+  return { role, loading, userData, refreshRole: loadUserRole, isSuperAdmin, isGodAdmin };
 }

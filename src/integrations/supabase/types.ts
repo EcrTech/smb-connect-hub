@@ -19,6 +19,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_hidden: boolean | null
           is_super_admin: boolean | null
           permissions: Json | null
           updated_at: string | null
@@ -28,6 +29,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_hidden?: boolean | null
           is_super_admin?: boolean | null
           permissions?: Json | null
           updated_at?: string | null
@@ -37,6 +39,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_hidden?: boolean | null
           is_super_admin?: boolean | null
           permissions?: Json | null
           updated_at?: string | null
@@ -275,6 +278,7 @@ export type Database = {
           created_at: string | null
           id: string
           ip_address: string | null
+          is_hidden_admin_action: boolean | null
           resource: string
           resource_id: string | null
           user_agent: string | null
@@ -286,6 +290,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ip_address?: string | null
+          is_hidden_admin_action?: boolean | null
           resource: string
           resource_id?: string | null
           user_agent?: string | null
@@ -297,6 +302,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           ip_address?: string | null
+          is_hidden_admin_action?: boolean | null
           resource?: string
           resource_id?: string | null
           user_agent?: string | null
@@ -1945,10 +1951,7 @@ export type Database = {
         Args: { check_chat_id: string; check_user_id: string }
         Returns: boolean
       }
-      can_send_emails: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
+      can_send_emails: { Args: { check_user_id: string }; Returns: boolean }
       can_view_company_details: {
         Args: { target_company_id: string; viewer_id: string }
         Returns: boolean
@@ -1961,30 +1964,7 @@ export type Database = {
         Args: { check_user_id: string }
         Returns: string
       }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      is_admin: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { check_user_id: string }; Returns: boolean }
       is_association_manager: {
         Args: { check_association_id: string; check_user_id: string }
         Returns: boolean
@@ -2017,6 +1997,7 @@ export type Database = {
         Args: { target_user_id: string; viewer_id: string }
         Returns: boolean
       }
+      is_hidden_admin: { Args: { check_user_id: string }; Returns: boolean }
       is_member_of_association: {
         Args: { target_association_id: string; viewer_id: string }
         Returns: boolean
@@ -2025,22 +2006,9 @@ export type Database = {
         Args: { target_user_id: string; viewer_id: string }
         Returns: boolean
       }
-      is_super_admin: {
-        Args: { check_user_id: string }
-        Returns: boolean
-      }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      is_super_admin: { Args: { check_user_id: string }; Returns: boolean }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
