@@ -58,6 +58,7 @@ import MemberMessages from "./pages/member/MemberMessages";
 import CompanyFeed from "./pages/company/CompanyFeed";
 import AssociationFeed from "./pages/association/AssociationFeed";
 import NotFound from "./pages/NotFound";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -72,9 +73,11 @@ const AppContent = () => {
       {showEventRequisition && <FloatingEventRequisition />}
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/auth/login" element={<Login />} />
+            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/reset-password" element={<ResetPassword />} />
+            
+            <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
         <Route 
           path="/setup" 
           element={
