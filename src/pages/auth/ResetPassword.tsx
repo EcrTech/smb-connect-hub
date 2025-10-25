@@ -36,19 +36,30 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    // Check if there's a valid recovery session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setIsValidSession(true);
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Invalid or expired reset link',
-          variant: 'destructive',
-        });
-        navigate('/auth/login');
-      }
-    });
+    // Handle the recovery token from URL hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const type = hashParams.get('type');
+    
+    if (type === 'recovery' && accessToken) {
+      // This is a valid recovery link - Supabase automatically handles the session
+      console.log('Recovery token detected, validating session...');
+      setIsValidSession(true);
+    } else {
+      // Check if there's already an active recovery session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+          setIsValidSession(true);
+        } else {
+          toast({
+            title: 'Invalid Reset Link',
+            description: 'This password reset link is invalid or has expired. Please request a new one.',
+            variant: 'destructive',
+          });
+          setTimeout(() => navigate('/auth/login'), 2000);
+        }
+      });
+    }
   }, [navigate, toast]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
@@ -61,17 +72,19 @@ export default function ResetPassword() {
       if (error) throw error;
 
       toast({
-        title: 'Success',
-        description: 'Your password has been reset successfully',
+        title: 'Password Reset Successful!',
+        description: 'Redirecting to login page...',
       });
 
-      // Sign out and redirect to login
-      await supabase.auth.signOut();
-      navigate('/auth/login');
+      // Sign out and redirect to login after brief delay
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        navigate('/auth/login');
+      }, 2000);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to reset password',
+        title: 'Failed to Reset Password',
+        description: error.message || 'An error occurred. Please try again or request a new reset link.',
         variant: 'destructive',
       });
     } finally {
@@ -96,7 +109,7 @@ export default function ResetPassword() {
           </div>
           <CardTitle className="text-2xl font-bold">Reset Your Password</CardTitle>
           <CardDescription>
-            Enter your new password below
+            Enter a new password for your account (minimum 8 characters)
           </CardDescription>
         </CardHeader>
         <CardContent>
