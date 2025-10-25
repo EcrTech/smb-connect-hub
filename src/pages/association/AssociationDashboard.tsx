@@ -223,6 +223,10 @@ export default function AssociationDashboard() {
                 </AvatarFallback>
               </Avatar>
             )}
+            <Button variant="outline" onClick={() => navigate('/account-settings')}>
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
             <Button variant="outline" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" />
               Logout

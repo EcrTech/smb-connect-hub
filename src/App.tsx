@@ -77,7 +77,7 @@ const AppContent = () => {
             <Route path="/auth/register" element={<Register />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             
-            <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+            <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
         <Route 
           path="/setup" 
           element={

@@ -21,6 +21,7 @@ import {
   Trash2,
   Building2,
   LogOut,
+  Settings,
   Image as ImageIcon,
   X,
   Search,
@@ -510,6 +511,9 @@ export default function MemberFeed() {
                     </AvatarFallback>
                   </Avatar>
                 )}
+                <Button variant="ghost" size="sm" onClick={() => navigate('/account-settings')}>
+                  <Settings className="w-4 h-4" />
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" />
                 </Button>
