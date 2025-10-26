@@ -1,6 +1,7 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import logo from "@/assets/smb-connect-logo.jpg";
+import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
   const location = useLocation();
@@ -15,9 +16,9 @@ const NotFound = () => {
         <img src={logo} alt="SMB Connect" className="h-16 object-contain mx-auto mb-6" />
         <h1 className="mb-4 text-4xl font-bold">404</h1>
         <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/80">
-          Return to Home
-        </a>
+        <Button asChild>
+          <Link to="/">Return to Home</Link>
+        </Button>
       </div>
     </div>
   );

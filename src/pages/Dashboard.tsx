@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { BackButton } from '@/components/BackButton';
 import { AdminOnboarding } from '@/components/onboarding/AdminOnboarding';
 import { AssociationOnboarding } from '@/components/onboarding/AssociationOnboarding';
 import { CompanyOnboarding } from '@/components/onboarding/CompanyOnboarding';

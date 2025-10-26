@@ -29,6 +29,7 @@ import {
   Users,
   Calendar
 } from 'lucide-react';
+import { BackButton } from '@/components/BackButton';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Post {
@@ -431,8 +432,9 @@ export default function MemberFeed() {
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
-            {/* Left - Search */}
+            {/* Left - Back Button & Search */}
             <div className="flex items-center gap-4 flex-1 max-w-2xl">
+              <BackButton fallbackPath="/dashboard" variant="ghost" size="icon" label="" />
               <div className="flex-1 max-w-md">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />

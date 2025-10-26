@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings, ArrowLeft } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageThread } from '@/components/messages/MessageThread';
+import { BackButton } from '@/components/BackButton';
 
 export default function MemberMessages() {
   const navigate = useNavigate();
@@ -63,9 +64,7 @@ export default function MemberMessages() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/member')}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <BackButton fallbackPath="/feed" variant="ghost" />
             <div>
               <h1 className="text-2xl font-bold">Messaging</h1>
               <p className="text-sm text-muted-foreground">Stay connected</p>
