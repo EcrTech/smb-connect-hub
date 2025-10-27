@@ -67,59 +67,50 @@ export default function CreateUser() {
     try {
       setLoading(true);
 
-      // Get current admin user for tracking who created the member
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log('Calling edge function to create user...');
+
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!currentUser) {
+      if (!session) {
         throw new Error('You must be logged in to create users');
       }
 
-      // Use provided password or generate temporary one
-      const password = data.password && data.password.trim() !== '' 
-        ? data.password 
-        : `Temp${Math.random().toString(36).substring(7)}!`;
-      
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email: data.email,
-        password: password,
-        email_confirm: true,
-        user_metadata: {
+      // Call edge function to create user with service role privileges
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password && data.password.trim() !== '' ? data.password : null,
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone || null,
-        },
-      });
-
-      if (authError) throw authError;
-
-      // Create member record with created_by tracking
-      const { error: memberError } = await supabase
-        .from('members')
-        .insert([{
-          user_id: authUser.user.id,
           company_id: data.company_id || null,
           role: data.role,
           designation: data.designation || null,
           department: data.department || null,
-          is_active: true,
-          created_by: currentUser.id, // Track who created this member
-        }]);
+        }),
+      });
 
-      if (memberError) throw memberError;
+      const result = await response.json();
 
-      // Send invitation email only if no password was set
-      if (!data.password || data.password.trim() === '') {
-        await supabase.auth.admin.inviteUserByEmail(data.email);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user');
       }
+
+      console.log('User created successfully:', result);
 
       toast({
         title: 'Success',
-        description: data.password && data.password.trim() !== '' 
-          ? 'User created successfully with the provided password.'
-          : 'User created successfully. Invitation email sent.',
+        description: result.message || 'User created successfully.',
       });
       navigate('/admin/users');
     } catch (error: any) {
+      console.error('Error creating user:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to create user',
