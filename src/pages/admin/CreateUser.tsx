@@ -67,6 +67,13 @@ export default function CreateUser() {
     try {
       setLoading(true);
 
+      // Get current admin user for tracking who created the member
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('You must be logged in to create users');
+      }
+
       // Use provided password or generate temporary one
       const password = data.password && data.password.trim() !== '' 
         ? data.password 
@@ -85,7 +92,7 @@ export default function CreateUser() {
 
       if (authError) throw authError;
 
-      // Create member record
+      // Create member record with created_by tracking
       const { error: memberError } = await supabase
         .from('members')
         .insert([{
@@ -95,6 +102,7 @@ export default function CreateUser() {
           designation: data.designation || null,
           department: data.department || null,
           is_active: true,
+          created_by: currentUser.id, // Track who created this member
         }]);
 
       if (memberError) throw memberError;
