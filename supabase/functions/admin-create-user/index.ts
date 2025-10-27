@@ -77,27 +77,31 @@ Deno.serve(async (req) => {
 
     console.log('User created in auth:', authData.user.id)
 
-    // Create member record
+    // Wait a moment for the trigger to create the member record
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Update the member record (created by handle_new_user trigger)
+    // instead of inserting a new one
     const { error: memberError } = await supabaseAdmin
       .from('members')
-      .insert([{
-        user_id: authData.user.id,
+      .update({
         company_id: company_id || null,
         role: role || 'member',
         designation: designation || null,
         department: department || null,
         is_active: true,
         created_by: requestingUser.id,
-      }])
+      })
+      .eq('user_id', authData.user.id)
 
     if (memberError) {
-      console.error('Member insert error:', memberError)
-      // Try to delete the auth user since member creation failed
+      console.error('Member update error:', memberError)
+      // Try to delete the auth user since member update failed
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       throw memberError
     }
 
-    console.log('Member record created successfully')
+    console.log('Member record updated successfully')
 
     // Send invitation email if no password was provided
     if (!password) {
