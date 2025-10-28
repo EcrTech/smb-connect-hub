@@ -1960,6 +1960,7 @@ export type Database = {
         Args: { member_company_id: string }
         Returns: boolean
       }
+      get_user_email: { Args: { check_user_id: string }; Returns: string }
       get_user_role_context: {
         Args: { check_user_id: string }
         Returns: string
