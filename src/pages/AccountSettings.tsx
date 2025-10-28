@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChangePasswordForm } from '@/components/account/ChangePasswordForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { BackButton } from '@/components/BackButton';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function AccountSettings() {
@@ -43,14 +42,7 @@ export default function AccountSettings() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+        <BackButton fallbackPath="/dashboard" variant="ghost" label="Back" className="mb-6" />
 
         <div className="space-y-6">
           <div>

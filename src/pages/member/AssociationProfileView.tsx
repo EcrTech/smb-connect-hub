@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { HomeButton } from "@/components/HomeButton";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,6 @@ import {
   Mail,
   Globe,
   Calendar,
-  ArrowLeft,
   Facebook,
   Twitter,
   Linkedin,
@@ -122,10 +122,7 @@ export default function AssociationProfileView() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+          <BackButton fallbackPath="/dashboard" variant="ghost" label="Back" />
           <HomeButton />
         </div>
 

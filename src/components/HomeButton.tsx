@@ -34,7 +34,8 @@ export const HomeButton = () => {
             <img 
               src={logo} 
               alt="SMB Connect" 
-              className="h-12 w-auto rounded-lg shadow-md hover:shadow-lg transition-shadow"
+              className="w-auto rounded-lg"
+              style={{ height: '2.8rem' }}
             />
           </button>
         </TooltipTrigger>
