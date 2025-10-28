@@ -117,7 +117,7 @@ export default function AdminActions() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-bold">Admin Actions</h1>
@@ -149,7 +149,7 @@ export default function AdminActions() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pl-20">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Quick Actions</h2>
           <p className="text-muted-foreground">

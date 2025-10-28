@@ -87,7 +87,7 @@ export default function AssociationMembers() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 pl-20">
           <Button variant="ghost" onClick={() => navigate('/association/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -95,7 +95,7 @@ export default function AssociationMembers() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pl-20">
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Association Members</h1>

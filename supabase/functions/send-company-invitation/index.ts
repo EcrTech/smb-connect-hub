@@ -12,6 +12,7 @@ interface InvitationEmailRequest {
   recipientEmail: string;
   invitedByName: string;
   invitedByEmail: string;
+  associationName: string;
   token: string;
 }
 
@@ -56,7 +57,7 @@ serve(async (req) => {
             <div class="content">
               <h2>You've been invited to join ${inviteData.companyName}</h2>
               <p>Hello,</p>
-              <p><strong>${inviteData.invitedByName}</strong> (${inviteData.invitedByEmail}) has invited you to join <strong>${inviteData.companyName}</strong> on SMB Connect.</p>
+              <p><strong>${inviteData.invitedByName}</strong> (${inviteData.invitedByEmail}) from <strong>${inviteData.associationName}</strong> has invited you to join <strong>${inviteData.companyName}</strong> on SMB Connect.</p>
               <p>Click the button below to accept this invitation:</p>
               <p style="text-align: center;">
                 <a href="${acceptUrl}" class="button">Accept Invitation</a>

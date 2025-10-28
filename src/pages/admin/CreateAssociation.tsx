@@ -84,7 +84,7 @@ export default function CreateAssociation() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 pl-20">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin/associations')}
@@ -95,7 +95,7 @@ export default function CreateAssociation() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 pl-20 max-w-2xl">
         <Card>
           <CardHeader>
             <CardTitle>Create New Association</CardTitle>

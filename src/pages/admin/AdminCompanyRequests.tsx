@@ -198,7 +198,7 @@ export default function AdminCompanyRequests() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 pl-20">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin/actions')}
@@ -210,7 +210,7 @@ export default function AdminCompanyRequests() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pl-20">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Company Requests</h2>
           <p className="text-muted-foreground">

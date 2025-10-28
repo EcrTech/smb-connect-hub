@@ -117,11 +117,12 @@ export default function AssociationInvitations() {
       // Send invitation email using edge function
       const { error: emailError } = await supabase.functions.invoke('send-company-invitation', {
         body: {
-          email: formData.email,
+          invitationId: invitation.id,
           companyName: formData.companyName,
+          recipientEmail: formData.email,
+          invitedByName: profile ? `${profile.first_name} ${profile.last_name}` : 'Association Admin',
+          invitedByEmail: user?.email || '',
           associationName: userData.association.name,
-          inviterName: profile ? `${profile.first_name} ${profile.last_name}` : 'Association Admin',
-          inviterEmail: user?.email || '',
           token,
         },
       });
@@ -164,7 +165,7 @@ export default function AssociationInvitations() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 pl-20">
           <Button variant="ghost" onClick={() => navigate('/association/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -172,7 +173,7 @@ export default function AssociationInvitations() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pl-20">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Send Invitation Form */}
           <Card>

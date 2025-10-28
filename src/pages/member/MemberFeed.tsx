@@ -525,7 +525,7 @@ export default function MemberFeed() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
+      <main className="container mx-auto px-4 py-6 pl-20 max-w-3xl">
         <RoleNavigation />
         
         {/* Associated Associations Ribbon */}

@@ -81,7 +81,7 @@ export default function BulkUploadAssociations() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 pl-20">
           <Button variant="ghost" onClick={() => navigate('/admin/associations')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Associations
@@ -89,7 +89,7 @@ export default function BulkUploadAssociations() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 pl-20 max-w-4xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Bulk Upload Associations</h1>
           <p className="text-muted-foreground">
