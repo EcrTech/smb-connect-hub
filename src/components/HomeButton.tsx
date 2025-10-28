@@ -29,7 +29,7 @@ export const HomeButton = () => {
         <TooltipTrigger asChild>
           <button
             onClick={() => navigate(getHomePath())}
-            className="fixed top-4 left-4 z-50 transition-all hover:scale-105"
+            className="fixed top-4 left-4 z-50"
           >
             <img 
               src={logo} 
