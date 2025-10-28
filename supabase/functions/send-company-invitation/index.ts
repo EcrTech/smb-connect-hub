@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,11 +23,12 @@ serve(async (req) => {
   }
 
   try {
-    const SENDER_API_KEY = Deno.env.get('SENDER_API_KEY');
-    if (!SENDER_API_KEY) {
-      throw new Error('SENDER_API_KEY is not configured');
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+    if (!RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is not configured');
     }
 
+    const resend = new Resend(RESEND_API_KEY);
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
@@ -75,45 +77,23 @@ serve(async (req) => {
       </html>
     `;
 
-    const senderResponse = await fetch('https://api.sender.net/v2/email', {
-      method: 'POST',
+    const emailResponse = await resend.emails.send({
+      from: 'SMB Connect <onboarding@resend.dev>',
+      to: [inviteData.recipientEmail],
+      subject: `Invitation to join ${inviteData.companyName} on SMB Connect`,
+      html: emailHtml,
+      reply_to: inviteData.invitedByEmail,
       headers: {
-        'Authorization': `Bearer ${SENDER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'X-Invitation-ID': inviteData.invitationId,
       },
-      body: JSON.stringify({
-        from: {
-          email: 'noreply@smbconnect.in',
-          name: 'SMB Connect',
-        },
-        to: [{
-          email: inviteData.recipientEmail,
-          name: inviteData.recipientEmail,
-        }],
-        subject: `Invitation to join ${inviteData.companyName} on SMB Connect`,
-        html: emailHtml,
-        text: `You've been invited to join ${inviteData.companyName} on SMB Connect by ${inviteData.invitedByName}. Accept the invitation here: ${acceptUrl}`,
-        reply_to: inviteData.invitedByEmail,
-        headers: {
-          'X-Invitation-ID': inviteData.invitationId,
-        },
-      }),
     });
 
-    if (!senderResponse.ok) {
-      const errorText = await senderResponse.text();
-      console.error('Sender API error:', errorText);
-      throw new Error(`Sender API error: ${senderResponse.status} ${errorText}`);
-    }
-
-    const senderResult = await senderResponse.json();
-    console.log('Invitation email sent via Sender:', senderResult);
+    console.log('Invitation email sent via Resend:', emailResponse);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        messageId: senderResult.message_id 
+        messageId: emailResponse.data?.id 
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
