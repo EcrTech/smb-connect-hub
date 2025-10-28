@@ -23,6 +23,7 @@ import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
 import AdminCompanyRequests from "./pages/admin/AdminCompanyRequests";
 import AdminEventRequests from "./pages/admin/AdminEventRequests";
 import AssociationProfileView from "./pages/admin/AssociationProfileView";
+import AdminCompanyProfileView from "./pages/admin/AdminCompanyProfileView";
 import CreateAssociation from "./pages/admin/CreateAssociation";
 import BrowseCompanies from "./pages/member/BrowseCompanies";
 import BrowseAssociations from "./pages/member/BrowseAssociations";
@@ -159,7 +160,15 @@ const AppContent = () => {
             } 
           />
           <Route 
-            path="/admin/requests" 
+            path="/admin/companies/:id"
+            element={
+              <ProtectedRoute>
+                <AdminCompanyProfileView />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/requests"
             element={
               <ProtectedRoute>
                 <AdminAssociationRequests />
