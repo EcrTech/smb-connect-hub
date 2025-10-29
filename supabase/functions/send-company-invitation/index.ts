@@ -35,7 +35,9 @@ serve(async (req) => {
     const inviteData: InvitationEmailRequest = await req.json();
     console.log('Sending company invitation email to:', inviteData.recipientEmail);
     
-    const acceptUrl = `${supabaseUrl.replace('.supabase.co', '')}/accept-invitation?token=${inviteData.token}`;
+    // Use the production app URL for invitation links
+    const appUrl = Deno.env.get('APP_URL') || 'https://gentle-field-0d01a791e.5.azurestaticapps.net';
+    const acceptUrl = `${appUrl}/accept-invitation?token=${inviteData.token}`;
     
     const emailHtml = `
       <!DOCTYPE html>
