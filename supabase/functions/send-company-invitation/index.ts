@@ -78,7 +78,7 @@ serve(async (req) => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: 'SMB Connect <onboarding@resend.dev>',
+      from: 'SMB Connect <noreply@smbconnect.in>',
       to: [inviteData.recipientEmail],
       subject: `Invitation to join ${inviteData.companyName} on SMB Connect`,
       html: emailHtml,
@@ -89,6 +89,12 @@ serve(async (req) => {
     });
 
     console.log('Invitation email sent via Resend:', emailResponse);
+
+    // Check if Resend returned an error
+    if (emailResponse.error) {
+      console.error('Resend error:', emailResponse.error);
+      throw new Error(emailResponse.error.message || 'Failed to send email via Resend');
+    }
 
     return new Response(
       JSON.stringify({ 

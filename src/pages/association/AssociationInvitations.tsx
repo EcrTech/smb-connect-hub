@@ -115,7 +115,7 @@ export default function AssociationInvitations() {
         .single();
 
       // Send invitation email using edge function
-      const { error: emailError } = await supabase.functions.invoke('send-company-invitation', {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invitation', {
         body: {
           invitationId: invitation.id,
           companyName: formData.companyName,
@@ -127,11 +127,18 @@ export default function AssociationInvitations() {
         },
       });
 
-      if (emailError) throw emailError;
+      if (emailError) {
+        throw new Error(`Failed to send email: ${emailError.message}`);
+      }
+
+      // Check if the edge function returned an error in the response
+      if (emailData?.error) {
+        throw new Error(emailData.error);
+      }
 
       toast({
         title: 'Success',
-        description: 'Invitation sent successfully',
+        description: 'Invitation sent successfully! The recipient will receive an email shortly.',
       });
 
       // Reset form and reload invitations
