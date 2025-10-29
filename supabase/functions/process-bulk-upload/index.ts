@@ -254,9 +254,71 @@ Deno.serve(async (req) => {
 
           if (memberError) throw memberError;
 
-          // Send invitation email only if no password was provided
+          // Send branded invitation email only if no password was provided
           if (!record.password || record.password.trim() === '') {
-            await supabaseClient.auth.admin.inviteUserByEmail(record.email);
+            try {
+              // Fetch company and association details for context
+              let companyName = null;
+              let associationName = null;
+              
+              if (finalCompanyId) {
+                const { data: companyData } = await supabaseClient
+                  .from('companies')
+                  .select('name, association_id, associations!inner(name)')
+                  .eq('id', finalCompanyId)
+                  .single();
+                
+                if (companyData) {
+                  companyName = companyData.name;
+                  const associations = companyData.associations as any;
+                  associationName = associations?.name || null;
+                }
+              } else if (associationId) {
+                // If no company but association context exists
+                const { data: assocData } = await supabaseClient
+                  .from('associations')
+                  .select('name')
+                  .eq('id', associationId)
+                  .single();
+                
+                if (assocData) {
+                  associationName = assocData.name;
+                }
+              }
+              
+              // Generate password reset link
+              const { data: resetData, error: linkError } = await supabaseClient.auth.admin.generateLink({
+                type: 'recovery',
+                email: record.email,
+              });
+              
+              if (linkError) {
+                console.error('Failed to generate reset link:', linkError);
+                throw linkError;
+              }
+              
+              // Send branded invitation email
+              const { error: inviteError } = await supabaseClient.functions.invoke('send-member-invitation', {
+                body: {
+                  email: record.email,
+                  firstName: record.first_name,
+                  lastName: record.last_name,
+                  companyName,
+                  associationName,
+                  resetPasswordUrl: resetData.properties.action_link
+                }
+              });
+              
+              if (inviteError) {
+                console.error('Failed to send invitation email:', inviteError);
+                // Don't throw - user is created, just email failed
+              } else {
+                console.log(`Sent invitation email to: ${record.email}`);
+              }
+            } catch (emailError) {
+              console.error('Error sending invitation:', emailError);
+              // Don't throw - user creation succeeded, email is secondary
+            }
           }
 
           successCount++;

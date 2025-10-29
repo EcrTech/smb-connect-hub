@@ -20,7 +20,7 @@ export default function BulkUploadUsers() {
   const instructions = [
     'Download the CSV template below',
     'Fill in user details with company_email to link users to companies in your association',
-    'Password is optional - users will receive invitation emails if password is not provided',
+    'Password is optional - when left blank, users will receive a branded welcome email with instructions to set their password',
     'Upload the completed CSV file'
   ];
 
