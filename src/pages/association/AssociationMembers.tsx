@@ -27,28 +27,49 @@ export default function AssociationMembers() {
   });
 
   useEffect(() => {
-    if (userData?.association?.id) {
+    console.log('AssociationMembers - userData:', userData);
+    console.log('AssociationMembers - association.id:', userData?.association?.id);
+    console.log('AssociationMembers - association_id:', userData?.association_id);
+    
+    const associationId = userData?.association?.id || userData?.association_id;
+    if (associationId) {
       loadMembers();
+    } else {
+      console.log('AssociationMembers - No association ID found');
+      setLoading(false);
     }
   }, [userData]);
 
   const loadMembers = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('LoadMembers - Current user:', user?.id);
+      
+      const associationId = userData?.association?.id || userData?.association_id;
+      console.log('LoadMembers - Using association ID:', associationId);
       
       // Get all companies in association
-      const { data: companies } = await supabase
+      const { data: companies, error: companiesError } = await supabase
         .from('companies')
         .select('id')
-        .eq('association_id', userData?.association?.id)
+        .eq('association_id', associationId)
         .eq('is_active', true);
 
+      console.log('LoadMembers - Companies query result:', { companies, companiesError });
+
+      if (companiesError) {
+        console.error('Error loading companies:', companiesError);
+        throw new Error(`Failed to load companies: ${companiesError.message}`);
+      }
+
       if (!companies || companies.length === 0) {
+        console.log('LoadMembers - No companies found for association');
         setLoading(false);
         return;
       }
 
       const companyIds = companies.map(c => c.id);
+      console.log('LoadMembers - Company IDs:', companyIds);
 
       // Get members with profiles and company info
       const { data: membersData, error } = await supabase
@@ -62,10 +83,14 @@ export default function AssociationMembers() {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
+      console.log('LoadMembers - Members query result:', { membersData, error });
+
       if (error) throw error;
 
       const totalMembers = membersData?.length || 0;
       const onboardedByMe = membersData?.filter(m => m.created_by === user?.id).length || 0;
+
+      console.log('LoadMembers - Stats:', { totalMembers, onboardedByMe });
 
       setMembers(membersData || []);
       setStats({
@@ -76,7 +101,7 @@ export default function AssociationMembers() {
       console.error('Error loading members:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load members',
+        description: error.message || 'Failed to load members',
         variant: 'destructive',
       });
     } finally {
