@@ -283,7 +283,7 @@ export default function CompanyFeed() {
         <div className="container mx-auto px-4 py-4 pl-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/company/dashboard')}>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/company')}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <h1 className="text-2xl font-bold">Company Feed</h1>

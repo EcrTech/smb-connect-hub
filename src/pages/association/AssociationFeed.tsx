@@ -283,7 +283,7 @@ export default function AssociationFeed() {
         <div className="container mx-auto px-4 py-4 pl-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/association/dashboard')}>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/association')}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <h1 className="text-2xl font-bold">Association Feed</h1>
