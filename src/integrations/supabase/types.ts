@@ -1451,6 +1451,7 @@ export type Database = {
           cover_image: string | null
           created_at: string | null
           current_context: string | null
+          email: string | null
           employment_status: string | null
           first_name: string
           headline: string | null
@@ -1470,6 +1471,7 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
+          email?: string | null
           employment_status?: string | null
           first_name: string
           headline?: string | null
@@ -1489,6 +1491,7 @@ export type Database = {
           cover_image?: string | null
           created_at?: string | null
           current_context?: string | null
+          email?: string | null
           employment_status?: string | null
           first_name?: string
           headline?: string | null
