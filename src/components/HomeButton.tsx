@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserRole } from '@/hooks/useUserRole';
-import logo from '@/assets/smb-connect-logo.jpg';
+import logo from '@/assets/smb-connect-logo.png';
 
 export const HomeButton = () => {
   const navigate = useNavigate();
