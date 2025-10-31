@@ -18,7 +18,7 @@ import {
 export default function AssociationMembers() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userData } = useUserRole();
+  const { userData, loading: userLoading } = useUserRole();
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -27,14 +27,25 @@ export default function AssociationMembers() {
   });
 
   useEffect(() => {
+    // Wait for user role to finish loading
+    if (userLoading) {
+      return;
+    }
+
     const associationId = userData?.association?.id || userData?.association_id;
     
-    if (associationId) {
-      loadMembers();
-    } else if (userData && !loading) {
+    if (!associationId) {
+      toast({
+        title: 'Error',
+        description: 'No association found for your account',
+        variant: 'destructive',
+      });
       setLoading(false);
+      return;
     }
-  }, [userData]);
+
+    loadMembers();
+  }, [userData, userLoading]);
 
   const loadMembers = async () => {
     try {
