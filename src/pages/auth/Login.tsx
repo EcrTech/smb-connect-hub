@@ -102,15 +102,15 @@ export default function Login() {
     try {
       setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
 
       setResetEmailSent(true);
       toast({
-        title: 'Success',
-        description: 'Password reset link has been sent to your email',
+        title: 'Reset Link Sent',
+        description: 'Password reset link sent! It may take 2-5 minutes to arrive. Please check your spam folder. The link will expire in 1 hour.',
       });
     } catch (error: any) {
       toast({
@@ -248,7 +248,7 @@ export default function Login() {
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
               {resetEmailSent
-                ? "We've sent you a password reset link. Please check your email."
+                ? "Password reset link sent! It may take 2-5 minutes to arrive. Please check your email and spam folder. The link expires in 1 hour."
                 : "Enter your email address and we'll send you a link to reset your password."}
             </DialogDescription>
           </DialogHeader>

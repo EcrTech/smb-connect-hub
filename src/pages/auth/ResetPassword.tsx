@@ -24,6 +24,7 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState(false);
+  const [validationTimeout, setValidationTimeout] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -36,6 +37,13 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
+    // Set timeout for slow validation
+    const timeoutId = setTimeout(() => {
+      if (!isValidSession) {
+        setValidationTimeout(true);
+      }
+    }, 10000); // 10 seconds
+
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     
     // Check for error parameters first
@@ -44,12 +52,13 @@ export default function ResetPassword() {
     const errorDescription = hashParams.get('error_description');
     
     if (error) {
+      clearTimeout(timeoutId);
       let title = 'Password Reset Link Issue';
       let description = errorDescription?.replace(/\+/g, ' ') || 'This link is invalid or has expired.';
       
       if (errorCode === 'otp_expired') {
         title = 'Reset Link Expired';
-        description = 'This password reset link has expired. Password reset links are valid for 1 hour. Please request a new reset link from your administrator.';
+        description = 'This password reset link has expired. Password reset links are valid for 1 hour. Please request a new reset link from the login page.';
       }
       
       toast({
@@ -70,23 +79,27 @@ export default function ResetPassword() {
     if (type === 'recovery' && accessToken) {
       // This is a valid recovery link - Supabase automatically handles the session
       console.log('Recovery token detected, validating session...');
+      clearTimeout(timeoutId);
       setIsValidSession(true);
     } else {
       // Check if there's already an active recovery session
       supabase.auth.getSession().then(({ data: { session } }) => {
+        clearTimeout(timeoutId);
         if (session) {
           setIsValidSession(true);
         } else {
           toast({
             title: 'Invalid Reset Link',
-            description: 'This password reset link is invalid or has expired. Please request a new one.',
+            description: 'This password reset link is invalid or has expired. Please request a new one from the login page.',
             variant: 'destructive',
           });
           setTimeout(() => navigate('/auth/login'), 2000);
         }
       });
     }
-  }, [navigate, toast]);
+
+    return () => clearTimeout(timeoutId);
+  }, [navigate, toast, isValidSession]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
@@ -121,7 +134,28 @@ export default function ResetPassword() {
   if (!isValidSession) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <p className="text-muted-foreground">Validating reset link...</p>
+        <Card className="w-full max-w-md">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <p className="text-muted-foreground">Validating reset link...</p>
+              {validationTimeout && (
+                <div className="space-y-3 p-4 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">Taking longer than expected?</p>
+                  <p className="text-sm text-muted-foreground">
+                    If this continues, your reset link may have expired or there may be a network issue.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/auth/login')}
+                  >
+                    Back to Login
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
