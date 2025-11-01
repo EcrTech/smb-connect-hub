@@ -101,20 +101,20 @@ export default function Login() {
   const handleForgotPassword = async (data: ForgotPasswordFormData) => {
     try {
       setLoading(true);
-      // Send OTP code via email (no redirect URL needed)
+      // Send OTP code via email (no redirect needed)
       const { error } = await supabase.auth.resetPasswordForEmail(data.email);
 
       if (error) throw error;
 
       setResetEmailSent(true);
       toast({
-        title: 'Reset Code Sent',
+        title: 'Verification Code Sent',
         description: 'A 6-digit verification code has been sent to your email. It may take 2-5 minutes to arrive. Please check your spam folder.',
       });
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send reset code',
+        description: error.message || 'Failed to send verification code',
         variant: 'destructive',
       });
     } finally {
@@ -247,7 +247,7 @@ export default function Login() {
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
               {resetEmailSent
-                ? "A 6-digit verification code has been sent to your email. It may take 2-5 minutes to arrive. Please check your spam folder."
+                ? "Check your email for the 6-digit verification code. It may take 2-5 minutes to arrive."
                 : "Enter your email address and we'll send you a 6-digit verification code to reset your password."}
             </DialogDescription>
           </DialogHeader>
@@ -283,24 +283,29 @@ export default function Login() {
               </DialogFooter>
             </form>
           ) : (
-            <DialogFooter className="flex-col gap-2">
-              <Button
-                onClick={() => {
-                  handleCloseForgotPassword();
-                  navigate('/reset-password');
-                }}
-                className="w-full"
-              >
-                Go to Reset Password Page
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleCloseForgotPassword}
-                className="w-full"
-              >
-                Close
-              </Button>
-            </DialogFooter>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground text-center">
+                Check your email for the 6-digit code, then click below to reset your password.
+              </p>
+              <DialogFooter className="flex-col gap-2 sm:gap-2">
+                <Button
+                  onClick={() => {
+                    handleCloseForgotPassword();
+                    navigate('/reset-password');
+                  }}
+                  className="w-full"
+                >
+                  Enter Verification Code
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleCloseForgotPassword}
+                  className="w-full"
+                >
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
           )}
         </DialogContent>
       </Dialog>
