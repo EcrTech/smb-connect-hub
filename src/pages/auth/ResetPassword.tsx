@@ -40,42 +40,31 @@ export default function ResetPassword() {
     try {
       setLoading(true);
       
-      console.log('Verifying OTP code for:', data.email);
+      console.log('Verifying OTP and resetting password for:', data.email);
       
-      // Step 1: Verify the OTP code
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: data.email,
-        token: data.token,
-        type: 'recovery',
+      // Call custom edge function to verify OTP and reset password
+      const { data: result, error } = await supabase.functions.invoke('verify-password-otp', {
+        body: {
+          email: data.email,
+          otp: data.token,
+          newPassword: data.password
+        }
       });
 
-      if (verifyError) {
-        console.error('OTP verification failed:', verifyError);
-        throw new Error(verifyError.message || 'Invalid or expired verification code. Please request a new code from the login page.');
+      if (error) {
+        console.error('Password reset failed:', error);
+        throw new Error(error.message || 'Invalid or expired verification code');
       }
 
-      console.log('OTP verified successfully, updating password...');
-
-      // Step 2: Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: data.password,
-      });
-
-      if (updateError) {
-        console.error('Password update failed:', updateError);
-        throw updateError;
-      }
-
-      console.log('Password updated successfully');
+      console.log('Password reset successful');
 
       toast({
         title: 'Password Reset Successful!',
         description: 'Your password has been updated. Redirecting to login...',
       });
 
-      // Sign out and redirect to login after brief delay
-      setTimeout(async () => {
-        await supabase.auth.signOut();
+      // Redirect to login after brief delay
+      setTimeout(() => {
         navigate('/auth/login');
       }, 2000);
     } catch (error: any) {
@@ -135,7 +124,7 @@ export default function ResetPassword() {
                 <p className="text-sm text-destructive">{errors.token.message}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                Check your email for the 6-digit code. It may take 2-5 minutes to arrive. Check your spam folder if you don't see it.
+                Check your email for the 6-digit code. It should arrive within seconds via Resend. Check your spam folder if you don't see it.
               </p>
             </div>
 

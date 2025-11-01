@@ -101,15 +101,18 @@ export default function Login() {
   const handleForgotPassword = async (data: ForgotPasswordFormData) => {
     try {
       setLoading(true);
-      // Send OTP code via email (no redirect needed)
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email);
+      
+      // Call custom edge function to send OTP
+      const { error } = await supabase.functions.invoke('send-password-otp', {
+        body: { email: data.email }
+      });
 
       if (error) throw error;
 
       setResetEmailSent(true);
       toast({
         title: 'Verification Code Sent',
-        description: 'A 6-digit verification code has been sent to your email. It may take 2-5 minutes to arrive. Please check your spam folder.',
+        description: 'A 6-digit verification code has been sent to your email via Resend. It should arrive within seconds. Check your spam folder if you don\'t see it.',
       });
     } catch (error: any) {
       toast({
@@ -247,8 +250,8 @@ export default function Login() {
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
               {resetEmailSent
-                ? "Check your email for the 6-digit verification code. It may take 2-5 minutes to arrive."
-                : "Enter your email address and we'll send you a 6-digit verification code to reset your password."}
+                ? "Check your email for the 6-digit verification code. It should arrive in seconds!"
+                : "Enter your email address and we'll send you a 6-digit verification code instantly via Resend."}
             </DialogDescription>
           </DialogHeader>
 
