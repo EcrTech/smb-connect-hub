@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/hooks/useAuth';
 import logo from '@/assets/smb-connect-logo.jpg';
 import heroImage from '@/assets/login-hero.png';
 
@@ -32,6 +33,7 @@ export default function Login() {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const {
     register,
@@ -46,9 +48,17 @@ export default function Login() {
     handleSubmit: handleSubmitForgot,
     formState: { errors: forgotErrors },
     reset: resetForgotForm,
+    setValue: setForgotValue,
   } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
   });
+
+  // Auto-fill email field when forgot password dialog opens
+  useEffect(() => {
+    if (showForgotPassword && user?.email) {
+      setForgotValue('email', user.email);
+    }
+  }, [showForgotPassword, user?.email, setForgotValue]);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
