@@ -145,7 +145,7 @@ export default function UserManagement() {
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .or(
-          `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`
+          `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`
         );
 
       const total = count || 0;
@@ -156,17 +156,17 @@ export default function UserManagement() {
       const from = (pageNum - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
+      // Search across first_name, last_name, email, and id (partial match)
+      const searchPattern = `%${searchQuery}%`;
+
       let query = supabase
         .from('profiles')
         .select('id, first_name, last_name, created_at')
+        .or(
+          `first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},email.ilike.${searchPattern},id.ilike.${searchPattern}`
+        )
         .order('created_at', { ascending: false })
         .range(from, to);
-
-      // Search across first_name, last_name, and id (partial match)
-      const searchPattern = `%${searchQuery}%`;
-      query = query.or(
-        `first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},id.ilike.${searchPattern}`
-      );
 
       const { data: profiles, error: profilesError } = await query;
 
