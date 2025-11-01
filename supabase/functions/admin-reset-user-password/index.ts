@@ -99,6 +99,9 @@ serve(async (req) => {
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email: (await supabaseAdmin.auth.admin.getUserById(userId)).data.user?.email!,
+        options: {
+          redirectTo: `${Deno.env.get('VITE_SUPABASE_URL')?.replace('supabase.co', 'lovable.app') || 'https://smb-connect-hub.lovable.app'}/auth/reset-password`
+        }
       });
 
       if (error) {

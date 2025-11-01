@@ -36,8 +36,34 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    // Handle the recovery token from URL hash
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    
+    // Check for error parameters first
+    const error = hashParams.get('error');
+    const errorCode = hashParams.get('error_code');
+    const errorDescription = hashParams.get('error_description');
+    
+    if (error) {
+      let title = 'Password Reset Link Issue';
+      let description = errorDescription?.replace(/\+/g, ' ') || 'This link is invalid or has expired.';
+      
+      if (errorCode === 'otp_expired') {
+        title = 'Reset Link Expired';
+        description = 'This password reset link has expired. Password reset links are valid for 1 hour. Please request a new reset link from your administrator.';
+      }
+      
+      toast({
+        title,
+        description,
+        variant: 'destructive',
+      });
+      
+      // Redirect to login after showing error
+      setTimeout(() => navigate('/auth/login'), 5000);
+      return;
+    }
+    
+    // Then check for valid recovery token
     const accessToken = hashParams.get('access_token');
     const type = hashParams.get('type');
     
