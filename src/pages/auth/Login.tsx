@@ -101,21 +101,20 @@ export default function Login() {
   const handleForgotPassword = async (data: ForgotPasswordFormData) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      // Send OTP code via email (no redirect URL needed)
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email);
 
       if (error) throw error;
 
       setResetEmailSent(true);
       toast({
-        title: 'Reset Link Sent',
-        description: 'Password reset link sent! It may take 2-5 minutes to arrive. Please check your spam folder. The link will expire in 1 hour.',
+        title: 'Reset Code Sent',
+        description: 'A 6-digit verification code has been sent to your email. It may take 2-5 minutes to arrive. Please check your spam folder.',
       });
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to send reset email',
+        description: error.message || 'Failed to send reset code',
         variant: 'destructive',
       });
     } finally {
@@ -248,8 +247,8 @@ export default function Login() {
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
               {resetEmailSent
-                ? "Password reset link sent! It may take 2-5 minutes to arrive. Please check your email and spam folder. The link expires in 1 hour."
-                : "Enter your email address and we'll send you a link to reset your password."}
+                ? "A 6-digit verification code has been sent to your email. It may take 2-5 minutes to arrive. Please check your spam folder."
+                : "Enter your email address and we'll send you a 6-digit verification code to reset your password."}
             </DialogDescription>
           </DialogHeader>
 
@@ -279,13 +278,28 @@ export default function Login() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send Reset Link'}
+                  {loading ? 'Sending...' : 'Send Verification Code'}
                 </Button>
               </DialogFooter>
             </form>
           ) : (
-            <DialogFooter>
-              <Button onClick={handleCloseForgotPassword}>Close</Button>
+            <DialogFooter className="flex-col gap-2">
+              <Button
+                onClick={() => {
+                  handleCloseForgotPassword();
+                  navigate('/reset-password');
+                }}
+                className="w-full"
+              >
+                Go to Reset Password Page
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCloseForgotPassword}
+                className="w-full"
+              >
+                Close
+              </Button>
             </DialogFooter>
           )}
         </DialogContent>

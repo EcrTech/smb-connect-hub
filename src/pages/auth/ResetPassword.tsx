@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/smb-connect-logo.jpg';
 
 const resetPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  token: z.string().length(6, 'Verification code must be 6 digits'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -23,8 +25,6 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
-  const [validationTimeout, setValidationTimeout] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -36,83 +36,31 @@ export default function ResetPassword() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  useEffect(() => {
-    // Set timeout for slow validation
-    const timeoutId = setTimeout(() => {
-      if (!isValidSession) {
-        setValidationTimeout(true);
-      }
-    }, 10000); // 10 seconds
-
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    
-    // Check for error parameters first
-    const error = hashParams.get('error');
-    const errorCode = hashParams.get('error_code');
-    const errorDescription = hashParams.get('error_description');
-    
-    if (error) {
-      clearTimeout(timeoutId);
-      let title = 'Password Reset Link Issue';
-      let description = errorDescription?.replace(/\+/g, ' ') || 'This link is invalid or has expired.';
-      
-      if (errorCode === 'otp_expired') {
-        title = 'Reset Link Expired';
-        description = 'This password reset link has expired. Password reset links are valid for 1 hour. Please request a new reset link from the login page.';
-      }
-      
-      toast({
-        title,
-        description,
-        variant: 'destructive',
-      });
-      
-      // Redirect to login after showing error
-      setTimeout(() => navigate('/auth/login'), 5000);
-      return;
-    }
-    
-    // Then check for valid recovery token
-    const accessToken = hashParams.get('access_token');
-    const type = hashParams.get('type');
-    
-    if (type === 'recovery' && accessToken) {
-      // This is a valid recovery link - Supabase automatically handles the session
-      console.log('Recovery token detected, validating session...');
-      clearTimeout(timeoutId);
-      setIsValidSession(true);
-    } else {
-      // Check if there's already an active recovery session
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        clearTimeout(timeoutId);
-        if (session) {
-          setIsValidSession(true);
-        } else {
-          toast({
-            title: 'Invalid Reset Link',
-            description: 'This password reset link is invalid or has expired. Please request a new one from the login page.',
-            variant: 'destructive',
-          });
-          setTimeout(() => navigate('/auth/login'), 2000);
-        }
-      });
-    }
-
-    return () => clearTimeout(timeoutId);
-  }, [navigate, toast, isValidSession]);
-
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.updateUser({
+      
+      // Step 1: Verify the OTP code
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: data.email,
+        token: data.token,
+        type: 'recovery',
+      });
+
+      if (verifyError) {
+        throw new Error(verifyError.message || 'Invalid or expired verification code. Please request a new code.');
+      }
+
+      // Step 2: Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: data.password,
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast({
         title: 'Password Reset Successful!',
-        description: 'Redirecting to login page...',
+        description: 'Your password has been updated. Redirecting to login...',
       });
 
       // Sign out and redirect to login after brief delay
@@ -123,42 +71,13 @@ export default function ResetPassword() {
     } catch (error: any) {
       toast({
         title: 'Failed to Reset Password',
-        description: error.message || 'An error occurred. Please try again or request a new reset link.',
+        description: error.message || 'Please check your verification code and try again, or request a new code from the login page.',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
-
-  if (!isValidSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center space-y-4">
-              <p className="text-muted-foreground">Validating reset link...</p>
-              {validationTimeout && (
-                <div className="space-y-3 p-4 bg-muted rounded-lg">
-                  <p className="text-sm font-medium">Taking longer than expected?</p>
-                  <p className="text-sm text-muted-foreground">
-                    If this continues, your reset link may have expired or there may be a network issue.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => navigate('/auth/login')}
-                  >
-                    Back to Login
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
@@ -169,11 +88,44 @@ export default function ResetPassword() {
           </div>
           <CardTitle className="text-2xl font-bold">Reset Your Password</CardTitle>
           <CardDescription>
-            Enter a new password for your account (minimum 8 characters)
+            Enter the 6-digit code from your email and choose a new password
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                {...register('email')}
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                disabled={loading}
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="token">Verification Code</Label>
+              <Input
+                {...register('token')}
+                id="token"
+                type="text"
+                placeholder="123456"
+                maxLength={6}
+                disabled={loading}
+                className="text-center text-2xl tracking-widest font-mono"
+              />
+              {errors.token && (
+                <p className="text-sm text-destructive">{errors.token.message}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Check your email for the 6-digit code. It may take 2-5 minutes to arrive.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">New Password</Label>
               <Input
@@ -203,8 +155,19 @@ export default function ResetPassword() {
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? 'Resetting Password...' : 'Reset Password'}
             </Button>
+
+            <div className="text-center pt-2">
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/auth/login')}
+                className="text-sm"
+              >
+                Back to Login
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
