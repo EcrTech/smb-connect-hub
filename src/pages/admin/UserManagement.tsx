@@ -79,9 +79,8 @@ export default function UserManagement() {
   const [hardDeletePassword, setHardDeletePassword] = useState('');
   const [hardDeleteNotes, setHardDeleteNotes] = useState('');
   const [showHardDeleteDialog, setShowHardDeleteDialog] = useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { toast } = useToast();
-  
-  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     loadData(1);
@@ -122,6 +121,15 @@ export default function UserManagement() {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
+  // Reload data when items per page changes
+  useEffect(() => {
+    if (searchTerm) {
+      performSearch(searchTerm, 1);
+    } else {
+      loadData(1);
+    }
+  }, [itemsPerPage]);
+
   const performSearch = async (searchQuery: string, pageNum: number = 1) => {
     try {
       setSearching(true);
@@ -137,11 +145,11 @@ export default function UserManagement() {
 
       const total = count || 0;
       setTotalUsers(total);
-      setTotalPages(Math.ceil(total / ITEMS_PER_PAGE));
+      setTotalPages(Math.ceil(total / itemsPerPage));
 
       // Search profiles with database-level filtering and pagination
-      const from = (pageNum - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
+      const from = (pageNum - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
       let query = supabase
         .from('profiles')
@@ -231,11 +239,11 @@ export default function UserManagement() {
 
       const total = count || 0;
       setTotalUsers(total);
-      setTotalPages(Math.ceil(total / ITEMS_PER_PAGE));
+      setTotalPages(Math.ceil(total / itemsPerPage));
 
       // Calculate pagination range
-      const from = (pageNum - 1) * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
+      const from = (pageNum - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
       // Load users from profiles table with pagination
       const { data: profiles, error: profilesError } = await supabase
@@ -636,20 +644,42 @@ export default function UserManagement() {
         </CardHeader>
         <CardContent>
           <div className="mb-4 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search by name or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                disabled={searching}
-              />
-              {searching && (
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-                </div>
-              )}
+            <div className="flex gap-4 items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by name or ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  disabled={searching}
+                />
+                {searching && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Label htmlFor="perPage" className="text-sm whitespace-nowrap">
+                  Show:
+                </Label>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => setItemsPerPage(Number(value))}
+                >
+                  <SelectTrigger id="perPage" className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             {selectedUserIds.size > 0 && (
