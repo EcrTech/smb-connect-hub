@@ -56,14 +56,14 @@ export default function UserManagement() {
   const navigate = useNavigate();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [displayedUsers, setDisplayedUsers] = useState<User[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [roleType, setRoleType] = useState<string>('');
   const [selectedAssociation, setSelectedAssociation] = useState<string>('');
@@ -80,13 +80,11 @@ export default function UserManagement() {
   const [hardDeleteNotes, setHardDeleteNotes] = useState('');
   const [showHardDeleteDialog, setShowHardDeleteDialog] = useState(false);
   const { toast } = useToast();
-  const observerRef = useRef<IntersectionObserver>();
-  const loadMoreRef = useRef<HTMLDivElement>(null);
   
   const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
-    loadData();
+    loadData(1);
     checkSuperAdmin();
   }, []);
 
@@ -114,57 +112,42 @@ export default function UserManagement() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchTerm) {
-        performSearch(searchTerm);
+        performSearch(searchTerm, 1);
       } else {
         // Reset to full list when search is cleared
-        setFilteredUsers(users);
-        setPage(1);
+        loadData(1);
       }
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  useEffect(() => {
-    const startIndex = 0;
-    const endIndex = page * ITEMS_PER_PAGE;
-    setDisplayedUsers(filteredUsers.slice(startIndex, endIndex));
-    setHasMore(endIndex < filteredUsers.length);
-  }, [page, filteredUsers]);
-
-  const loadMore = useCallback(() => {
-    if (hasMore && !loading) {
-      setPage(prev => prev + 1);
-    }
-  }, [hasMore, loading]);
-
-  useEffect(() => {
-    if (observerRef.current) observerRef.current.disconnect();
-
-    observerRef.current = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        loadMore();
-      }
-    });
-
-    if (loadMoreRef.current) {
-      observerRef.current.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) observerRef.current.disconnect();
-    };
-  }, [loadMore]);
-
-  const performSearch = async (searchQuery: string) => {
+  const performSearch = async (searchQuery: string, pageNum: number = 1) => {
     try {
       setSearching(true);
+      setPage(pageNum);
 
-      // Search profiles with database-level filtering
+      // Get total count first
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .or(
+          `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,id.ilike.%${searchQuery}%`
+        );
+
+      const total = count || 0;
+      setTotalUsers(total);
+      setTotalPages(Math.ceil(total / ITEMS_PER_PAGE));
+
+      // Search profiles with database-level filtering and pagination
+      const from = (pageNum - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       let query = supabase
         .from('profiles')
         .select('id, first_name, last_name, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       // Search across first_name, last_name, and id (partial match)
       const searchPattern = `%${searchQuery}%`;
@@ -179,11 +162,8 @@ export default function UserManagement() {
         throw profilesError;
       }
 
-      console.log('Search results:', profiles?.length);
-
       if (!profiles || profiles.length === 0) {
         setFilteredUsers([]);
-        setPage(1);
         setSearching(false);
         return;
       }
@@ -227,7 +207,6 @@ export default function UserManagement() {
       });
 
       setFilteredUsers(searchResults);
-      setPage(1);
     } catch (error: any) {
       toast({
         title: 'Search Error',
@@ -240,16 +219,30 @@ export default function UserManagement() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (pageNum: number = 1) => {
     try {
       setLoading(true);
+      setPage(pageNum);
 
-      // Load users from profiles table with pagination (100 at a time initially)
+      // Get total count first
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      const total = count || 0;
+      setTotalUsers(total);
+      setTotalPages(Math.ceil(total / ITEMS_PER_PAGE));
+
+      // Calculate pagination range
+      const from = (pageNum - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      // Load users from profiles table with pagination
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, created_at')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(from, to);
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
@@ -421,7 +414,7 @@ export default function UserManagement() {
       setRoleType('');
       setSelectedAssociation('');
       setSelectedCompany('');
-      loadData();
+      loadData(page);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -556,10 +549,10 @@ export default function UserManagement() {
   };
 
   const toggleAllUsers = () => {
-    if (selectedUserIds.size === displayedUsers.length) {
+    if (selectedUserIds.size === filteredUsers.length) {
       setSelectedUserIds(new Set());
     } else {
-      setSelectedUserIds(new Set(displayedUsers.map(u => u.id)));
+      setSelectedUserIds(new Set(filteredUsers.map(u => u.id)));
     }
   };
 
@@ -682,7 +675,7 @@ export default function UserManagement() {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedUserIds.size === displayedUsers.length && displayedUsers.length > 0}
+                    checked={selectedUserIds.size === filteredUsers.length && filteredUsers.length > 0}
                     onCheckedChange={toggleAllUsers}
                   />
                 </TableHead>
@@ -694,14 +687,14 @@ export default function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayedUsers.length === 0 && !loading && (
+                  {filteredUsers.length === 0 && !loading && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         {searchTerm ? 'No users found matching your search.' : 'No users found.'}
                       </TableCell>
                     </TableRow>
                   )}
-                  {displayedUsers.map((user) => (
+                  {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <Checkbox
@@ -931,9 +924,67 @@ export default function UserManagement() {
             </TableBody>
           </Table>
 
-          {hasMore && (
-            <div ref={loadMoreRef} className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing page {page} of {totalPages} ({totalUsers} total users)
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newPage = page - 1;
+                    searchTerm ? performSearch(searchTerm, newPage) : loadData(newPage);
+                  }}
+                  disabled={page === 1 || loading || searching}
+                >
+                  Previous
+                </Button>
+                
+                {/* Page numbers */}
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          searchTerm ? performSearch(searchTerm, pageNum) : loadData(pageNum);
+                        }}
+                        disabled={loading || searching}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newPage = page + 1;
+                    searchTerm ? performSearch(searchTerm, newPage) : loadData(newPage);
+                  }}
+                  disabled={page === totalPages || loading || searching}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
