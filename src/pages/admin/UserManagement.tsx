@@ -60,6 +60,7 @@ export default function UserManagement() {
   const [associations, setAssociations] = useState<Association[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -109,13 +110,20 @@ export default function UserManagement() {
     }
   };
 
+  // Database search with debouncing
   useEffect(() => {
-    const filtered = users.filter(user =>
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-    setPage(1);
-  }, [searchTerm, users]);
+    const timeoutId = setTimeout(() => {
+      if (searchTerm) {
+        performSearch(searchTerm);
+      } else {
+        // Reset to full list when search is cleared
+        setFilteredUsers(users);
+        setPage(1);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   useEffect(() => {
     const startIndex = 0;
@@ -147,6 +155,90 @@ export default function UserManagement() {
       if (observerRef.current) observerRef.current.disconnect();
     };
   }, [loadMore]);
+
+  const performSearch = async (searchQuery: string) => {
+    try {
+      setSearching(true);
+
+      // Search profiles with database-level filtering
+      let query = supabase
+        .from('profiles')
+        .select('id, first_name, last_name, created_at')
+        .order('created_at', { ascending: false });
+
+      // Search across first_name, last_name, and id (partial match)
+      const searchPattern = `%${searchQuery}%`;
+      query = query.or(
+        `first_name.ilike.${searchPattern},last_name.ilike.${searchPattern},id.ilike.${searchPattern}`
+      );
+
+      const { data: profiles, error: profilesError } = await query;
+
+      if (profilesError) {
+        console.error('Error searching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Search results:', profiles?.length);
+
+      if (!profiles || profiles.length === 0) {
+        setFilteredUsers([]);
+        setPage(1);
+        setSearching(false);
+        return;
+      }
+
+      // Get user IDs from search results
+      const userIds = profiles.map(p => p.id);
+
+      // Load role assignments for search results
+      const [adminData, associationAdminData, companyAdminData, memberData] = await Promise.all([
+        supabase.from('admin_users').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('association_managers').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('company_admins').select('user_id').in('user_id', userIds).eq('is_active', true),
+        supabase.from('members').select('user_id, role, created_by, created_at').in('user_id', userIds).eq('is_active', true)
+      ]);
+
+      const adminUsers = new Set(adminData.data?.map(a => a.user_id) || []);
+      const associationAdmins = new Set(associationAdminData.data?.map(a => a.user_id) || []);
+      const companyAdmins = new Set(companyAdminData.data?.map(a => a.user_id) || []);
+      const companyMembers = new Map((memberData.data || []).filter(m => m.role === 'member').map(m => [m.user_id, m]));
+
+      const searchResults = profiles.map(profile => {
+        const displayName = [profile.first_name, profile.last_name]
+          .filter(Boolean)
+          .join(' ') || 'Unknown User';
+        
+        const memberData = companyMembers.get(profile.id);
+        
+        return {
+          id: profile.id,
+          email: profile.id.substring(0, 8) + '...',
+          name: displayName,
+          created_at: memberData?.created_at || profile.created_at,
+          created_by: memberData?.created_by,
+          roles: [
+            ...(adminUsers.has(profile.id) ? ['Admin'] : []),
+            ...(associationAdmins.has(profile.id) ? ['Association Admin'] : []),
+            ...(companyAdmins.has(profile.id) ? ['Company Admin'] : []),
+            ...(companyMembers.has(profile.id) ? ['Member'] : [])
+          ]
+        };
+      });
+
+      setFilteredUsers(searchResults);
+      setPage(1);
+    } catch (error: any) {
+      toast({
+        title: 'Search Error',
+        description: error.message,
+        variant: 'destructive'
+      });
+      setFilteredUsers([]);
+    } finally {
+      setSearching(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -553,11 +645,17 @@ export default function UserManagement() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search by name..."
+                placeholder="Search by name or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
+                disabled={searching}
               />
+              {searching && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+              )}
             </div>
             
             {selectedUserIds.size > 0 && (
@@ -592,10 +690,17 @@ export default function UserManagement() {
                 <TableHead>Roles</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {displayedUsers.map((user) => (
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedUsers.length === 0 && !loading && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {searchTerm ? 'No users found matching your search.' : 'No users found.'}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {displayedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>
                     <Checkbox
