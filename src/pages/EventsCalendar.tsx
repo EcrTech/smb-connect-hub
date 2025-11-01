@@ -35,6 +35,7 @@ interface Event {
   end: Date;
   location: string | null;
   event_type: string | null;
+  created_by: string;
 }
 
 export default function EventsCalendar() {
@@ -76,6 +77,7 @@ export default function EventsCalendar() {
         end: new Date(event.end_date),
         location: event.location,
         event_type: event.event_type,
+        created_by: event.created_by,
       }));
 
       setEvents(formattedEvents);
@@ -90,7 +92,19 @@ export default function EventsCalendar() {
     }
   };
 
-  const handleSelectEvent = (event: Event) => {
+  const handleSelectEvent = async (event: Event) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Allow super admins or event creators to edit
+    if (!isSuperAdmin && event.created_by !== user?.id) {
+      toast({
+        title: 'Not Allowed',
+        description: 'You can only edit events you created',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setSelectedEvent(event);
     setFormData({
       title: event.title,
@@ -346,7 +360,7 @@ export default function EventsCalendar() {
             startAccessor="start"
             endAccessor="end"
             onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
+            onSelectSlot={isSuperAdmin ? handleSelectSlot : undefined}
             selectable={isSuperAdmin}
             popup
             views={['month', 'week', 'day', 'agenda']}
