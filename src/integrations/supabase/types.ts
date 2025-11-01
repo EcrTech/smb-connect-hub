@@ -1240,6 +1240,13 @@ export type Database = {
             referencedRelation: "companies_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       messages: {
