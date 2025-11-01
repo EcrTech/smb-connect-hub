@@ -32,18 +32,10 @@ serve(async (req) => {
       }
     )
 
-    // Verify user exists
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers()
-    const userExists = users.some(u => u.email === email)
-
-    if (!userExists) {
-      // Don't reveal if user exists or not for security
-      console.log('User not found but sending success response')
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    // Note: We don't check if user exists here to avoid pagination issues with auth.admin.listUsers()
+    // and to maintain security by not revealing whether an email is registered.
+    // The verify-password-otp function will validate the user exists when they submit the OTP.
+    console.log('Processing password reset request for:', email)
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
