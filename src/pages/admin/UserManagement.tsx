@@ -83,7 +83,6 @@ export default function UserManagement() {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [resetMethod, setResetMethod] = useState<'email' | 'manual'>('email');
   const [newPassword, setNewPassword] = useState('');
-  const [resetAdminPassword, setResetAdminPassword] = useState('');
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const { toast } = useToast();
 
@@ -617,7 +616,6 @@ export default function UserManagement() {
     try {
       const requestBody: any = {
         userId: resetPasswordUser.id,
-        adminPassword: resetAdminPassword,
       };
 
       if (resetMethod === 'email') {
@@ -643,14 +641,13 @@ export default function UserManagement() {
       toast({
         title: "Password Reset Successful",
         description: resetMethod === 'email' 
-          ? "Password reset email sent successfully" 
+          ? "Password reset email sent successfully. Please allow 2-5 minutes for delivery." 
           : "Password updated successfully",
       });
 
       setShowResetPasswordDialog(false);
       setResetPasswordUser(null);
       setNewPassword('');
-      setResetAdminPassword('');
       setResetMethod('email');
     } catch (error: any) {
       console.error('Error resetting password:', error);
@@ -1181,19 +1178,11 @@ export default function UserManagement() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="admin-password">Your Admin Password *</Label>
-              <Input
-                id="admin-password"
-                type="password"
-                value={resetAdminPassword}
-                onChange={(e) => setResetAdminPassword(e.target.value)}
-                placeholder="Confirm your password"
-              />
-              <p className="text-xs text-muted-foreground">
-                Re-enter your password to verify this action
+            {resetMethod === 'email' && (
+              <p className="text-sm text-muted-foreground">
+                A password reset link will be sent to the user's email. Please note that email delivery may take 2-5 minutes.
               </p>
-            </div>
+            )}
           </div>
           <DialogFooter>
             <Button 
@@ -1202,7 +1191,6 @@ export default function UserManagement() {
                 setShowResetPasswordDialog(false);
                 setResetPasswordUser(null);
                 setNewPassword('');
-                setResetAdminPassword('');
                 setResetMethod('email');
               }}
             >
@@ -1210,9 +1198,9 @@ export default function UserManagement() {
             </Button>
             <Button
               onClick={handleResetPassword}
-              disabled={!resetAdminPassword.trim() || (resetMethod === 'manual' && newPassword.length < 8)}
+              disabled={resetMethod === 'manual' && newPassword.length < 8}
             >
-              Reset Password
+              {resetMethod === 'email' ? 'Send Reset Email' : 'Update Password'}
             </Button>
           </DialogFooter>
         </DialogContent>

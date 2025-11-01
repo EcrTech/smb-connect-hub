@@ -10,7 +10,6 @@ interface ResetPasswordRequest {
   userId: string;
   newPassword?: string;
   sendResetEmail?: boolean;
-  adminPassword: string;
 }
 
 serve(async (req) => {
@@ -68,26 +67,12 @@ serve(async (req) => {
       );
     }
 
-    const { userId, newPassword, sendResetEmail, adminPassword }: ResetPasswordRequest = await req.json();
+    const { userId, newPassword, sendResetEmail }: ResetPasswordRequest = await req.json();
 
-    if (!userId || !adminPassword) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Verify admin's password
-    const { error: signInError } = await supabaseClient.auth.signInWithPassword({
-      email: user.email!,
-      password: adminPassword,
-    });
-
-    if (signInError) {
-      console.error('Admin password verification failed:', signInError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid admin password' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -100,7 +85,7 @@ serve(async (req) => {
         type: 'recovery',
         email: (await supabaseAdmin.auth.admin.getUserById(userId)).data.user?.email!,
         options: {
-          redirectTo: `${Deno.env.get('VITE_SUPABASE_URL')?.replace('supabase.co', 'lovable.app') || 'https://smb-connect-hub.lovable.app'}/auth/reset-password`
+          redirectTo: `${Deno.env.get('VITE_SUPABASE_URL')?.replace('supabase.co', 'lovable.app') || 'https://smb-connect-hub.lovable.app'}/reset-password`
         }
       });
 
