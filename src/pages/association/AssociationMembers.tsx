@@ -80,8 +80,8 @@ export default function AssociationMembers() {
         .from('members')
         .select(`
           *,
-          profiles:user_id (first_name, last_name, email),
-          company:companies (name)
+          profiles(first_name, last_name, email),
+          companies(name)
         `)
         .in('company_id', companyIds)
         .eq('is_active', true)
@@ -209,7 +209,7 @@ export default function AssociationMembers() {
                           {member.profiles?.first_name} {member.profiles?.last_name}
                         </TableCell>
                         <TableCell>{member.profiles?.email}</TableCell>
-                        <TableCell>{member.company?.name || 'N/A'}</TableCell>
+                        <TableCell>{member.companies?.name || 'N/A'}</TableCell>
                         <TableCell className="capitalize">{member.role}</TableCell>
                         <TableCell>
                           {new Date(member.created_at).toLocaleDateString()}
