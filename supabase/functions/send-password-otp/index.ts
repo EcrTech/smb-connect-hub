@@ -143,7 +143,7 @@ serve(async (req) => {
     `
 
     const { data, error: emailError } = await resend.emails.send({
-      from: 'SMB Connect <noreply@smbconnect.in>',
+      from: 'SMB Connect <onboarding@resend.dev>',
       to: [email],
       subject: 'Reset Your Password - Verification Code',
       html: htmlContent,
