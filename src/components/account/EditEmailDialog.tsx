@@ -66,8 +66,9 @@ export function EditEmailDialog({ currentEmail }: EditEmailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <Pencil className="h-4 w-4" />
+        <Button variant="outline" size="sm">
+          <Pencil className="h-4 w-4 mr-2" />
+          Edit Email
         </Button>
       </DialogTrigger>
       <DialogContent>
