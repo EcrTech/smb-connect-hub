@@ -244,18 +244,19 @@ export default function UserManagement() {
     try {
       setLoading(true);
 
-      // Load users from profiles table (accessible to admins via RLS)
+      // Load users from profiles table with pagination (100 at a time initially)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, created_at')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
         throw profilesError;
       }
 
-      console.log('Loaded profiles:', profiles?.length, profiles);
+      console.log('Loaded profiles:', profiles?.length);
 
       // Get user IDs
       const userIds = profiles?.map(p => p.id) || [];
