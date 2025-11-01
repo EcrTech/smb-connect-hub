@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ChangePasswordForm } from '@/components/account/ChangePasswordForm';
+import { EditEmailDialog } from '@/components/account/EditEmailDialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackButton } from '@/components/BackButton';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,7 +62,10 @@ export default function AccountSettings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  {user?.email && <EditEmailDialog currentEmail={user.email} />}
+                </div>
                 <p className="text-base mt-1">{user?.email}</p>
               </div>
               {profile && (
