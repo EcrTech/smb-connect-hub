@@ -80,6 +80,11 @@ export default function UserManagement() {
   const [hardDeleteNotes, setHardDeleteNotes] = useState('');
   const [showHardDeleteDialog, setShowHardDeleteDialog] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [resetMethod, setResetMethod] = useState<'email' | 'manual'>('email');
+  const [newPassword, setNewPassword] = useState('');
+  const [resetAdminPassword, setResetAdminPassword] = useState('');
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -606,6 +611,57 @@ export default function UserManagement() {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+
+    try {
+      const requestBody: any = {
+        userId: resetPasswordUser.id,
+        adminPassword: resetAdminPassword,
+      };
+
+      if (resetMethod === 'email') {
+        requestBody.sendResetEmail = true;
+      } else {
+        if (newPassword.length < 8) {
+          toast({
+            title: "Invalid Password",
+            description: "Password must be at least 8 characters",
+            variant: "destructive",
+          });
+          return;
+        }
+        requestBody.newPassword = newPassword;
+      }
+
+      const { error } = await supabase.functions.invoke('admin-reset-user-password', {
+        body: requestBody,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password Reset Successful",
+        description: resetMethod === 'email' 
+          ? "Password reset email sent successfully" 
+          : "Password updated successfully",
+      });
+
+      setShowResetPasswordDialog(false);
+      setResetPasswordUser(null);
+      setNewPassword('');
+      setResetAdminPassword('');
+      setResetMethod('email');
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: "Password Reset Failed",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredCompanies = selectedAssociation
     ? companies.filter(c => c.association_id === selectedAssociation)
     : companies;
@@ -938,21 +994,35 @@ export default function UserManagement() {
                       </DialogContent>
                     </Dialog>
                     {isSuperAdmin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingUser(user)}
-                        title="Delete member"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setResetPasswordUser(user);
+                            setShowResetPasswordDialog(true);
+                          }}
+                          title="Reset password"
+                        >
+                          <Shield className="h-4 w-4 mr-1" />
+                          Reset Password
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeletingUser(user)}
+                          title="Delete member"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
                     )}
                   </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
@@ -1073,6 +1143,80 @@ export default function UserManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password - {resetPasswordUser?.email}</DialogTitle>
+            <DialogDescription>
+              Choose how you want to reset this user's password
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Reset Method</Label>
+              <Select value={resetMethod} onValueChange={(value: 'email' | 'manual') => setResetMethod(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Send Reset Email (Recommended)</SelectItem>
+                  <SelectItem value="manual">Set Password Manually</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {resetMethod === 'manual' && (
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password (min 8 characters)</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  minLength={8}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">Your Admin Password *</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                value={resetAdminPassword}
+                onChange={(e) => setResetAdminPassword(e.target.value)}
+                placeholder="Confirm your password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Re-enter your password to verify this action
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowResetPasswordDialog(false);
+                setResetPasswordUser(null);
+                setNewPassword('');
+                setResetAdminPassword('');
+                setResetMethod('email');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetPassword}
+              disabled={!resetAdminPassword.trim() || (resetMethod === 'manual' && newPassword.length < 8)}
+            >
+              Reset Password
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Hard Delete Confirmation Dialog */}
       <Dialog open={showHardDeleteDialog} onOpenChange={setShowHardDeleteDialog}>
