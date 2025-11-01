@@ -92,26 +92,9 @@ export default function EventsCalendar() {
     }
   };
 
-  const handleSelectEvent = async (event: Event) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    console.log('Event clicked:', event.title);
-    console.log('Event creator:', event.created_by);
-    console.log('Current user:', user?.id);
-    console.log('Is super admin:', isSuperAdmin);
-    
-    // Allow super admins or event creators to edit
-    if (!isSuperAdmin && event.created_by !== user?.id) {
-      console.log('User not authorized to edit this event');
-      toast({
-        title: 'Not Allowed',
-        description: 'You can only edit events you created',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    console.log('Opening edit dialog');
+  const handleSelectEvent = (event: Event) => {
+    console.log('=== EVENT CLICKED ===');
+    console.log('Event:', event);
     setSelectedEvent(event);
     setFormData({
       title: event.title,
