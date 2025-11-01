@@ -53,10 +53,15 @@ export default function Login() {
     resolver: zodResolver(forgotPasswordSchema),
   });
 
-  // Auto-fill email field when forgot password dialog opens
+  // Auto-fill email field from login form when forgot password dialog opens
   useEffect(() => {
-    if (showForgotPassword && user?.email) {
-      setForgotValue('email', user.email);
+    if (showForgotPassword) {
+      const loginEmail = (document.getElementById('email') as HTMLInputElement)?.value;
+      if (loginEmail) {
+        setForgotValue('email', loginEmail);
+      } else if (user?.email) {
+        setForgotValue('email', user.email);
+      }
     }
   }, [showForgotPassword, user?.email, setForgotValue]);
 
