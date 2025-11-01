@@ -54,7 +54,7 @@ serve(async (req) => {
     }
 
     // Verify user is an admin
-    const { data: adminData, error: adminError } = await supabaseClient
+    const { data: adminData, error: adminError } = await supabaseAdmin
       .from('admin_users')
       .select('is_active, is_super_admin')
       .eq('user_id', user.id)
