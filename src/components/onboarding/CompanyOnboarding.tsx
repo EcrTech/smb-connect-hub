@@ -44,8 +44,8 @@ export function CompanyOnboarding() {
     },
     {
       id: 'events',
-      title: 'Request Events',
-      description: 'Submit event requisitions for company meetings, launches, or celebrations.',
+      title: 'Create Events',
+      description: 'Create events directly from the floating button to add them to the calendar.',
       target: '[data-tour="event-requisition"]',
     },
   ];

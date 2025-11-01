@@ -44,8 +44,8 @@ export function AdminOnboarding() {
     },
     {
       id: 'events',
-      title: 'Event Requisitions',
-      description: 'Review and approve event requests from associations and companies.',
+      title: 'Event Management',
+      description: 'Review and manage events on the calendar.',
       action: () => navigate('/admin/event-requests'),
     },
   ];
