@@ -1,6 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "https://esm.sh/resend@3.0.0";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,7 +16,7 @@ interface InvitationEmailRequest {
   token: string;
 }
 
-serve(async (req) => {
+const handler = async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -29,8 +28,6 @@ serve(async (req) => {
     }
 
     const resend = new Resend(RESEND_API_KEY);
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const inviteData: InvitationEmailRequest = await req.json();
     console.log('Sending company invitation email to:', inviteData.recipientEmail);
@@ -118,4 +115,6 @@ serve(async (req) => {
       }
     );
   }
-});
+};
+
+serve(handler);
