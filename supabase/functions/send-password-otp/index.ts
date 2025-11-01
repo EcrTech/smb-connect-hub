@@ -1,6 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { Resend } from 'https://esm.sh/resend@3.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,9 +63,7 @@ serve(async (req) => {
 
     console.log('OTP stored successfully, sending email...')
 
-    // Send email via Resend
-    const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
-
+    // Send email via Resend API directly
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -142,19 +139,29 @@ serve(async (req) => {
       </html>
     `
 
-    const { data, error: emailError } = await resend.emails.send({
-      from: 'SMB Connect <onboarding@resend.dev>',
-      to: [email],
-      subject: 'Reset Your Password - Verification Code',
-      html: htmlContent,
+    // Use Resend API directly
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'SMB Connect <onboarding@resend.dev>',
+        to: [email],
+        subject: 'Reset Your Password - Verification Code',
+        html: htmlContent,
+      }),
     })
 
-    if (emailError) {
-      console.error('Failed to send email:', emailError)
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text()
+      console.error('Failed to send email:', errorText)
       throw new Error('Failed to send verification email')
     }
 
-    console.log('Password reset OTP email sent successfully:', data)
+    const resendData = await resendResponse.json()
+    console.log('Password reset OTP email sent successfully:', resendData)
 
     return new Response(
       JSON.stringify({ success: true }),
