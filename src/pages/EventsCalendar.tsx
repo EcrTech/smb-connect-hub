@@ -238,129 +238,137 @@ export default function EventsCalendar() {
           </Button>
           <h1 className="text-2xl font-bold">Events Calendar</h1>
           {isSuperAdmin && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => {
-                  setSelectedEvent(null);
-                  setFormData({
-                    title: '',
-                    description: '',
-                    start_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-                    end_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-                    location: '',
-                    event_type: '',
-                  });
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Event
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{selectedEvent ? 'Edit Event' : 'Create Event'}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Event Title *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="start_date">Start Date & Time *</Label>
-                      <Input
-                        id="start_date"
-                        type="datetime-local"
-                        value={formData.start_date}
-                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="end_date">End Date & Time *</Label>
-                      <Input
-                        id="end_date"
-                        type="datetime-local"
-                        value={formData.end_date}
-                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="e.g., Conference Room A, Online, etc."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="event_type">Event Type</Label>
-                    <Select
-                      value={formData.event_type}
-                      onValueChange={(value) => setFormData({ ...formData, event_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select event type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="meeting">Meeting</SelectItem>
-                        <SelectItem value="conference">Conference</SelectItem>
-                        <SelectItem value="webinar">Webinar</SelectItem>
-                        <SelectItem value="workshop">Workshop</SelectItem>
-                        <SelectItem value="social">Social Event</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex justify-between gap-2">
-                    <div>
-                      {selectedEvent && (
-                        <Button type="button" variant="destructive" onClick={handleDelete}>
-                          Delete Event
-                        </Button>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit">
-                        {selectedEvent ? 'Update' : 'Create'} Event
-                      </Button>
-                    </div>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => {
+              setSelectedEvent(null);
+              setFormData({
+                title: '',
+                description: '',
+                start_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+                end_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+                location: '',
+                event_type: '',
+              });
+              setDialogOpen(true);
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Event
+            </Button>
           )}
           {!isSuperAdmin && <div className="w-32" />}
         </div>
       </header>
 
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedEvent ? 'Edit Event' : 'Create Event'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Event Title *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Start Date & Time *</Label>
+                <Input
+                  id="start_date"
+                  type="datetime-local"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end_date">End Date & Time *</Label>
+                <Input
+                  id="end_date"
+                  type="datetime-local"
+                  value={formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g., Conference Room A, Online, etc."
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="event_type">Event Type</Label>
+              <Select
+                value={formData.event_type}
+                onValueChange={(value) => setFormData({ ...formData, event_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select event type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="conference">Conference</SelectItem>
+                  <SelectItem value="webinar">Webinar</SelectItem>
+                  <SelectItem value="workshop">Workshop</SelectItem>
+                  <SelectItem value="social">Social Event</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-between gap-2">
+              <div>
+                {selectedEvent && (
+                  <Button type="button" variant="destructive" onClick={handleDelete}>
+                    Delete Event
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {selectedEvent ? 'Update' : 'Create'} Event
+                </Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <main className="container mx-auto px-4 py-6 pl-20">
         <div className="bg-card rounded-lg p-4 shadow-sm" style={{ height: 'calc(100vh - 180px)' }}>
+          <style>{`
+            .rbc-event {
+              cursor: pointer !important;
+            }
+            .rbc-event:hover {
+              opacity: 0.8;
+            }
+          `}</style>
           <Calendar
             localizer={localizer}
             events={events}
