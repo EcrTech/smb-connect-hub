@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,15 +26,24 @@ type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
   });
+
+  useEffect(() => {
+    const email = location.state?.email;
+    if (email) {
+      setValue('email', email);
+    }
+  }, [location.state, setValue]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
@@ -100,8 +109,9 @@ export default function ResetPassword() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                disabled={loading}
+                disabled={true}
                 autoComplete="email"
+                className="bg-muted"
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>

@@ -293,8 +293,9 @@ export default function Login() {
               <DialogFooter className="flex-col gap-2 sm:gap-2">
                 <Button
                   onClick={() => {
+                    const email = (document.getElementById('forgot-email') as HTMLInputElement)?.value;
                     handleCloseForgotPassword();
-                    navigate('/reset-password');
+                    navigate('/reset-password', { state: { email } });
                   }}
                   className="w-full"
                 >
