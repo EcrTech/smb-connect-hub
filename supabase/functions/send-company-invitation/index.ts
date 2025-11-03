@@ -56,9 +56,9 @@ const handler = async (req: Request): Promise<Response> => {
               <h1>Company Invitation</h1>
             </div>
             <div class="content">
-              <h2>You've been invited to join ${inviteData.companyName}</h2>
+              <h2>You've been invited by ${inviteData.associationName}</h2>
               <p>Hello,</p>
-              <p><strong>${inviteData.invitedByName}</strong> (${inviteData.invitedByEmail}) from <strong>${inviteData.associationName}</strong> has invited you to join <strong>${inviteData.companyName}</strong> on SMB Connect.</p>
+              <p><strong>${inviteData.invitedByName}</strong> (${inviteData.invitedByEmail}) from <strong>${inviteData.associationName}</strong> has invited you to register <strong>${inviteData.companyName}</strong> on SMB Connect.</p>
               <p>Click the button below to accept this invitation:</p>
               <p style="text-align: center;">
                 <a href="${acceptUrl}" class="button">Accept Invitation</a>
@@ -77,9 +77,9 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: 'SMB Connect <noreply@smbconnect.in>',
+      from: 'SMB Connect <echocommunicator@gmail.com>',
       to: [inviteData.recipientEmail],
-      subject: `Invitation to join ${inviteData.companyName} on SMB Connect`,
+      subject: `Invitation from ${inviteData.associationName} to join SMB Connect`,
       html: emailHtml,
       reply_to: inviteData.invitedByEmail,
       headers: {
