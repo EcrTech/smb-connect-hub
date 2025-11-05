@@ -7,6 +7,7 @@ import { Building2, Users, Shield, LogOut, Settings, FileText, Plus, Upload, Mai
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { RoleSwitcher } from '@/components/RoleSwitcher';
 
 export default function AdminActions() {
   const navigate = useNavigate();
@@ -125,6 +126,7 @@ export default function AdminActions() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <RoleSwitcher />
             {profile && currentUserId && (
               <Avatar 
                 className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
