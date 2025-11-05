@@ -6,12 +6,14 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HomeButton } from "./components/HomeButton";
 import { FloatingEventRequisition } from "./components/FloatingEventRequisition";
+import { RoleProvider } from "./contexts/RoleContext";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import Dashboard from "./pages/Dashboard";
+import SelectRole from "./pages/SelectRole";
 import Setup from "./pages/Setup";
 import RequestAssociation from "./pages/RequestAssociation";
 import RequestCompany from "./pages/RequestCompany";
@@ -79,7 +81,14 @@ const AppContent = () => {
             <Route path="/auth/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
-            
+            <Route 
+              path="/select-role" 
+              element={
+                <ProtectedRoute>
+                  <SelectRole />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
         <Route 
           path="/setup" 
@@ -491,11 +500,13 @@ const AppContent = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <RoleProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </RoleProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,14 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 import logo from '@/assets/smb-connect-logo.png';
 
 export const HomeButton = () => {
   const navigate = useNavigate();
   const { role } = useUserRole();
+  const { selectedRole } = useRoleContext();
+  
+  // Use selected role from context if available, otherwise fall back to role from hook
+  const activeRole = selectedRole || role;
 
   const getHomePath = () => {
-    switch(role) {
+    switch(activeRole) {
       case 'admin':
       case 'god-admin':
         return '/admin';
@@ -40,7 +45,7 @@ export const HomeButton = () => {
           </button>
         </TooltipTrigger>
         <TooltipContent side="right">
-          <p>Go to {role === 'admin' || role === 'god-admin' ? 'Admin Dashboard' : role === 'association' ? 'Association Dashboard' : role === 'company' ? 'Company Dashboard' : role === 'member' ? 'Feed' : 'Dashboard'}</p>
+          <p>Go to {activeRole === 'admin' || activeRole === 'god-admin' ? 'Admin Dashboard' : activeRole === 'association' ? 'Association Dashboard' : activeRole === 'company' ? 'Company Dashboard' : activeRole === 'member' ? 'Feed' : 'Dashboard'}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

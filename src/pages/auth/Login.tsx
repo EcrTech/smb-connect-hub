@@ -80,7 +80,8 @@ export default function Login() {
         description: 'You have been logged in successfully',
       });
       
-      navigate('/dashboard');
+      // Navigate to role selection page
+      navigate('/select-role');
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -98,7 +99,7 @@ export default function Login() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${window.location.origin}/select-role`,
         },
       });
 

@@ -1,7 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { RoleSwitcher } from './RoleSwitcher';
 import { 
   Shield, 
   Building2, 
@@ -14,6 +16,10 @@ export function RoleNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useUserRole();
+  const { selectedRole } = useRoleContext();
+  
+  // Use selected role from context if available
+  const activeRole = selectedRole || role;
 
   // Don't show on auth pages
   if (location.pathname.startsWith('/auth') || location.pathname === '/') {
@@ -31,7 +37,7 @@ export function RoleNavigation() {
   });
 
   // Add role-specific navigation
-  if (role === 'admin') {
+  if (activeRole === 'admin' || activeRole === 'god-admin') {
     navigationOptions.push({
       label: 'Admin Dashboard',
       icon: Shield,
@@ -40,7 +46,7 @@ export function RoleNavigation() {
     });
   }
 
-  if (role === 'association') {
+  if (activeRole === 'association') {
     navigationOptions.push({
       label: 'Association Dashboard',
       icon: Building2,
@@ -49,7 +55,7 @@ export function RoleNavigation() {
     });
   }
 
-  if (role === 'company') {
+  if (activeRole === 'company') {
     navigationOptions.push({
       label: 'Company Dashboard',
       icon: Building2,
@@ -68,6 +74,7 @@ export function RoleNavigation() {
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Switch View</h3>
+          <RoleSwitcher />
         </div>
         <div className="flex flex-wrap gap-2">
           {navigationOptions.map((option) => {

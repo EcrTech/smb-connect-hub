@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
@@ -15,14 +16,15 @@ import MemberDashboard from './member/MemberDashboard';
 
 export default function Dashboard() {
   const { role, loading, refreshRole } = useUserRole();
+  const { selectedRole } = useRoleContext();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !role) {
-      // User has no role assigned, redirect to request association page
-      navigate('/request-association');
+    // Redirect to role selection if no role is selected
+    if (!loading && !selectedRole && !role) {
+      navigate('/select-role');
     }
-  }, [role, loading, navigate]);
+  }, [loading, role, selectedRole, navigate]);
 
   if (loading) {
     return (
