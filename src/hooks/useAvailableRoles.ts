@@ -43,37 +43,67 @@ export function useAvailableRoles() {
       }
 
       // Check association manager roles
-      const { data: associationManagers } = await supabase
-        .from('association_managers')
-        .select('association_id, association:associations(id, name)')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
+      // Admins get access to ALL associations for troubleshooting
+      if (roles.isAdmin) {
+        const { data: allAssociations } = await supabase
+          .from('associations')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name');
 
-      if (associationManagers && associationManagers.length > 0) {
-        roles.associations = associationManagers
-          .filter(am => am.association)
-          .map(am => ({
-            id: (am.association as any).id,
-            name: (am.association as any).name,
-          }));
+        if (allAssociations && allAssociations.length > 0) {
+          roles.associations = allAssociations;
+        }
+      } else {
+        const { data: associationManagers } = await supabase
+          .from('association_managers')
+          .select('association_id, association:associations(id, name)')
+          .eq('user_id', user.id)
+          .eq('is_active', true);
+
+        if (associationManagers && associationManagers.length > 0) {
+          roles.associations = associationManagers
+            .filter(am => am.association)
+            .map(am => ({
+              id: (am.association as any).id,
+              name: (am.association as any).name,
+            }));
+        }
       }
 
       // Check company admin roles
-      const { data: companyAdmins } = await supabase
-        .from('members')
-        .select('company_id, role, company:companies(id, name)')
-        .eq('user_id', user.id)
-        .in('role', ['owner', 'admin'])
-        .eq('is_active', true);
+      // Admins get access to ALL companies for troubleshooting
+      if (roles.isAdmin) {
+        const { data: allCompanies } = await supabase
+          .from('companies')
+          .select('id, name')
+          .eq('is_active', true)
+          .order('name');
 
-      if (companyAdmins && companyAdmins.length > 0) {
-        roles.companies = companyAdmins
-          .filter(ca => ca.company)
-          .map(ca => ({
-            id: (ca.company as any).id,
-            name: (ca.company as any).name,
-            role: ca.role as 'owner' | 'admin',
+        if (allCompanies && allCompanies.length > 0) {
+          roles.companies = allCompanies.map(c => ({
+            id: c.id,
+            name: c.name,
+            role: 'admin' as const,
           }));
+        }
+      } else {
+        const { data: companyAdmins } = await supabase
+          .from('members')
+          .select('company_id, role, company:companies(id, name)')
+          .eq('user_id', user.id)
+          .in('role', ['owner', 'admin'])
+          .eq('is_active', true);
+
+        if (companyAdmins && companyAdmins.length > 0) {
+          roles.companies = companyAdmins
+            .filter(ca => ca.company)
+            .map(ca => ({
+              id: (ca.company as any).id,
+              name: (ca.company as any).name,
+              role: ca.role as 'owner' | 'admin',
+            }));
+        }
       }
 
       // Check member status
