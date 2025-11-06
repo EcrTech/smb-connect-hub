@@ -406,6 +406,24 @@ export default function UserManagement() {
             toast({ title: 'Error', description: 'Please select a company', variant: 'destructive' });
             return;
           }
+          
+          // Check if user already has a member record for this company
+          const { data: existingMember } = await supabase
+            .from('members')
+            .select('id')
+            .eq('user_id', selectedUser.id)
+            .eq('company_id', selectedCompany)
+            .maybeSingle();
+          
+          if (existingMember) {
+            toast({ 
+              title: 'Already a member', 
+              description: 'This user is already a member of this company',
+              variant: 'destructive' 
+            });
+            return;
+          }
+          
           const { error: memberError } = await supabase
             .from('members')
             .insert({ 
