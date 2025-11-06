@@ -124,6 +124,7 @@ export default function SelectRole() {
           }}
           availableRoles={availableRoles}
           onSelectRole={handleRoleSelect}
+          loading={loading}
         />
       )}
     </div>
