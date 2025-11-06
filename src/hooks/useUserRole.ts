@@ -14,7 +14,7 @@ export function useUserRole() {
 
   useEffect(() => {
     loadUserRole();
-  }, []);
+  }, [selectedRole, selectedAssociationId, selectedCompanyId]);
 
   const loadUserRole = async () => {
     try {
