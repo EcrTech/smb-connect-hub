@@ -32,12 +32,58 @@ export default function AssociationDashboard() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProfile();
-    if (userData?.association) {
-      setAssociation(userData.association);
-      loadStats(userData.association.id);
-    }
-  }, [userData]);
+    const initialize = async () => {
+      await loadProfile();
+      console.log('AssociationDashboard userData:', userData);
+      console.log('userData type:', userData?.type);
+      console.log('userData.association:', userData?.association);
+      console.log('userData.association_id:', userData?.association_id);
+      
+      // Try to get association data from userData or fetch it directly
+      if (userData?.association) {
+        setAssociation(userData.association);
+        loadStats(userData.association.id);
+      } else if (userData?.association_id) {
+        // If we have association_id but not association object, fetch it
+        console.log('Fetching association with id:', userData.association_id);
+        try {
+          const { data: assocData, error } = await supabase
+            .from('associations')
+            .select('*')
+            .eq('id', userData.association_id)
+            .maybeSingle();
+          
+          console.log('Fetched association data:', assocData, 'error:', error);
+          
+          if (assocData) {
+            setAssociation(assocData);
+            loadStats(assocData.id);
+          } else {
+            setLoading(false);
+            toast({
+              title: 'Error',
+              description: 'Could not load association data',
+              variant: 'destructive'
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching association:', err);
+          setLoading(false);
+        }
+      } else if (userData && !userData.association && !userData.association_id) {
+        // userData exists but no association reference
+        console.error('User data loaded but no association found:', userData);
+        setLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Association data not found. Please contact support.',
+          variant: 'destructive'
+        });
+      }
+    };
+    
+    initialize();
+  }, [userData, toast]);
 
   const loadProfile = async () => {
     try {
