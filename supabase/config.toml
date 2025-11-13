@@ -4,10 +4,10 @@ project_id = "jqynxytwngtytvuzucuo"
 verify_jwt = false
 
 [functions.send-member-invitation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-company-invitation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-password-reset]
 verify_jwt = false

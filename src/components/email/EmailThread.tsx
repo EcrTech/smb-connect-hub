@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Reply, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import DOMPurify from 'dompurify';
 
 interface EmailThreadProps {
   conversationId: string;
@@ -240,10 +241,16 @@ export function EmailThread({
                         : "bg-muted"
                     )}
                   >
-                    <div
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: message.body_html }}
-                    />
+                  <div 
+                    className="prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: DOMPurify.sanitize(message.body_html, {
+                        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'blockquote', 'div', 'span'],
+                        ALLOWED_ATTR: ['href', 'target', 'class'],
+                        ALLOW_DATA_ATTR: false
+                      })
+                    }}
+                  />
                   </div>
                 </div>
               </div>
