@@ -104,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: 'SMB Connect <echocommunicator@gmail.com>',
+      from: 'SMB Connect <onboarding@resend.dev>',
       to: [inviteData.recipientEmail],
       subject: `Invitation from ${inviteData.associationName} to join SMB Connect`,
       html: emailHtml,
