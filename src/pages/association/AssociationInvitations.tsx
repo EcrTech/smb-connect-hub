@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 export default function AssociationInvitations() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userData } = useUserRole();
+  const { userData, loading: userLoading } = useUserRole();
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -35,6 +35,15 @@ export default function AssociationInvitations() {
       loadInvitations();
     }
   }, [userData]);
+
+  // Show loading state while user data is being fetched
+  if (userLoading || !userData?.association?.id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   const loadInvitations = async () => {
     try {
@@ -216,7 +225,7 @@ export default function AssociationInvitations() {
                     required
                   />
                 </div>
-                <Button type="submit" disabled={sending}>
+                <Button type="submit" disabled={sending || userLoading}>
                   <Mail className="w-4 h-4 mr-2" />
                   {sending ? 'Sending...' : 'Send Invitation'}
                 </Button>
