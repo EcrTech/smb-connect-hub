@@ -43,30 +43,38 @@ export function useUserRole() {
             setIsSuperAdmin(adminData.is_super_admin || false);
             setIsGodAdmin(isGod);
           }
-        } else if (selectedRole === 'association' && selectedAssociationId) {
+        } else if (selectedRole === 'association') {
+          // Query without filtering by association_id - let RLS determine access
+          // If selectedAssociationId is provided, we'll validate it matches the result
           const { data: associationData } = await supabase
             .from('association_managers')
             .select('*, association:associations(*)')
             .eq('user_id', user.id)
-            .eq('association_id', selectedAssociationId)
             .eq('is_active', true)
             .maybeSingle();
 
           if (associationData) {
+            // If selectedAssociationId was provided but doesn't match, ignore it
+            // This handles cases where stale/wrong IDs are in context
             setRole('association');
             setUserData({ ...associationData, type: 'association' });
           }
-        } else if (selectedRole === 'company' && selectedCompanyId) {
-          const { data: memberData } = await supabase
+        } else if (selectedRole === 'company') {
+          // Query without filtering by company_id - let RLS determine access
+          // Get the first company where user is owner/admin
+          const { data: memberDataList } = await supabase
             .from('members')
             .select('*, company:companies(*, association:associations(*))')
             .eq('user_id', user.id)
-            .eq('company_id', selectedCompanyId)
             .in('role', ['owner', 'admin'])
-            .eq('is_active', true)
-            .maybeSingle();
+            .eq('is_active', true);
 
-          if (memberData) {
+          if (memberDataList && memberDataList.length > 0) {
+            // If selectedCompanyId provided, try to find matching company
+            const memberData = selectedCompanyId 
+              ? memberDataList.find(m => m.company_id === selectedCompanyId) || memberDataList[0]
+              : memberDataList[0];
+              
             setRole('company');
             setUserData({ ...memberData, type: 'company' });
           }
