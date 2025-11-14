@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Shield, LogOut, Settings, FileText, Plus, Upload, Mail, MessageCircle, BarChart3, Calendar } from 'lucide-react';
+import { Building2, Users, Shield, LogOut, Settings, FileText, Plus, Upload, Mail, MessageCircle, BarChart3, Calendar, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -267,6 +267,10 @@ export default function AdminActions() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin/users')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Users
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/invitations')}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Member Invitations
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin/email-lists')}>
                 <Mail className="w-4 h-4 mr-2" />
