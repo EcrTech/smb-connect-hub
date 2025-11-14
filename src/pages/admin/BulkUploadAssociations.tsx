@@ -48,22 +48,49 @@ export default function BulkUploadAssociations() {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const text = e.target?.result as string;
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
         
-        const { data, error } = await supabase.functions.invoke('process-bulk-upload', {
-          body: {
-            type: 'associations',
-            csvData: text,
-          },
-        });
+        let success = 0;
+        let failed = 0;
 
-        if (error) throw error;
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const rowData: any = {};
+          
+          headers.forEach((header, index) => {
+            rowData[header] = values[index] || null;
+          });
+
+          try {
+            const { error } = await supabase.from('associations').insert({
+              name: rowData.name,
+              description: rowData.description,
+              contact_email: rowData.contact_email,
+              contact_phone: rowData.contact_phone,
+              website: rowData.website,
+              address: rowData.address,
+              city: rowData.city,
+              state: rowData.state,
+              country: rowData.country || 'India',
+              postal_code: rowData.postal_code,
+            });
+
+            if (error) throw error;
+            success++;
+          } catch (err) {
+            console.error('Failed to insert row:', err);
+            failed++;
+          }
+        }
 
         toast({
           title: 'Success',
-          description: `Successfully processed ${data.success} records. ${data.failed || 0} failed.`,
+          description: `Successfully processed ${success} records. ${failed} failed.`,
         });
 
         event.target.value = '';
+        setUploading(false);
       };
 
       reader.readAsText(file);
@@ -73,7 +100,6 @@ export default function BulkUploadAssociations() {
         description: error.message || 'Failed to process CSV file',
         variant: 'destructive',
       });
-    } finally {
       setUploading(false);
     }
   };

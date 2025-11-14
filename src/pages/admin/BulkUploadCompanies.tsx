@@ -48,22 +48,72 @@ export default function BulkUploadCompanies() {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const text = e.target?.result as string;
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
         
-        const { data, error } = await supabase.functions.invoke('process-bulk-upload', {
-          body: {
-            type: 'companies',
-            csvData: text,
-          },
-        });
+        let success = 0;
+        let failed = 0;
 
-        if (error) throw error;
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const rowData: any = {};
+          
+          headers.forEach((header, index) => {
+            rowData[header] = values[index] || null;
+          });
+
+          try {
+            // Find association by email if provided
+            let associationId = null;
+            if (rowData.association_email) {
+              const { data: association } = await supabase
+                .from('associations')
+                .select('id')
+                .eq('contact_email', rowData.association_email)
+                .single();
+              associationId = association?.id;
+            }
+
+            if (!associationId) {
+              failed++;
+              continue;
+            }
+
+            const { error } = await supabase.from('companies').insert({
+              association_id: associationId,
+              name: rowData.name,
+              description: rowData.description,
+              email: rowData.email,
+              phone: rowData.phone,
+              website: rowData.website,
+              address: rowData.address,
+              city: rowData.city,
+              state: rowData.state,
+              country: rowData.country || 'India',
+              postal_code: rowData.postal_code,
+              gst_number: rowData.gst_number,
+              pan_number: rowData.pan_number,
+              business_type: rowData.business_type,
+              industry_type: rowData.industry_type,
+              employee_count: rowData.employee_count ? parseInt(rowData.employee_count) : null,
+              annual_turnover: rowData.annual_turnover ? parseFloat(rowData.annual_turnover) : null,
+            });
+
+            if (error) throw error;
+            success++;
+          } catch (err) {
+            console.error('Failed to insert row:', err);
+            failed++;
+          }
+        }
 
         toast({
           title: 'Success',
-          description: `Successfully processed ${data.success} records. ${data.failed || 0} failed.`,
+          description: `Successfully processed ${success} records. ${failed} failed.`,
         });
 
         event.target.value = '';
+        setUploading(false);
       };
 
       reader.readAsText(file);
@@ -73,7 +123,6 @@ export default function BulkUploadCompanies() {
         description: error.message || 'Failed to process CSV file',
         variant: 'destructive',
       });
-    } finally {
       setUploading(false);
     }
   };
