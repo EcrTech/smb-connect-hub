@@ -104,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const emailResponse = await resend.emails.send({
-      from: 'SMB Connect <noreply@yourdomain.com>', // Replace with your verified domain
+      from: 'SMB Connect <noreply@smbconnect.in>',
       to: [inviteData.recipientEmail],
       subject: `Invitation from ${inviteData.associationName} to join SMB Connect`,
       html: emailHtml,
