@@ -12,6 +12,7 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AcceptInvitation from "./pages/AcceptInvitation";
+import AcceptMemberInvitation from "./pages/auth/AcceptMemberInvitation";
 import Dashboard from "./pages/Dashboard";
 import SelectRole from "./pages/SelectRole";
 import Setup from "./pages/Setup";
@@ -40,6 +41,7 @@ import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
 import AdminWhatsAppLists from "./pages/admin/AdminWhatsAppLists";
 import AdminWhatsAppListDetail from "./pages/admin/AdminWhatsAppListDetail";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import MemberInvitations from "./pages/admin/MemberInvitations";
 import AssociationDashboard from "./pages/association/AssociationDashboard";
 import AssociationCompanies from "./pages/association/AssociationCompanies";
 import AssociationInvitations from "./pages/association/AssociationInvitations";
@@ -77,6 +79,7 @@ const AppContent = () => {
             <Route path="/auth/register" element={<Register />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/accept-invitation" element={<AcceptInvitation />} />
+            <Route path="/register" element={<AcceptMemberInvitation />} />
             <Route 
               path="/select-role" 
               element={
@@ -271,6 +274,14 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/admin/invitations" 
+            element={
+              <ProtectedRoute>
+                <MemberInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/request-association"
             element={
               <ProtectedRoute>
@@ -335,6 +346,14 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/association/manage-invitations" 
+            element={
+              <ProtectedRoute>
+                <MemberInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/company"
             element={
               <ProtectedRoute>
@@ -347,6 +366,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <CompanyMembers />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/manage-invitations" 
+            element={
+              <ProtectedRoute>
+                <MemberInvitations />
               </ProtectedRoute>
             } 
           />
