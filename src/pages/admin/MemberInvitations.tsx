@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreateMemberInvitationDialog } from '@/components/admin/CreateMemberInvitationDialog';
+import { BackButton } from '@/components/BackButton';
 import { Loader2, MoreVertical, RefreshCw, Ban, Mail, Calendar, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -167,9 +168,11 @@ export default function MemberInvitations() {
 
   const organizationId = role === 'association' ? userData?.association_id : userData?.company_id;
   const organizationType = role === 'association' ? 'association' : 'company';
+  const fallbackPath = role === 'association' ? '/association/dashboard' : role === 'company' ? '/company/dashboard' : '/dashboard';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <BackButton fallbackPath={fallbackPath} className="mb-4" />
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
