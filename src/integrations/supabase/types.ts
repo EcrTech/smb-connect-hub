@@ -1182,6 +1182,101 @@ export type Database = {
           },
         ]
       }
+      member_invitation_audit: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          invitation_id: string
+          ip_address: string | null
+          performed_by: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          invitation_id: string
+          ip_address?: string | null
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          ip_address?: string | null
+          performed_by?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_invitation_audit_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "member_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          department: string | null
+          designation: string | null
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          invited_by: string
+          last_name: string
+          organization_id: string
+          organization_type: string
+          role: string
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email: string
+          expires_at: string
+          first_name: string
+          id?: string
+          invited_by: string
+          last_name: string
+          organization_id: string
+          organization_type: string
+          role: string
+          status?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          invited_by?: string
+          last_name?: string
+          organization_id?: string
+          organization_type?: string
+          role?: string
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           company_id: string | null
