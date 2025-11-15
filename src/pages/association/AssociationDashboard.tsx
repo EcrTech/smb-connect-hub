@@ -93,20 +93,6 @@ export default function AssociationDashboard() {
     };
     
     initialize();
-
-    // Add loading timeout
-    const timeout = setTimeout(() => {
-      if (loading) {
-        setLoading(false);
-        toast({
-          title: 'Loading timeout',
-          description: 'Data is taking longer than expected. Please refresh the page.',
-          variant: 'destructive'
-        });
-      }
-    }, 10000); // 10 second timeout
-
-    return () => clearTimeout(timeout);
   }, [userData, toast]);
 
   const loadProfile = async () => {
@@ -359,7 +345,10 @@ export default function AssociationDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:shadow-lg transition-shadow" 
+            onClick={() => navigate('/association/manage-invitations')}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Pending Invitations</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
