@@ -25,19 +25,48 @@ export default function AssociationInvitations() {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [associationId, setAssociationId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
   });
 
   useEffect(() => {
-    if (userData?.association?.id) {
+    const initializeAssociation = async () => {
+      if (userLoading) return;
+
+      // For god-admin or admin users without association context, get first association
+      if ((userData?.type === 'god-admin' || userData?.type === 'admin') && !userData?.association?.id) {
+        try {
+          const { data: associations, error } = await supabase
+            .from('associations')
+            .select('id')
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+
+          if (!error && associations) {
+            setAssociationId(associations.id);
+          }
+        } catch (error) {
+          console.error('Error fetching association:', error);
+        }
+      } else if (userData?.association?.id) {
+        setAssociationId(userData.association.id);
+      }
+    };
+
+    initializeAssociation();
+  }, [userData, userLoading]);
+
+  useEffect(() => {
+    if (associationId) {
       loadInvitations();
     }
-  }, [userData]);
+  }, [associationId]);
 
   // Show loading state while user data is being fetched
-  if (userLoading || !userData?.association?.id) {
+  if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -46,11 +75,13 @@ export default function AssociationInvitations() {
   }
 
   const loadInvitations = async () => {
+    if (!associationId) return;
+    
     try {
       const { data, error } = await supabase
         .from('company_invitations')
         .select('*')
-        .eq('association_id', userData?.association?.id)
+        .eq('association_id', associationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -79,7 +110,7 @@ export default function AssociationInvitations() {
       return;
     }
 
-    if (!userData?.association?.id) {
+    if (!associationId) {
       toast({
         title: 'Error',
         description: 'Association not found',
@@ -103,7 +134,7 @@ export default function AssociationInvitations() {
       const { data: invitation, error: invitationError } = await supabase
         .from('company_invitations')
         .insert({
-          association_id: userData.association.id,
+          association_id: associationId,
           company_name: formData.companyName,
           email: formData.email,
           token,
