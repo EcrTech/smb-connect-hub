@@ -178,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create registration URL with token
-    const registrationUrl = `${appUrl}/accept-invitation?token=${rawToken}`;
+    const registrationUrl = `${appUrl}/register?token=${rawToken}`;
 
     // Send email via Resend
     const emailHtml = `
