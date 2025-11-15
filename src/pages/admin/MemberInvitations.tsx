@@ -171,7 +171,7 @@ export default function MemberInvitations() {
   const fallbackPath = role === 'association' ? '/association/dashboard' : role === 'company' ? '/company/dashboard' : '/dashboard';
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 pt-20 space-y-6">
       <div className="mb-6">
         <BackButton fallbackPath={fallbackPath} />
       </div>
