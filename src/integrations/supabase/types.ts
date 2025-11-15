@@ -1223,6 +1223,7 @@ export type Database = {
       member_invitations: {
         Row: {
           accepted_at: string | null
+          accepted_by: string | null
           created_at: string
           department: string | null
           designation: string | null
@@ -1242,6 +1243,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           department?: string | null
           designation?: string | null
@@ -1261,6 +1263,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           department?: string | null
           designation?: string | null
