@@ -45,17 +45,20 @@ export function useUserRole() {
           }
         } else if (selectedRole === 'association') {
           // Query without filtering by association_id - let RLS determine access
-          // If selectedAssociationId is provided, we'll validate it matches the result
-          const { data: associationData } = await supabase
+          // Get all association manager records for this user
+          const { data: associationDataList } = await supabase
             .from('association_managers')
             .select('*, association:associations(*)')
             .eq('user_id', user.id)
-            .eq('is_active', true)
-            .maybeSingle();
+            .eq('is_active', true);
 
-          if (associationData) {
-            // If selectedAssociationId was provided but doesn't match, ignore it
-            // This handles cases where stale/wrong IDs are in context
+          if (associationDataList && associationDataList.length > 0) {
+            // If selectedAssociationId is provided, try to find matching association
+            // Otherwise, just take the first one
+            const associationData = selectedAssociationId 
+              ? associationDataList.find(a => a.association_id === selectedAssociationId) || associationDataList[0]
+              : associationDataList[0];
+              
             setRole('association');
             setUserData({ ...associationData, type: 'association' });
           }
@@ -116,14 +119,14 @@ export function useUserRole() {
       }
 
       // Check if association manager
-      const { data: associationData } = await supabase
+      const { data: associationDataList } = await supabase
         .from('association_managers')
         .select('*, association:associations(*)')
         .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
+        .eq('is_active', true);
 
-      if (associationData) {
+      if (associationDataList && associationDataList.length > 0) {
+        const associationData = associationDataList[0];
         setRole('association');
         setUserData({ ...associationData, type: 'association' });
         setLoading(false);
