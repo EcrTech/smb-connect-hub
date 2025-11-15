@@ -1996,6 +1996,14 @@ export type Database = {
         Args: { target_company_id: string; viewer_id: string }
         Returns: boolean
       }
+      can_view_profile_as_association_manager: {
+        Args: { profile_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
+      can_view_profile_as_company_admin: {
+        Args: { profile_user_id: string; viewer_id: string }
+        Returns: boolean
+      }
       check_company_admin_for_member: {
         Args: { member_company_id: string }
         Returns: boolean
@@ -2012,7 +2020,7 @@ export type Database = {
         Returns: boolean
       }
       is_association_manager_of_user: {
-        Args: { target_user_id: string; viewer_id: string }
+        Args: { manager_user_id: string; target_user_id: string }
         Returns: boolean
       }
       is_association_network_manager: {
@@ -2028,7 +2036,7 @@ export type Database = {
         Returns: boolean
       }
       is_company_admin_of_user: {
-        Args: { target_user_id: string; viewer_id: string }
+        Args: { admin_user_id: string; target_user_id: string }
         Returns: boolean
       }
       is_company_admin_role: {
@@ -2053,10 +2061,14 @@ export type Database = {
         Returns: boolean
       }
       is_same_company: {
-        Args: { target_user_id: string; viewer_id: string }
+        Args: { check_user_id: string; target_user_id: string }
         Returns: boolean
       }
       is_super_admin: { Args: { check_user_id: string }; Returns: boolean }
+      is_user_association_manager: {
+        Args: { _association_id: string; _user_id: string }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
