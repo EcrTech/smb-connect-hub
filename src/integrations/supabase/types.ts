@@ -1237,6 +1237,7 @@ export type Database = {
           role: string
           status: string
           token: string
+          token_hash: string
           updated_at: string
         }
         Insert: {
@@ -1255,6 +1256,7 @@ export type Database = {
           role: string
           status?: string
           token: string
+          token_hash: string
           updated_at?: string
         }
         Update: {
@@ -1273,6 +1275,7 @@ export type Database = {
           role?: string
           status?: string
           token?: string
+          token_hash?: string
           updated_at?: string
         }
         Relationships: []
