@@ -116,7 +116,29 @@ export default function AcceptMemberInvitation() {
         }
       );
 
-      if (functionError) throw functionError;
+      // Handle edge function errors (including 409 conflicts)
+      if (functionError) {
+        let errorMessage = 'Failed to complete registration';
+        
+        if (data && typeof data === 'object') {
+          if ('error' in data) {
+            errorMessage = data.error as string;
+          }
+          if ('existing_user' in data && data.existing_user) {
+            // User already exists - show specific message
+            toast.error('An account with this email already exists', {
+              description: 'Please sign in to continue',
+              action: {
+                label: 'Sign In',
+                onClick: () => navigate('/login')
+              }
+            });
+            return;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
 
       if (data.success) {
         toast.success('Registration completed successfully!');
