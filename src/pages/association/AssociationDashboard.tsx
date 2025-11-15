@@ -70,6 +70,33 @@ export default function AssociationDashboard() {
           console.error('Error fetching association:', err);
           setLoading(false);
         }
+      } else if (userData?.type === 'god-admin' || userData?.type === 'admin') {
+        // Admin user without association context - fetch first association or show selector
+        console.log('Admin user accessing association dashboard without context');
+        try {
+          const { data: associations, error } = await supabase
+            .from('associations')
+            .select('*')
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
+          
+          if (associations) {
+            console.log('Auto-selected association for admin:', associations);
+            setAssociation(associations);
+            loadStats(associations.id);
+          } else {
+            setLoading(false);
+            toast({
+              title: 'No Associations Found',
+              description: 'No active associations available to manage.',
+              variant: 'destructive'
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching associations for admin:', err);
+          setLoading(false);
+        }
       } else if (userData && !userData.association && !userData.association_id) {
         // userData exists but no association reference
         console.error('User data loaded but no association found:', userData);
