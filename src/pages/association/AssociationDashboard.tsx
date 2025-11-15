@@ -374,10 +374,10 @@ export default function AssociationDashboard() {
 
           <Card 
             className="cursor-pointer hover:shadow-lg transition-shadow" 
-            onClick={() => navigate('/association/manage-invitations')}
+            onClick={() => navigate('/association/invitations')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Invitations</CardTitle>
+              <CardTitle className="text-sm font-medium">Pending Company Invitations</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -386,7 +386,7 @@ export default function AssociationDashboard() {
               ) : (
                 <>
                   <div className="text-2xl font-bold">{stats.pendingInvitations}</div>
-                  <p className="text-xs text-muted-foreground">Awaiting response</p>
+                  <p className="text-xs text-muted-foreground">Companies awaiting response</p>
                 </>
               )}
             </CardContent>
@@ -474,11 +474,11 @@ export default function AssociationDashboard() {
                 data-tour="send-invitations"
               >
                 <Users className="w-4 h-4 mr-2" />
-                Send Invitations
+                Company Invitations
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/manage-invitations')}>
                 <UserPlus className="w-4 h-4 mr-2" />
-                Manage Invitations
+                Member Invitations
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/calendar')}>
                 <Calendar className="w-4 h-4 mr-2" />
