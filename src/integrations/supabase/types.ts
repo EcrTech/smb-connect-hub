@@ -1235,6 +1235,8 @@ export type Database = {
           last_name: string
           organization_id: string
           organization_type: string
+          revoked_at: string | null
+          revoked_by: string | null
           role: string
           status: string
           token: string
@@ -1255,6 +1257,8 @@ export type Database = {
           last_name: string
           organization_id: string
           organization_type: string
+          revoked_at?: string | null
+          revoked_by?: string | null
           role: string
           status?: string
           token: string
@@ -1275,6 +1279,8 @@ export type Database = {
           last_name?: string
           organization_id?: string
           organization_type?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
           role?: string
           status?: string
           token?: string
