@@ -172,7 +172,9 @@ export default function MemberInvitations() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <BackButton fallbackPath={fallbackPath} className="mb-4" />
+      <div className="mb-6">
+        <BackButton fallbackPath={fallbackPath} />
+      </div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
