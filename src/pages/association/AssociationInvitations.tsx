@@ -7,7 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { ArrowLeft, Send, Mail } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -25,12 +35,15 @@ export default function AssociationInvitations() {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [associationId, setAssociationId] = useState<string | null>(null);
   const [associationName, setAssociationName] = useState<string>('');
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedInvitation, setSelectedInvitation] = useState<any>(null);
 
   useEffect(() => {
     const initializeAssociation = async () => {
@@ -199,6 +212,44 @@ export default function AssociationInvitations() {
     }
   };
 
+  const handleDeleteInvitation = async () => {
+    if (!selectedInvitation) return;
+
+    setDeleting(selectedInvitation.id);
+    
+    try {
+      const { error } = await supabase
+        .from('company_invitations')
+        .delete()
+        .eq('id', selectedInvitation.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Invitation deleted successfully',
+      });
+
+      loadInvitations();
+    } catch (error: any) {
+      console.error('Error deleting invitation:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete invitation',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(null);
+      setDeleteDialogOpen(false);
+      setSelectedInvitation(null);
+    }
+  };
+
+  const openDeleteDialog = (invitation: any) => {
+    setSelectedInvitation(invitation);
+    setDeleteDialogOpen(true);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -287,13 +338,14 @@ export default function AssociationInvitations() {
                   No invitations sent yet
                 </div>
               ) : (
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Company Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Sent Date</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -307,6 +359,16 @@ export default function AssociationInvitations() {
                         <TableCell>
                           {new Date(invitation.created_at).toLocaleDateString()}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openDeleteDialog(invitation)}
+                            disabled={deleting === invitation.id}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -316,6 +378,29 @@ export default function AssociationInvitations() {
           </Card>
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the invitation for{' '}
+              <span className="font-semibold">{selectedInvitation?.company_name}</span>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInvitation}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
