@@ -89,17 +89,32 @@ export function CreateMemberInvitationDialog({
         }
       );
 
-      if (error) throw error;
+      // Handle edge function errors (including 409 conflicts)
+      if (error) {
+        // Try to get the specific error message from the response
+        let errorMessage = 'Failed to send invitation';
+        
+        if (result && typeof result === 'object' && 'error' in result) {
+          errorMessage = result.error;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+        
+        toast.error(errorMessage);
+        return;
+      }
 
-      if (result.success) {
+      if (result && result.success) {
         toast.success('Invitation sent successfully!', {
           description: `An email has been sent to ${data.email}`,
         });
         reset();
         setOpen(false);
         onSuccess?.();
+      } else if (result && result.error) {
+        toast.error(result.error);
       } else {
-        throw new Error(result.error || 'Failed to send invitation');
+        toast.error('Failed to send invitation');
       }
     } catch (err: any) {
       console.error('Error creating invitation:', err);
