@@ -59,6 +59,27 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Found valid invitation:', invitation.id);
 
+    // Check if user already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(u => u.email === invitation.email);
+
+    if (existingUser) {
+      console.log('User already exists:', existingUser.id);
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'An account with this email already exists. Please sign in instead.',
+          code: 'user_exists',
+          existing_user: true
+        }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Create Supabase Auth user with auto-confirmed email
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: invitation.email,
@@ -72,6 +93,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (authError || !authData.user) {
       console.error('Error creating auth user:', authError);
+      
+      // Check if it's a duplicate email error
+      if (authError?.message?.includes('already been registered')) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'An account with this email already exists. Please sign in instead.',
+            code: 'user_exists',
+            existing_user: true
+          }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
       throw new Error(`Failed to create user account: ${authError?.message || 'Unknown error'}`);
     }
 
