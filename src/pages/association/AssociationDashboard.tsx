@@ -73,16 +73,40 @@ export default function AssociationDashboard() {
       } else if (userData && !userData.association && !userData.association_id) {
         // userData exists but no association reference
         console.error('User data loaded but no association found:', userData);
+        console.log('userData keys:', userData ? Object.keys(userData) : 'null');
         setLoading(false);
         toast({
           title: 'Error',
-          description: 'Association data not found. Please contact support.',
-          variant: 'destructive'
+          description: 'Association data not found. Click retry to reload.',
+          variant: 'destructive',
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </Button>
+          )
         });
       }
     };
     
     initialize();
+
+    // Add loading timeout
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setLoading(false);
+        toast({
+          title: 'Loading timeout',
+          description: 'Data is taking longer than expected. Please refresh the page.',
+          variant: 'destructive'
+        });
+      }
+    }, 10000); // 10 second timeout
+
+    return () => clearTimeout(timeout);
   }, [userData, toast]);
 
   const loadProfile = async () => {
