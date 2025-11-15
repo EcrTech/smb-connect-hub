@@ -75,32 +75,25 @@ export default function AcceptInvitation() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      // Fetch invitation details
-      const { data: inviteData, error: inviteError } = await supabase
-        .from('company_invitations')
-        .select(`
-          *,
-          association:associations(name)
-        `)
-        .eq('token', token)
-        .single();
+      // Verify invitation using edge function (bypasses RLS)
+      const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+        'verify-company-invitation',
+        {
+          body: { token }
+        }
+      );
 
-      if (inviteError || !inviteData) {
-        setError('Invitation not found or invalid.');
+      if (verifyError || !verifyData?.valid) {
+        setError(verifyData?.error || 'Invitation not found or invalid.');
         return;
       }
 
-      // Check if expired
-      if (new Date(inviteData.expires_at) < new Date()) {
-        setError('This invitation has expired.');
-        return;
-      }
-
-      // Check if already accepted
-      if (inviteData.status === 'accepted') {
-        setError('This invitation has already been accepted.');
-        return;
-      }
+      const inviteData = {
+        ...verifyData.invitation,
+        association: verifyData.invitation.association_name ? {
+          name: verifyData.invitation.association_name
+        } : undefined
+      };
 
       setInvitation(inviteData);
 
