@@ -143,6 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
         role,
         designation,
         department,
+        token: rawToken,
         token_hash: tokenHash,
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
