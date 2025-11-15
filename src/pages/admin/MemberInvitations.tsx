@@ -172,7 +172,7 @@ export default function MemberInvitations() {
 
   return (
     <div className="container mx-auto p-6 pt-20 space-y-6">
-      <div className="mb-6">
+      <div className="mb-6 relative z-[60]">
         <BackButton fallbackPath={fallbackPath} />
       </div>
       <Card>
