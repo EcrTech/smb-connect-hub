@@ -26,6 +26,7 @@ export default function AssociationInvitations() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [associationId, setAssociationId] = useState<string | null>(null);
+  const [associationName, setAssociationName] = useState<string>('');
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
@@ -40,19 +41,21 @@ export default function AssociationInvitations() {
         try {
           const { data: associations, error } = await supabase
             .from('associations')
-            .select('id')
+            .select('id, name')
             .eq('is_active', true)
             .limit(1)
             .single();
 
           if (!error && associations) {
             setAssociationId(associations.id);
+            setAssociationName(associations.name);
           }
         } catch (error) {
           console.error('Error fetching association:', error);
         }
       } else if (userData?.association?.id) {
         setAssociationId(userData.association.id);
+        setAssociationName(userData.association.name || '');
       }
     };
 
@@ -162,7 +165,7 @@ export default function AssociationInvitations() {
           recipientEmail: formData.email,
           invitedByName: profile ? `${profile.first_name} ${profile.last_name}` : 'Association Admin',
           invitedByEmail: user?.email || '',
-          associationName: userData.association.name,
+          associationName: associationName,
           token,
         },
       });
