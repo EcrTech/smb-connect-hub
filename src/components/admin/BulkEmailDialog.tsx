@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send, AlertCircle, Image as ImageIcon, Upload } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useUserRole } from '@/hooks/useUserRole';
 import 'react-quill/dist/quill.snow.css';
 
 const ReactQuill = lazy(() => import('react-quill'));
@@ -23,6 +24,7 @@ export function BulkEmailDialog({
   listIds,
 }: BulkEmailDialogProps) {
   const { toast } = useToast();
+  const { role, userData } = useUserRole();
   const quillRef = useRef<any>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -152,9 +154,11 @@ export function BulkEmailDialog({
             listId,
             subject,
             bodyHtml: body,
-            bodyText: body.replace(/<[^>]*>/g, ''), // Strip HTML for plain text
+            bodyText: body.replace(/<[^>]*>/g, ''),
             senderEmail,
             senderName: senderName || senderEmail,
+            associationId: role === 'association' ? userData?.association_id : null,
+            companyId: role === 'company' ? userData?.company_id : null,
           },
         })
       );

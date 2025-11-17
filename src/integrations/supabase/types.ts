@@ -800,6 +800,256 @@ export type Database = {
         }
         Relationships: []
       }
+      email_campaign_events: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          external_message_id: string | null
+          id: string
+          ip_address: string | null
+          occurred_at: string
+          recipient_email: string
+          recipient_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          external_message_id?: string | null
+          id?: string
+          ip_address?: string | null
+          occurred_at?: string
+          recipient_email: string
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          external_message_id?: string | null
+          id?: string
+          ip_address?: string | null
+          occurred_at?: string
+          recipient_email?: string
+          recipient_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaign_events_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaign_recipients: {
+        Row: {
+          bounced: boolean | null
+          bounced_at: string | null
+          campaign_id: string
+          click_count: number | null
+          clicked: boolean | null
+          complained: boolean | null
+          created_at: string | null
+          delivered: boolean | null
+          delivered_at: string | null
+          email: string
+          external_message_id: string | null
+          first_clicked_at: string | null
+          first_opened_at: string | null
+          id: string
+          last_clicked_at: string | null
+          last_opened_at: string | null
+          name: string | null
+          open_count: number | null
+          opened: boolean | null
+          sent: boolean | null
+          sent_at: string | null
+          unsubscribed: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          bounced?: boolean | null
+          bounced_at?: string | null
+          campaign_id: string
+          click_count?: number | null
+          clicked?: boolean | null
+          complained?: boolean | null
+          created_at?: string | null
+          delivered?: boolean | null
+          delivered_at?: string | null
+          email: string
+          external_message_id?: string | null
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_opened_at?: string | null
+          name?: string | null
+          open_count?: number | null
+          opened?: boolean | null
+          sent?: boolean | null
+          sent_at?: string | null
+          unsubscribed?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          bounced?: boolean | null
+          bounced_at?: string | null
+          campaign_id?: string
+          click_count?: number | null
+          clicked?: boolean | null
+          complained?: boolean | null
+          created_at?: string | null
+          delivered?: boolean | null
+          delivered_at?: string | null
+          email?: string
+          external_message_id?: string | null
+          first_clicked_at?: string | null
+          first_opened_at?: string | null
+          id?: string
+          last_clicked_at?: string | null
+          last_opened_at?: string | null
+          name?: string | null
+          open_count?: number | null
+          opened?: boolean | null
+          sent?: boolean | null
+          sent_at?: string | null
+          unsubscribed?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "email_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_campaigns: {
+        Row: {
+          association_id: string | null
+          bounce_rate: number | null
+          click_rate: number | null
+          company_id: string | null
+          created_at: string | null
+          created_by: string
+          external_campaign_id: string | null
+          id: string
+          list_id: string
+          open_rate: number | null
+          sender_email: string
+          sender_name: string
+          sent_at: string
+          subject: string
+          total_bounced: number
+          total_clicked: number
+          total_complained: number
+          total_delivered: number
+          total_opened: number
+          total_recipients: number
+          total_sent: number
+          total_unsubscribed: number
+          updated_at: string | null
+        }
+        Insert: {
+          association_id?: string | null
+          bounce_rate?: number | null
+          click_rate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by: string
+          external_campaign_id?: string | null
+          id?: string
+          list_id: string
+          open_rate?: number | null
+          sender_email: string
+          sender_name: string
+          sent_at?: string
+          subject: string
+          total_bounced?: number
+          total_clicked?: number
+          total_complained?: number
+          total_delivered?: number
+          total_opened?: number
+          total_recipients?: number
+          total_sent?: number
+          total_unsubscribed?: number
+          updated_at?: string | null
+        }
+        Update: {
+          association_id?: string | null
+          bounce_rate?: number | null
+          click_rate?: number | null
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          external_campaign_id?: string | null
+          id?: string
+          list_id?: string
+          open_rate?: number | null
+          sender_email?: string
+          sender_name?: string
+          sent_at?: string
+          subject?: string
+          total_bounced?: number
+          total_clicked?: number
+          total_complained?: number
+          total_delivered?: number
+          total_opened?: number
+          total_recipients?: number
+          total_sent?: number
+          total_unsubscribed?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaigns_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "email_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_conversations: {
         Row: {
           created_at: string
