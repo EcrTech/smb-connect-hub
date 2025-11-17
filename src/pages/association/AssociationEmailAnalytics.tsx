@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, TrendingUp, Users, MousePointer, AlertCircle } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 
 interface CampaignStats {
   totalCampaigns: number;
@@ -27,7 +28,9 @@ interface CampaignListItem {
 
 export default function AssociationEmailAnalytics() {
   const { userData } = useUserRole();
+  const { selectedAssociationId } = useRoleContext();
   const [loading, setLoading] = useState(true);
+  const [associationId, setAssociationId] = useState<string | null>(null);
   const [stats, setStats] = useState<CampaignStats>({
     totalCampaigns: 0,
     totalSent: 0,
@@ -39,12 +42,39 @@ export default function AssociationEmailAnalytics() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
+    // Priority 1: Use selectedAssociationId from RoleContext (set by dashboard)
+    if (selectedAssociationId) {
+      console.log('Using selectedAssociationId from RoleContext:', selectedAssociationId);
+      setAssociationId(selectedAssociationId);
+      return;
+    }
+    
+    // Priority 2: Use association_id from userData (for association managers)
     if (userData?.association_id) {
+      console.log('Using userData.association_id:', userData.association_id);
+      setAssociationId(userData.association_id);
+      return;
+    }
+    
+    console.warn('No association context found. User type:', userData?.type);
+  }, [selectedAssociationId, userData]);
+
+  useEffect(() => {
+    if (associationId) {
+      console.log('=== ANALYTICS CONTEXT DEBUG ===');
+      console.log('selectedAssociationId:', selectedAssociationId);
+      console.log('userData.association_id:', userData?.association_id);
+      console.log('Resolved associationId:', associationId);
       loadAnalytics();
     }
-  }, [userData, timeRange]);
+  }, [associationId, timeRange]);
 
   const loadAnalytics = async () => {
+    if (!associationId) {
+      console.warn('Cannot load analytics: no associationId');
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -55,7 +85,7 @@ export default function AssociationEmailAnalytics() {
       const { data: campaignsData, error } = await supabase
         .from('email_campaigns')
         .select('*')
-        .eq('association_id', userData.association_id)
+        .eq('association_id', associationId)
         .gte('sent_at', startDate.toISOString())
         .order('sent_at', { ascending: false });
 

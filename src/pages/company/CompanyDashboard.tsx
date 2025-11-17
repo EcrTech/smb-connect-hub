@@ -8,12 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RoleNavigation } from '@/components/RoleNavigation';
+import { useRoleContext } from '@/contexts/RoleContext';
 
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userData } = useUserRole();
+  const { setRole } = useRoleContext();
   const [company, setCompany] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -33,6 +35,8 @@ export default function CompanyDashboard() {
     loadProfile();
     if (userData?.company) {
       setCompany(userData.company);
+      setRole('company', undefined, userData.company.id);
+      console.log('RoleContext updated with company:', userData.company.id);
       loadStats(userData.company.id);
     }
   }, [userData]);
