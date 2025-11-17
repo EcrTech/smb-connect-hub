@@ -1126,6 +1126,8 @@ export type Database = {
       }
       email_lists: {
         Row: {
+          association_id: string | null
+          company_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -1135,6 +1137,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          association_id?: string | null
+          company_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -1144,6 +1148,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          association_id?: string | null
+          company_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1152,7 +1158,29 @@ export type Database = {
           total_recipients?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_lists_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_lists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_lists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_messages: {
         Row: {

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Loader2 } from 'lucide-react';
 
 interface CreateEmailListDialogProps {
@@ -20,6 +21,7 @@ export function CreateEmailListDialog({
   onSuccess,
 }: CreateEmailListDialogProps) {
   const { toast } = useToast();
+  const { role, userData } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -41,13 +43,34 @@ export function CreateEmailListDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Prepare insert data with organizational context
+      const insertData: any = {
+        name: name.trim(),
+        description: description.trim() || null,
+        created_by: user.id,
+      };
+
+      // Add organizational context based on current role
+      if (role === 'association' && userData?.association_id) {
+        insertData.association_id = userData.association_id;
+      } else if (role === 'company' && userData?.company_id) {
+        insertData.company_id = userData.company_id;
+      } else if (role === 'admin' || role === 'god-admin') {
+        // For admins, get the first association (or we could add a dropdown to select)
+        const { data: associations } = await supabase
+          .from('associations')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        if (associations) {
+          insertData.association_id = associations.id;
+        }
+      }
+
       const { error } = await supabase
         .from('email_lists')
-        .insert({
-          name: name.trim(),
-          description: description.trim() || null,
-          created_by: user.id,
-        });
+        .insert(insertData);
 
       if (error) throw error;
 
