@@ -48,8 +48,12 @@ import AssociationInvitations from "./pages/association/AssociationInvitations";
 import AssociationMembers from "./pages/association/AssociationMembers";
 import AssociationProfile from "./pages/association/AssociationProfile";
 import AssociationBulkUploadCompanies from "./pages/association/BulkUploadCompanies";
+import AssociationEmailLists from "./pages/association/AssociationEmailLists";
+import AssociationEmailListDetail from "./pages/association/AssociationEmailListDetail";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import CompanyMembers from "./pages/company/CompanyMembers";
+import CompanyEmailLists from "./pages/company/CompanyEmailLists";
+import CompanyEmailListDetail from "./pages/company/CompanyEmailListDetail";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
 import MemberConnections from "./pages/member/MemberConnections";
@@ -350,6 +354,22 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <MemberInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/email-lists" 
+            element={
+              <ProtectedRoute>
+                <AssociationEmailLists />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/email-lists/:listId" 
+            element={
+              <ProtectedRoute>
+                <AssociationEmailListDetail />
               </ProtectedRoute>
             } 
           />

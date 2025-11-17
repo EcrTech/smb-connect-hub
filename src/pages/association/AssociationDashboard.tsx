@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, CheckCircle2, Clock, TrendingUp, Upload, UserPlus } from 'lucide-react';
+import { Building2, Users, LogOut, Settings, Radio, Calendar, GraduationCap, CheckCircle2, Clock, TrendingUp, Upload, UserPlus, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -483,6 +483,10 @@ export default function AssociationDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/calendar')}>
                 <Calendar className="w-4 h-4 mr-2" />
                 Event Calendar
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/email-lists')}>
+                <Mail className="w-4 h-4 mr-2" />
+                Email Lists
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />
