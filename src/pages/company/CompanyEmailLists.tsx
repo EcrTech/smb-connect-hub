@@ -33,17 +33,8 @@ export default function CompanyEmailLists() {
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
 
   useEffect(() => {
-    if (role !== 'company') {
-      navigate('/');
-      toast({
-        title: 'Access Denied',
-        description: 'You do not have permission to access this page',
-        variant: 'destructive',
-      });
-      return;
-    }
     loadEmailLists();
-  }, [role]);
+  }, []);
 
   const loadEmailLists = async () => {
     try {
@@ -54,7 +45,6 @@ export default function CompanyEmailLists() {
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
-        .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -62,7 +52,7 @@ export default function CompanyEmailLists() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load email lists',
+        description: 'Failed to load bulk email lists',
         variant: 'destructive',
       });
     } finally {
@@ -71,7 +61,7 @@ export default function CompanyEmailLists() {
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!confirm('Are you sure you want to delete this email list? This will also delete all recipients.')) {
+    if (!confirm('Are you sure you want to delete this bulk email list? This will also delete all recipients.')) {
       return;
     }
 
@@ -85,14 +75,14 @@ export default function CompanyEmailLists() {
 
       toast({
         title: 'Success',
-        description: 'Email list deleted',
+        description: 'Bulk email list deleted',
       });
 
       loadEmailLists();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to delete email list',
+        description: 'Failed to delete bulk email list',
         variant: 'destructive',
       });
     }
@@ -115,7 +105,7 @@ export default function CompanyEmailLists() {
                 Back
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Email Lists</h1>
+                <h1 className="text-2xl font-bold">Bulk Email</h1>
                 <p className="text-sm text-muted-foreground">Manage bulk email recipient lists</p>
               </div>
             </div>
@@ -161,9 +151,9 @@ export default function CompanyEmailLists() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Mail className="w-12 h-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No email lists found</h3>
+              <h3 className="text-lg font-semibold mb-2">No bulk email lists found</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {searchQuery ? 'Try adjusting your search' : 'Create your first email list to get started'}
+                {searchQuery ? 'Try adjusting your search' : 'Create your first bulk email list to get started'}
               </p>
               {!searchQuery && (
                 <Button onClick={() => setCreateDialogOpen(true)}>

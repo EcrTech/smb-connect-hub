@@ -33,18 +33,8 @@ export default function AdminEmailLists() {
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
 
   useEffect(() => {
-    // Check if user has permission to access email features
-    if (role && role !== 'admin' && role !== 'association' && role !== 'company') {
-      navigate('/');
-      toast({
-        title: 'Access Denied',
-        description: 'You do not have permission to access email features',
-        variant: 'destructive',
-      });
-      return;
-    }
     loadEmailLists();
-  }, [role]);
+  }, []);
 
   const loadEmailLists = async () => {
     try {
@@ -59,7 +49,7 @@ export default function AdminEmailLists() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load email lists',
+        description: 'Failed to load bulk email lists',
         variant: 'destructive',
       });
     } finally {
@@ -68,7 +58,7 @@ export default function AdminEmailLists() {
   };
 
   const handleDeleteList = async (listId: string) => {
-    if (!confirm('Are you sure you want to delete this email list? This will also delete all recipients.')) {
+    if (!confirm('Are you sure you want to delete this bulk email list? This will also delete all recipients.')) {
       return;
     }
 
@@ -82,14 +72,14 @@ export default function AdminEmailLists() {
 
       toast({
         title: 'Success',
-        description: 'Email list deleted',
+        description: 'Bulk email list deleted',
       });
 
       loadEmailLists();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to delete email list',
+        description: 'Failed to delete bulk email list',
         variant: 'destructive',
       });
     }
@@ -112,7 +102,7 @@ export default function AdminEmailLists() {
                 Back
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">Email Lists</h1>
+                <h1 className="text-2xl font-bold">Bulk Email</h1>
                 <p className="text-sm text-muted-foreground">Manage bulk email recipient lists</p>
               </div>
             </div>
@@ -130,7 +120,7 @@ export default function AdminEmailLists() {
         {/* Search and Actions */}
         <div className="mb-6 flex items-center justify-between gap-4">
           <Input
-            placeholder="Search email lists..."
+            placeholder="Search bulk email lists..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
@@ -149,14 +139,14 @@ export default function AdminEmailLists() {
         {/* Email Lists */}
         {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading email lists...</p>
+            <p className="text-muted-foreground">Loading bulk email lists...</p>
           </div>
         ) : filteredLists.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Mail className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
               <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'No email lists found' : 'No email lists yet'}
+                {searchQuery ? 'No bulk email lists found' : 'No bulk email lists yet'}
               </p>
               {!searchQuery && (
                 <Button onClick={() => setCreateDialogOpen(true)}>

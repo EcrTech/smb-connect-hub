@@ -46,7 +46,7 @@ export default function CompanyEmailListDetail() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load email list',
+        description: 'Failed to load bulk email list',
         variant: 'destructive',
       });
     }
@@ -188,7 +188,7 @@ export default function CompanyEmailListDetail() {
                 Back to Lists
               </Button>
               <div>
-                <h1 className="text-2xl font-bold">{list?.name || 'Email List'}</h1>
+                <h1 className="text-2xl font-bold">{list?.name || 'Bulk Email List'}</h1>
                 <p className="text-sm text-muted-foreground">
                   {list?.description || 'Manage recipients'}
                 </p>

@@ -340,7 +340,7 @@ export default function CompanyDashboard() {
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/company/email-lists')}>
                 <Mail className="w-4 h-4 mr-2" />
-                Email Lists
+                Bulk Email
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/company/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
