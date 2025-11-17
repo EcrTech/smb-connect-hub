@@ -157,8 +157,6 @@ export function BulkEmailDialog({
             bodyText: body.replace(/<[^>]*>/g, ''),
             senderEmail,
             senderName: senderName || senderEmail,
-            associationId: role === 'association' ? userData?.association_id : null,
-            companyId: role === 'company' ? userData?.company_id : null,
           },
         })
       );

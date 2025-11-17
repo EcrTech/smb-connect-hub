@@ -13,8 +13,6 @@ interface BulkEmailRequest {
   bodyText?: string;
   senderEmail: string;
   senderName: string;
-  associationId?: string;
-  companyId?: string;
 }
 
 serve(async (req) => {
@@ -72,7 +70,23 @@ serve(async (req) => {
 
     console.log(`Sending to ${recipients.length} recipients`);
 
-    // Create campaign record
+    // Get the list's organizational context (SECURITY: don't trust client data)
+    const { data: listData, error: listError } = await supabase
+      .from('email_lists')
+      .select('association_id, company_id')
+      .eq('id', emailData.listId)
+      .single();
+
+    if (listError) {
+      throw new Error(`Failed to get list context: ${listError.message}`);
+    }
+
+    console.log('List organizational context:', {
+      association_id: listData.association_id,
+      company_id: listData.company_id
+    });
+
+    // Create campaign record with organizational context from list
     const { data: campaign, error: campaignError } = await supabase
       .from('email_campaigns')
       .insert({
@@ -80,8 +94,8 @@ serve(async (req) => {
         subject: emailData.subject,
         sender_name: emailData.senderName,
         sender_email: emailData.senderEmail,
-        association_id: emailData.associationId || null,
-        company_id: emailData.companyId || null,
+        association_id: listData.association_id,
+        company_id: listData.company_id,
         created_by: user.id,
         total_recipients: recipients.length,
       })
