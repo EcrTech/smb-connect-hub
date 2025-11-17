@@ -46,7 +46,7 @@ export default function AdminEmailListDetail() {
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to load email list',
+        description: 'Failed to load bulk email list',
         variant: 'destructive',
       });
     }

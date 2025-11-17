@@ -53,7 +53,7 @@ export function CreateEmailListDialog({
 
       toast({
         title: 'Success',
-        description: 'Email list created',
+        description: 'Bulk email list created',
       });
 
       setName('');
@@ -63,7 +63,7 @@ export function CreateEmailListDialog({
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create email list',
+        description: error.message || 'Failed to create bulk email list',
         variant: 'destructive',
       });
     } finally {
@@ -75,7 +75,7 @@ export function CreateEmailListDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Email List</DialogTitle>
+          <DialogTitle>Create Bulk Email List</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

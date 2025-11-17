@@ -486,7 +486,7 @@ export default function AssociationDashboard() {
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/email-lists')}>
                 <Mail className="w-4 h-4 mr-2" />
-                Email Lists
+                Bulk Email
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />
