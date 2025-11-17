@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Mail, TrendingUp, Users, MousePointer, AlertCircle } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 
 interface CampaignStats {
   totalCampaigns: number;
@@ -27,7 +28,9 @@ interface CampaignListItem {
 
 export default function CompanyEmailAnalytics() {
   const { userData } = useUserRole();
+  const { selectedCompanyId } = useRoleContext();
   const [loading, setLoading] = useState(true);
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [stats, setStats] = useState<CampaignStats>({
     totalCampaigns: 0,
     totalSent: 0,
@@ -39,12 +42,39 @@ export default function CompanyEmailAnalytics() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
   useEffect(() => {
-    if (userData?.company_id) {
+    // Priority 1: Use selectedCompanyId from RoleContext (set by dashboard)
+    if (selectedCompanyId) {
+      console.log('Using selectedCompanyId from RoleContext:', selectedCompanyId);
+      setCompanyId(selectedCompanyId);
+      return;
+    }
+    
+    // Priority 2: Use company.id from userData (for company admins)
+    if (userData?.company?.id) {
+      console.log('Using userData.company.id:', userData.company.id);
+      setCompanyId(userData.company.id);
+      return;
+    }
+    
+    console.warn('No company context found. User type:', userData?.type);
+  }, [selectedCompanyId, userData]);
+
+  useEffect(() => {
+    if (companyId) {
+      console.log('=== ANALYTICS CONTEXT DEBUG ===');
+      console.log('selectedCompanyId:', selectedCompanyId);
+      console.log('userData.company.id:', userData?.company?.id);
+      console.log('Resolved companyId:', companyId);
       loadAnalytics();
     }
-  }, [userData, timeRange]);
+  }, [companyId, timeRange]);
 
   const loadAnalytics = async () => {
+    if (!companyId) {
+      console.warn('Cannot load analytics: no companyId');
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -55,7 +85,7 @@ export default function CompanyEmailAnalytics() {
       const { data: campaignsData, error } = await supabase
         .from('email_campaigns')
         .select('*')
-        .eq('company_id', userData.company_id)
+        .eq('company_id', companyId)
         .gte('sent_at', startDate.toISOString())
         .order('sent_at', { ascending: false });
 

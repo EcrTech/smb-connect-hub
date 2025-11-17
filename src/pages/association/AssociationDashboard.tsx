@@ -8,12 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RoleNavigation } from '@/components/RoleNavigation';
+import { useRoleContext } from '@/contexts/RoleContext';
 
 
 export default function AssociationDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userData } = useUserRole();
+  const { setRole } = useRoleContext();
   const [association, setAssociation] = useState<any>(null);
   const [stats, setStats] = useState({
     totalCompanies: 0,
@@ -57,6 +59,7 @@ export default function AssociationDashboard() {
           
           if (assocData) {
             setAssociation(assocData);
+            setRole('association', assocData.id);
             loadStats(assocData.id);
           } else {
             setLoading(false);
@@ -84,6 +87,8 @@ export default function AssociationDashboard() {
           if (associations) {
             console.log('Auto-selected association for admin:', associations);
             setAssociation(associations);
+            setRole('association', associations.id);
+            console.log('RoleContext updated with association:', associations.id);
             loadStats(associations.id);
           } else {
             setLoading(false);
