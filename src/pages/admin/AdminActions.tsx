@@ -280,6 +280,10 @@ export default function AdminActions() {
                 <MessageCircle className="w-4 h-4 mr-2" />
                 WhatsApp Lists
               </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/email-analytics')}>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Email Analytics
+              </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/admin')}>
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Analytics Dashboard
