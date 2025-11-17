@@ -38,6 +38,7 @@ import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
 import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
 import AdminEmailLists from "./pages/admin/AdminEmailLists";
 import AdminEmailListDetail from "./pages/admin/AdminEmailListDetail";
+import AdminEmailAnalytics from "./pages/admin/AdminEmailAnalytics";
 import AdminWhatsAppLists from "./pages/admin/AdminWhatsAppLists";
 import AdminWhatsAppListDetail from "./pages/admin/AdminWhatsAppListDetail";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -50,10 +51,12 @@ import AssociationProfile from "./pages/association/AssociationProfile";
 import AssociationBulkUploadCompanies from "./pages/association/BulkUploadCompanies";
 import AssociationEmailLists from "./pages/association/AssociationEmailLists";
 import AssociationEmailListDetail from "./pages/association/AssociationEmailListDetail";
+import AssociationEmailAnalytics from "./pages/association/AssociationEmailAnalytics";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import CompanyMembers from "./pages/company/CompanyMembers";
 import CompanyEmailLists from "./pages/company/CompanyEmailLists";
 import CompanyEmailListDetail from "./pages/company/CompanyEmailListDetail";
+import CompanyEmailAnalytics from "./pages/company/CompanyEmailAnalytics";
 import MemberDashboard from "./pages/member/MemberDashboard";
 import MemberCompanies from "./pages/member/MemberCompanies";
 import MemberConnections from "./pages/member/MemberConnections";
@@ -254,7 +257,15 @@ const AppContent = () => {
             } 
           />
           <Route 
-            path="/admin/whatsapp-lists" 
+            path="/admin/email-analytics" 
+            element={
+              <ProtectedRoute>
+                <AdminEmailAnalytics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/whatsapp-lists"
             element={
               <ProtectedRoute>
                 <AdminWhatsAppLists />
@@ -374,6 +385,22 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/association/email-analytics" 
+            element={
+              <ProtectedRoute>
+                <AssociationEmailAnalytics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/feed"
+            element={
+              <ProtectedRoute>
+                <AssociationFeed />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/company"
             element={
               <ProtectedRoute>
@@ -382,7 +409,7 @@ const AppContent = () => {
             } 
           />
           <Route 
-            path="/company/members" 
+            path="/company/members"
             element={
               <ProtectedRoute>
                 <CompanyMembers />
@@ -394,6 +421,38 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <MemberInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/email-lists" 
+            element={
+              <ProtectedRoute>
+                <CompanyEmailLists />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/email-lists/:listId" 
+            element={
+              <ProtectedRoute>
+                <CompanyEmailListDetail />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/email-analytics" 
+            element={
+              <ProtectedRoute>
+                <CompanyEmailAnalytics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/company/feed" 
+            element={
+              <ProtectedRoute>
+                <CompanyFeed />
               </ProtectedRoute>
             } 
           />

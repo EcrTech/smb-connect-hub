@@ -13,6 +13,8 @@ interface BulkEmailRequest {
   bodyText?: string;
   senderEmail: string;
   senderName: string;
+  associationId?: string;
+  companyId?: string;
 }
 
 serve(async (req) => {
@@ -32,6 +34,15 @@ serve(async (req) => {
 
     const emailData: BulkEmailRequest = await req.json();
     console.log('Sending bulk email to list:', emailData.listId);
+
+    // Get user from auth header
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token || '');
+    
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
 
     // Get all recipients from the list
     const { data: recipients, error: recipientsError } = await supabase
@@ -60,6 +71,35 @@ serve(async (req) => {
     }
 
     console.log(`Sending to ${recipients.length} recipients`);
+
+    // Create campaign record
+    const { data: campaign, error: campaignError } = await supabase
+      .from('email_campaigns')
+      .insert({
+        list_id: emailData.listId,
+        subject: emailData.subject,
+        sender_name: emailData.senderName,
+        sender_email: emailData.senderEmail,
+        association_id: emailData.associationId || null,
+        company_id: emailData.companyId || null,
+        created_by: user.id,
+        total_recipients: recipients.length,
+      })
+      .select()
+      .single();
+
+    if (campaignError) throw campaignError;
+
+    // Create recipient records
+    const recipientRecords = recipients.map(r => ({
+      campaign_id: campaign.id,
+      email: r.email,
+      name: r.name,
+    }));
+
+    await supabase
+      .from('email_campaign_recipients')
+      .insert(recipientRecords);
 
     const results = {
       sent: 0,
@@ -113,9 +153,34 @@ serve(async (req) => {
               console.error(`Failed to send to ${recipient.email}:`, errorText);
               results.failed++;
               results.errors.push(`${recipient.email}: ${errorText}`);
-            } else {
-              results.sent++;
+              return;
             }
+
+            const senderResult = await senderResponse.json();
+
+            // Update recipient record with sent status
+            await supabase
+              .from('email_campaign_recipients')
+              .update({
+                sent: true,
+                sent_at: new Date().toISOString(),
+                external_message_id: senderResult.message_id,
+              })
+              .eq('campaign_id', campaign.id)
+              .eq('email', recipient.email);
+
+            // Insert sent event
+            await supabase
+              .from('email_campaign_events')
+              .insert({
+                campaign_id: campaign.id,
+                recipient_email: recipient.email,
+                event_type: 'sent',
+                external_message_id: senderResult.message_id,
+              });
+
+            results.sent++;
+            console.log(`Successfully sent to ${recipient.email}`);
           } catch (error: any) {
             console.error(`Error sending to ${recipient.email}:`, error);
             results.failed++;
