@@ -63,6 +63,36 @@ export function BulkInviteCompaniesDialog({
         let failed = 0;
         const errors: string[] = [];
 
+        // Fetch association name and user profile data before processing
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user?.id) {
+          toast.error('User not authenticated');
+          setUploading(false);
+          return;
+        }
+
+        const { data: associationData } = await supabase
+          .from('associations')
+          .select('name')
+          .eq('id', associationId)
+          .single();
+
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (!associationData || !profileData) {
+          toast.error('Failed to fetch required data');
+          setUploading(false);
+          return;
+        }
+
+        const invitedByName = `${profileData.first_name} ${profileData.last_name}`;
+        const invitedByEmail = profileData.email;
+        const associationName = associationData.name;
+
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim());
           const rowData: any = {};
@@ -84,9 +114,7 @@ export function BulkInviteCompaniesDialog({
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
 
-            const { data: userData } = await supabase.auth.getUser();
-
-            const { error: inviteError } = await supabase
+            const { data: invitationData, error: inviteError } = await supabase
               .from('company_invitations')
               .insert({
                 association_id: associationId,
@@ -94,20 +122,25 @@ export function BulkInviteCompaniesDialog({
                 email: rowData.email,
                 token,
                 expires_at: expiresAt.toISOString(),
-                invited_by: userData?.user?.id,
+                invited_by: userData.user.id,
                 status: 'pending',
-              });
+              })
+              .select()
+              .single();
 
             if (inviteError) throw inviteError;
 
-            // Send invitation email
+            // Send invitation email with all required parameters
             const { error: emailError } = await supabase.functions.invoke(
               'send-company-invitation',
               {
                 body: {
-                  email: rowData.email,
-                  company_name: rowData.company_name,
-                  association_id: associationId,
+                  invitationId: invitationData.id,
+                  companyName: rowData.company_name,
+                  recipientEmail: rowData.email,
+                  invitedByName,
+                  invitedByEmail,
+                  associationName,
                   token,
                 },
               }
