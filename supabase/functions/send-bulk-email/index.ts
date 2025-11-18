@@ -172,104 +172,102 @@ serve(async (req) => {
       errors: [] as string[],
     };
 
-    // Send emails in batches with timeout protection
-    const BATCH_SIZE = 20;
+    // Send emails sequentially with rate limiting
+    // Resend limits: 2 requests/second, 100 emails/minute
+    // Using 600ms delay = 1.67 requests/sec = 100 emails/min
+    const DELAY_BETWEEN_EMAILS = 600; // milliseconds
     const REQUEST_TIMEOUT = 30000; // 30 seconds per request
     
-    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-      const batch = recipients.slice(i, i + BATCH_SIZE);
-      console.log(`=== SENDING BATCH ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(recipients.length/BATCH_SIZE)} ===`);
+    console.log(`=== SENDING ${recipients.length} EMAILS WITH RATE LIMITING ===`);
+    console.log(`Rate: ${DELAY_BETWEEN_EMAILS}ms delay between emails (~${Math.floor(60000/DELAY_BETWEEN_EMAILS)} emails/min)`);
+    
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i];
+      console.log(`[${i + 1}/${recipients.length}] Sending to: ${recipient.email}`);
       
-      await Promise.all(
-        batch.map(async (recipient) => {
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
-          );
-          
-          const sendPromise = (async () => {
-            try {
-              console.log(`Sending to: ${recipient.email}`);
-              
-              const { data: emailResult, error: emailError } = await resend.emails.send({
-                from: `${emailData.senderName || 'SMB Connect'} <noreply@smbconnect.in>`,
-                to: [recipient.email],
-                subject: emailData.subject,
-                html: emailData.bodyHtml,
-                text: emailData.bodyText || emailData.bodyHtml.replace(/<[^>]*>/g, ''),
-                reply_to: emailData.senderEmail,
-                headers: {
-                  'X-Bulk-List-ID': emailData.listId,
-                  'X-Campaign-ID': campaign.id,
-                },
-              });
-
-              if (emailError) {
-                console.error(`Resend API error for ${recipient.email}:`, emailError);
-                results.failed++;
-                results.errors.push(`${recipient.email}: ${emailError.message}`);
-                return;
-              }
-
-              if (!emailResult) {
-                console.error(`No result from Resend for ${recipient.email}`);
-                results.failed++;
-                results.errors.push(`${recipient.email}: No result from Resend`);
-                return;
-              }
-
-              console.log(`Email sent successfully to ${recipient.email}, Message ID: ${emailResult.id}`);
-
-              // Update recipient record with sent status
-              const { error: updateError } = await supabase
-                .from('email_campaign_recipients')
-                .update({
-                  sent: true,
-                  sent_at: new Date().toISOString(),
-                  external_message_id: emailResult.id,
-                })
-                .eq('campaign_id', campaign.id)
-                .eq('email', recipient.email);
-
-              if (updateError) {
-                console.error(`Failed to update recipient record for ${recipient.email}:`, updateError);
-              }
-
-              // Insert sent event
-              const { error: eventError } = await supabase
-                .from('email_campaign_events')
-                .insert({
-                  campaign_id: campaign.id,
-                  recipient_email: recipient.email,
-                  event_type: 'sent',
-                  external_message_id: emailResult.id,
-                });
-
-              if (eventError) {
-                console.error(`Failed to insert event for ${recipient.email}:`, eventError);
-              }
-
-              results.sent++;
-            } catch (error: any) {
-              console.error(`Exception sending to ${recipient.email}:`, error);
-              console.error('Error stack:', error.stack);
-              results.failed++;
-              results.errors.push(`${recipient.email}: ${error.message}`);
-            }
-          })();
-
-          try {
-            await Promise.race([sendPromise, timeoutPromise]);
-          } catch (error: any) {
-            console.error(`Timeout or race error for ${recipient.email}:`, error);
-            results.failed++;
-            results.errors.push(`${recipient.email}: ${error.message}`);
-          }
-        })
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
       );
+      
+      const sendPromise = (async () => {
+        try {
+          const { data: emailResult, error: emailError } = await resend.emails.send({
+            from: `${emailData.senderName || 'SMB Connect'} <noreply@smbconnect.in>`,
+            to: [recipient.email],
+            subject: emailData.subject,
+            html: emailData.bodyHtml,
+            text: emailData.bodyText || emailData.bodyHtml.replace(/<[^>]*>/g, ''),
+            reply_to: emailData.senderEmail,
+            headers: {
+              'X-Bulk-List-ID': emailData.listId,
+              'X-Campaign-ID': campaign.id,
+            },
+          });
 
-      // Add delay between batches
-      if (i + BATCH_SIZE < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+          if (emailError) {
+            console.error(`Resend API error for ${recipient.email}:`, emailError);
+            results.failed++;
+            results.errors.push(`${recipient.email}: ${emailError.message}`);
+            return;
+          }
+
+          if (!emailResult) {
+            console.error(`No result from Resend for ${recipient.email}`);
+            results.failed++;
+            results.errors.push(`${recipient.email}: No result from Resend`);
+            return;
+          }
+
+          console.log(`✓ Email sent to ${recipient.email}, Message ID: ${emailResult.id}`);
+
+          // Update recipient record with sent status
+          const { error: updateError } = await supabase
+            .from('email_campaign_recipients')
+            .update({
+              sent: true,
+              sent_at: new Date().toISOString(),
+              external_message_id: emailResult.id,
+            })
+            .eq('campaign_id', campaign.id)
+            .eq('email', recipient.email);
+
+          if (updateError) {
+            console.error(`Failed to update recipient record for ${recipient.email}:`, updateError);
+          }
+
+          // Insert sent event
+          const { error: eventError } = await supabase
+            .from('email_campaign_events')
+            .insert({
+              campaign_id: campaign.id,
+              recipient_email: recipient.email,
+              event_type: 'sent',
+              external_message_id: emailResult.id,
+            });
+
+          if (eventError) {
+            console.error(`Failed to insert event for ${recipient.email}:`, eventError);
+          }
+
+          results.sent++;
+        } catch (error: any) {
+          console.error(`Exception sending to ${recipient.email}:`, error);
+          results.failed++;
+          results.errors.push(`${recipient.email}: ${error.message}`);
+        }
+      })();
+
+      try {
+        await Promise.race([sendPromise, timeoutPromise]);
+      } catch (error: any) {
+        console.error(`Timeout error for ${recipient.email}:`, error);
+        results.failed++;
+        results.errors.push(`${recipient.email}: ${error.message}`);
+      }
+
+      // Rate limiting: wait before sending next email (except for last one)
+      if (i < recipients.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_EMAILS));
       }
     }
 
