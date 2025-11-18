@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { CreateMemberInvitationDialog } from '@/components/admin/CreateMemberInvitationDialog';
+import { BulkInviteMembersDialog } from '@/components/admin/BulkInviteMembersDialog';
 import { BackButton } from '@/components/BackButton';
 import { Loader2, MoreVertical, RefreshCw, Ban, Mail, Calendar, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -185,11 +186,18 @@ export default function MemberInvitations() {
               </CardDescription>
             </div>
             {organizationId && (
-              <CreateMemberInvitationDialog
-                organizationId={organizationId}
-                organizationType={organizationType as 'company' | 'association'}
-                onSuccess={loadInvitations}
-              />
+              <div className="flex gap-2">
+                <BulkInviteMembersDialog
+                  organizationId={organizationId}
+                  organizationType={organizationType as 'company' | 'association'}
+                  onSuccess={loadInvitations}
+                />
+                <CreateMemberInvitationDialog
+                  organizationId={organizationId}
+                  organizationType={organizationType as 'company' | 'association'}
+                  onSuccess={loadInvitations}
+                />
+              </div>
             )}
           </div>
         </CardHeader>
