@@ -88,11 +88,10 @@ export function BulkEmailDialog({
       // Upload to Supabase storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `email-images/${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
-        .from('profile-images')
-        .upload(filePath, file, {
+        .from('email-images')
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false,
         });
@@ -101,8 +100,8 @@ export function BulkEmailDialog({
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('profile-images')
-        .getPublicUrl(filePath);
+        .from('email-images')
+        .getPublicUrl(fileName);
 
       // Insert image into editor
       const quill = quillRef.current?.getEditor();
