@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { ArrowLeft, Send, Mail, Trash2 } from 'lucide-react';
+import { BulkInviteCompaniesDialog } from '@/components/admin/BulkInviteCompaniesDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -279,13 +280,23 @@ export default function AssociationInvitations() {
           {/* Send Invitation Form */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="w-5 h-5" />
-                Send Company Invitation
-              </CardTitle>
-              <CardDescription>
-                Invite companies to join {userData?.association?.name}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Send className="w-5 h-5" />
+                    Send Company Invitation
+                  </CardTitle>
+                  <CardDescription>
+                    Invite companies to join {userData?.association?.name}
+                  </CardDescription>
+                </div>
+                {associationId && (
+                  <BulkInviteCompaniesDialog
+                    associationId={associationId}
+                    onSuccess={loadInvitations}
+                  />
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSendInvitation} className="space-y-4">
