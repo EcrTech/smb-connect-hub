@@ -22,6 +22,70 @@ interface ResendWebhookEvent {
   };
 }
 
+// Verify Resend webhook signature using Svix format
+async function verifyWebhookSignature(
+  payload: string,
+  headers: Headers,
+  secret: string
+): Promise<boolean> {
+  const svixId = headers.get('svix-id');
+  const svixTimestamp = headers.get('svix-timestamp');
+  const svixSignature = headers.get('svix-signature');
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    console.error('Missing svix headers');
+    return false;
+  }
+
+  // Check timestamp is recent (within 5 minutes)
+  const timestamp = parseInt(svixTimestamp);
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestamp) > 300) {
+    console.error('Webhook timestamp too old or too far in future');
+    return false;
+  }
+
+  // Construct the signed content
+  const signedContent = `${svixId}.${svixTimestamp}.${payload}`;
+
+  // Remove whsec_ prefix from secret
+  const secretKey = secret.startsWith('whsec_') ? secret.substring(6) : secret;
+
+  // Create HMAC signature
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secretKey),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(signedContent)
+  );
+
+  // Convert to base64
+  const expectedSignature = btoa(
+    String.fromCharCode(...new Uint8Array(signature))
+  );
+
+  // Resend sends multiple signatures (v1), extract and compare
+  const signatures = svixSignature.split(' ');
+  for (const versionedSig of signatures) {
+    const [version, sig] = versionedSig.split(',');
+    if (version === 'v1' && sig === expectedSignature) {
+      console.log('Webhook signature verified ✓');
+      return true;
+    }
+  }
+
+  console.error('Signature mismatch');
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -30,11 +94,47 @@ serve(async (req) => {
   try {
     console.log('=== EMAIL WEBHOOK RECEIVED ===');
     
+    // Get the raw body for signature verification
+    const rawBody = await req.text();
+    
+    // Verify webhook signature
+    const webhookSecret = Deno.env.get('RESEND_WEBHOOK_SECRET');
+    if (!webhookSecret) {
+      console.error('RESEND_WEBHOOK_SECRET not configured');
+      return new Response(
+        JSON.stringify({ error: 'Webhook secret not configured' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      );
+    }
+
+    const isValid = await verifyWebhookSignature(
+      rawBody,
+      req.headers,
+      webhookSecret
+    );
+
+    if (!isValid) {
+      console.error('❌ Invalid webhook signature - possible security threat');
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 401,
+        }
+      );
+    }
+
+    console.log('✅ Webhook signature verified - processing event');
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const webhookData: ResendWebhookEvent = await req.json();
+    // Parse the JSON after verification
+    const webhookData: ResendWebhookEvent = JSON.parse(rawBody);
     console.log('Event type:', webhookData.type);
     console.log('Email ID:', webhookData.data.email_id);
     console.log('To:', webhookData.data.to);
