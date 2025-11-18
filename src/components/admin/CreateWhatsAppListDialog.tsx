@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 import { toast } from "sonner";
 
 interface CreateWhatsAppListDialogProps {
@@ -18,6 +20,8 @@ const CreateWhatsAppListDialog = ({
   onOpenChange,
   onSuccess,
 }: CreateWhatsAppListDialogProps) => {
+  const { role, userData } = useUserRole();
+  const { selectedAssociationId, selectedCompanyId } = useRoleContext();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
@@ -33,13 +37,39 @@ const CreateWhatsAppListDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      console.log('=== CREATE WHATSAPP LIST DEBUG ===');
+      console.log('role:', role);
+      console.log('userData.association_id:', userData?.association_id);
+      console.log('userData.company_id:', userData?.company_id);
+      console.log('selectedAssociationId:', selectedAssociationId);
+      console.log('selectedCompanyId:', selectedCompanyId);
+
+      const insertData: any = {
+        name: name.trim(),
+        description: description.trim() || null,
+        created_by: user.id,
+      };
+
+      // Add organizational context based on current role
+      if (role === 'association' && userData?.association_id) {
+        insertData.association_id = userData.association_id;
+      } else if (role === 'company' && userData?.company_id) {
+        insertData.company_id = userData.company_id;
+      } else if (role === 'admin' || role === 'god-admin') {
+        if (selectedAssociationId) {
+          insertData.association_id = selectedAssociationId;
+        } else if (selectedCompanyId) {
+          insertData.company_id = selectedCompanyId;
+        } else {
+          throw new Error('Please select an association or company first from the dashboard');
+        }
+      }
+
+      console.log('Final insertData:', insertData);
+
       const { error } = await supabase
         .from('whatsapp_lists')
-        .insert({
-          name: name.trim(),
-          description: description.trim() || null,
-          created_by: user.id,
-        });
+        .insert(insertData);
 
       if (error) throw error;
 

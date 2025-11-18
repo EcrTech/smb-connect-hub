@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
 import { Loader2 } from 'lucide-react';
 
 interface CreateEmailListDialogProps {
@@ -22,6 +23,7 @@ export function CreateEmailListDialog({
 }: CreateEmailListDialogProps) {
   const { toast } = useToast();
   const { role, userData } = useUserRole();
+  const { selectedAssociationId, selectedCompanyId } = useRoleContext();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -50,23 +52,30 @@ export function CreateEmailListDialog({
         created_by: user.id,
       };
 
+      console.log('=== CREATE EMAIL LIST DEBUG ===');
+      console.log('role:', role);
+      console.log('userData.association_id:', userData?.association_id);
+      console.log('userData.company_id:', userData?.company_id);
+      console.log('selectedAssociationId:', selectedAssociationId);
+      console.log('selectedCompanyId:', selectedCompanyId);
+
       // Add organizational context based on current role
       if (role === 'association' && userData?.association_id) {
         insertData.association_id = userData.association_id;
       } else if (role === 'company' && userData?.company_id) {
         insertData.company_id = userData.company_id;
       } else if (role === 'admin' || role === 'god-admin') {
-        // For admins, get the first association (or we could add a dropdown to select)
-        const { data: associations } = await supabase
-          .from('associations')
-          .select('id')
-          .limit(1)
-          .single();
-        
-        if (associations) {
-          insertData.association_id = associations.id;
+        // Priority 1: Use selectedAssociationId from RoleContext (set by dashboard)
+        if (selectedAssociationId) {
+          insertData.association_id = selectedAssociationId;
+        } else if (selectedCompanyId) {
+          insertData.company_id = selectedCompanyId;
+        } else {
+          throw new Error('Please select an association or company first from the dashboard');
         }
       }
+
+      console.log('Final insertData:', insertData);
 
       const { error } = await supabase
         .from('email_lists')
