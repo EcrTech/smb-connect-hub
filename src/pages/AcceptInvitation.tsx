@@ -114,42 +114,20 @@ export default function AcceptInvitation() {
     try {
       setSubmitting(true);
 
-      // Create company
-      const { data: company, error: companyError } = await supabase
-        .from('companies')
-        .insert({
-          name: inviteData.company_name,
-          email: inviteData.email,
-          association_id: inviteData.association_id,
-          is_active: true,
-          created_by: userId,
-        })
-        .select()
-        .single();
+      // Call edge function to handle company creation (bypasses RLS)
+      const { data, error: acceptError } = await supabase.functions.invoke(
+        'accept-company-invitation',
+        {
+          body: { 
+            token,
+            userId 
+          }
+        }
+      );
 
-      if (companyError) throw companyError;
-
-      // Update member record to link to company
-      const { error: memberError } = await supabase
-        .from('members')
-        .update({
-          company_id: company.id,
-          role: 'owner',
-        })
-        .eq('user_id', userId);
-
-      if (memberError) throw memberError;
-
-      // Mark invitation as accepted
-      const { error: updateError } = await supabase
-        .from('company_invitations')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', inviteData.id);
-
-      if (updateError) throw updateError;
+      if (acceptError || !data?.success) {
+        throw new Error(data?.error || acceptError?.message || 'Failed to accept invitation');
+      }
 
       toast({
         title: 'Success!',
