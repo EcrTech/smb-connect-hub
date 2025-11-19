@@ -70,9 +70,23 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Missing required fields: email, organization_id, organization_type, role');
     }
 
+    // Validate name fields (required by database)
+    if (!first_name || !last_name) {
+      throw new Error('Missing required fields: first_name, last_name');
+    }
+
+    console.log('Creating invitation with data:', {
+      email,
+      first_name,
+      last_name,
+      organization_id,
+      organization_type,
+      role
+    });
+
     // Verify user has permission to invite to this organization
     if (organization_type === 'company') {
-      const { data: memberCheck } = await supabase
+      const { data: memberCheck, error: memberError } = await supabase
         .from('members')
         .select('role')
         .eq('user_id', user.id)
@@ -80,16 +94,24 @@ const handler = async (req: Request): Promise<Response> => {
         .in('role', ['owner', 'admin'])
         .single();
 
+      if (memberError) {
+        console.error('Error checking company membership:', memberError);
+      }
+
       if (!memberCheck) {
         throw new Error('Unauthorized: User cannot invite to this company');
       }
     } else if (organization_type === 'association') {
-      const { data: managerCheck } = await supabase
+      const { data: managerCheck, error: managerError } = await supabase
         .from('association_managers')
         .select('id')
         .eq('user_id', user.id)
         .eq('association_id', organization_id)
         .single();
+
+      if (managerError) {
+        console.error('Error checking association management:', managerError);
+      }
 
       if (!managerCheck) {
         throw new Error('Unauthorized: User cannot invite to this association');
@@ -109,7 +131,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check for duplicate pending invitation
-    const { data: existingInvite } = await supabase
+    const { data: existingInvite, error: duplicateCheckError } = await supabase
       .from('member_invitations')
       .select('id, status')
       .eq('email', email.toLowerCase())
@@ -117,7 +139,12 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('status', 'pending')
       .single();
 
+    if (duplicateCheckError && duplicateCheckError.code !== 'PGRST116') {
+      console.error('Error checking for duplicate invitation:', duplicateCheckError);
+    }
+
     if (existingInvite) {
+      console.log('Duplicate invitation found for:', email);
       return new Response(
         JSON.stringify({ error: 'An active invitation already exists for this email' }),
         { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -249,13 +276,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Log audit trail
-    await supabase
+    const { error: auditError } = await supabase
       .from('member_invitation_audit')
       .insert({
         invitation_id: invitation.id,
         action: 'created',
         performed_by: user.id
       });
+
+    if (auditError) {
+      console.error('Error logging audit trail (non-blocking):', auditError);
+    }
 
     return new Response(
       JSON.stringify({
