@@ -1,0 +1,552 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, TrendingUp, Users, Building2, Activity, GraduationCap, CheckCircle2, Clock, BarChart3 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { formatDate } from "@/lib/formatters";
+import { useUserRole } from "@/hooks/useUserRole";
+
+interface TimeSeriesData {
+  date: string;
+  members: number;
+  companies: number;
+}
+
+interface TopCompany {
+  name: string;
+  memberCount: number;
+}
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+
+const AssociationAnalytics = () => {
+  const navigate = useNavigate();
+  const { userData } = useUserRole();
+  const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [associationId, setAssociationId] = useState<string | null>(null);
+  
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    totalCompanies: 0,
+    activeUsers: 0,
+    pendingInvitations: 0,
+    newMembers1Day: 0,
+    newMembers7Days: 0,
+    newMembers30Days: 0,
+    onboardingTotal: 0,
+    onboardingCompleted: 0,
+    onboardingInProgress: 0,
+    onboardingCompletionRate: 0,
+    totalPosts: 0,
+    totalConnections: 0,
+  });
+  
+  const [growthData, setGrowthData] = useState<TimeSeriesData[]>([]);
+  const [topCompanies, setTopCompanies] = useState<TopCompany[]>([]);
+
+  useEffect(() => {
+    const initAssociation = async () => {
+      if (userData?.association_id) {
+        setAssociationId(userData.association_id);
+      } else if (userData?.association) {
+        setAssociationId(userData.association.id);
+      }
+    };
+    
+    initAssociation();
+  }, [userData]);
+
+  useEffect(() => {
+    if (associationId) {
+      loadAnalytics();
+    }
+  }, [timeRange, associationId]);
+
+  const getDaysAgo = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date.toISOString();
+  };
+
+  const loadAnalytics = async () => {
+    if (!associationId) return;
+    
+    try {
+      setLoading(true);
+      const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+      const startDate = timeRange === 'all' ? null : getDaysAgo(days);
+
+      // Load companies in this association
+      const { data: companies, error: companiesError } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('association_id', associationId)
+        .eq('is_active', true);
+
+      if (companiesError) throw companiesError;
+      
+      const companyIds = companies?.map(c => c.id) || [];
+
+      // Load overall stats
+      const [
+        { count: membersCount },
+        { count: activeCompaniesCount },
+        { count: pendingInvitesCount },
+        { count: onboardingTotal },
+        { count: onboardingCompleted },
+        { count: newMembers1Day },
+        { count: newMembers7Days },
+        { count: newMembers30Days },
+        { count: totalPosts },
+        { count: totalConnections }
+      ] = await Promise.all([
+        supabase.from('members').select('*', { count: 'exact', head: true })
+          .in('company_id', companyIds)
+          .eq('is_active', true),
+        supabase.from('companies').select('*', { count: 'exact', head: true })
+          .eq('association_id', associationId)
+          .eq('is_active', true),
+        supabase.from('member_invitations').select('*', { count: 'exact', head: true })
+          .eq('organization_type', 'company')
+          .in('organization_id', companyIds)
+          .eq('status', 'pending'),
+        supabase.from('user_onboarding').select('*', { count: 'exact', head: true })
+          .in('user_id', (await supabase.from('members').select('user_id').in('company_id', companyIds)).data?.map(m => m.user_id) || []),
+        supabase.from('user_onboarding').select('*', { count: 'exact', head: true })
+          .in('user_id', (await supabase.from('members').select('user_id').in('company_id', companyIds)).data?.map(m => m.user_id) || [])
+          .eq('is_completed', true),
+        supabase.from('members').select('*', { count: 'exact', head: true })
+          .in('company_id', companyIds)
+          .gte('created_at', getDaysAgo(1)),
+        supabase.from('members').select('*', { count: 'exact', head: true })
+          .in('company_id', companyIds)
+          .gte('created_at', getDaysAgo(7)),
+        supabase.from('members').select('*', { count: 'exact', head: true })
+          .in('company_id', companyIds)
+          .gte('created_at', getDaysAgo(30)),
+        supabase.from('posts').select('*', { count: 'exact', head: true })
+          .in('user_id', (await supabase.from('members').select('user_id').in('company_id', companyIds)).data?.map(m => m.user_id) || []),
+        supabase.from('connections').select('*', { count: 'exact', head: true })
+          .in('sender_id', (await supabase.from('members').select('id').in('company_id', companyIds)).data?.map(m => m.id) || [])
+          .eq('status', 'accepted')
+      ]);
+
+      const onboardingInProgress = (onboardingTotal || 0) - (onboardingCompleted || 0);
+      const onboardingCompletionRate = onboardingTotal ? Math.round((onboardingCompleted / onboardingTotal) * 100) : 0;
+
+      setStats({
+        totalMembers: membersCount || 0,
+        totalCompanies: activeCompaniesCount || 0,
+        activeUsers: membersCount || 0,
+        pendingInvitations: pendingInvitesCount || 0,
+        newMembers1Day: newMembers1Day || 0,
+        newMembers7Days: newMembers7Days || 0,
+        newMembers30Days: newMembers30Days || 0,
+        onboardingTotal: onboardingTotal || 0,
+        onboardingCompleted: onboardingCompleted || 0,
+        onboardingInProgress,
+        onboardingCompletionRate,
+        totalPosts: totalPosts || 0,
+        totalConnections: totalConnections || 0,
+      });
+
+      // Load growth data
+      await loadGrowthData(companyIds, startDate);
+      
+      // Load top companies
+      await loadTopCompanies(companyIds);
+
+      setLoading(false);
+    } catch (error: any) {
+      console.error('Error loading analytics:', error);
+      toast.error('Failed to load analytics');
+      setLoading(false);
+    }
+  };
+
+  const loadGrowthData = async (companyIds: string[], startDate: string | null) => {
+    try {
+      const query = supabase
+        .from('members')
+        .select('created_at')
+        .in('company_id', companyIds)
+        .order('created_at', { ascending: true });
+
+      if (startDate) {
+        query.gte('created_at', startDate);
+      }
+
+      const { data: membersData } = await query;
+
+      const companiesQuery = supabase
+        .from('companies')
+        .select('created_at')
+        .eq('association_id', associationId)
+        .order('created_at', { ascending: true });
+
+      if (startDate) {
+        companiesQuery.gte('created_at', startDate);
+      }
+
+      const { data: companiesData } = await companiesQuery;
+
+      // Group by date
+      const dataMap = new Map<string, { members: number; companies: number }>();
+      
+      membersData?.forEach(item => {
+        const date = new Date(item.created_at).toLocaleDateString();
+        const current = dataMap.get(date) || { members: 0, companies: 0 };
+        dataMap.set(date, { ...current, members: current.members + 1 });
+      });
+
+      companiesData?.forEach(item => {
+        const date = new Date(item.created_at).toLocaleDateString();
+        const current = dataMap.get(date) || { members: 0, companies: 0 };
+        dataMap.set(date, { ...current, companies: current.companies + 1 });
+      });
+
+      const growthArray = Array.from(dataMap.entries())
+        .map(([date, counts]) => ({
+          date,
+          members: counts.members,
+          companies: counts.companies,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(-30); // Last 30 data points
+
+      setGrowthData(growthArray);
+    } catch (error) {
+      console.error('Error loading growth data:', error);
+    }
+  };
+
+  const loadTopCompanies = async (companyIds: string[]) => {
+    try {
+      const { data: companiesWithCounts } = await supabase
+        .from('companies')
+        .select(`
+          id,
+          name,
+          members:members(count)
+        `)
+        .in('id', companyIds)
+        .eq('is_active', true);
+
+      const topCompaniesData = (companiesWithCounts || [])
+        .map(company => ({
+          name: company.name,
+          memberCount: Array.isArray(company.members) ? company.members.length : 0,
+        }))
+        .sort((a, b) => b.memberCount - a.memberCount)
+        .slice(0, 10);
+
+      setTopCompanies(topCompaniesData);
+    } catch (error) {
+      console.error('Error loading top companies:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate('/association')}
+              className="hover:bg-primary/10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Association Analytics
+              </h1>
+              <p className="text-muted-foreground">Comprehensive insights and metrics</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Time Range Selector */}
+        <div className="flex gap-2">
+          <Button
+            variant={timeRange === '7d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('7d')}
+          >
+            7 Days
+          </Button>
+          <Button
+            variant={timeRange === '30d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('30d')}
+          >
+            30 Days
+          </Button>
+          <Button
+            variant={timeRange === '90d' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('90d')}
+          >
+            90 Days
+          </Button>
+          <Button
+            variant={timeRange === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setTimeRange('all')}
+          >
+            All Time
+          </Button>
+        </div>
+
+        {/* Overview Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="hover:shadow-lg transition-shadow border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+              <Users className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalMembers}</div>
+              <p className="text-xs text-muted-foreground">
+                +{stats.newMembers7Days} this week
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Companies</CardTitle>
+              <Building2 className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalCompanies}</div>
+              <p className="text-xs text-muted-foreground">
+                Active companies
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Invitations</CardTitle>
+              <Activity className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.pendingInvitations}</div>
+              <p className="text-xs text-muted-foreground">
+                Awaiting response
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-primary/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
+              <BarChart3 className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPosts}</div>
+              <p className="text-xs text-muted-foreground">
+                Member engagement
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Growth Trends */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Growth Trends
+            </CardTitle>
+            <CardDescription>Member and company growth over time</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={growthData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                />
+                <YAxis tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="members" 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2}
+                  name="Members"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="companies" 
+                  stroke="hsl(var(--secondary))" 
+                  strokeWidth={2}
+                  name="Companies"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Onboarding Analytics */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Member Onboarding Analytics
+            </CardTitle>
+            <CardDescription>Track member onboarding progress and completion</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Total Members</span>
+                </div>
+                <div className="text-2xl font-bold">{stats.onboardingTotal}</div>
+                <p className="text-xs text-muted-foreground">Started onboarding</p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium">Completed</span>
+                </div>
+                <div className="text-2xl font-bold text-green-600">{stats.onboardingCompleted}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.onboardingCompletionRate}% completion rate
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                  <span className="text-sm font-medium">In Progress</span>
+                </div>
+                <div className="text-2xl font-bold text-orange-600">{stats.onboardingInProgress}</div>
+                <p className="text-xs text-muted-foreground">Currently onboarding</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Companies */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Top Companies by Member Count
+            </CardTitle>
+            <CardDescription>Companies with the most members</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {topCompanies.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topCompanies} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={150}
+                    tick={{ fontSize: 12 }}
+                    className="text-muted-foreground"
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="memberCount" 
+                    fill="hsl(var(--primary))" 
+                    name="Members"
+                    radius={[0, 8, 8, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No company data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity Summary */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle>Recent Activity Summary</CardTitle>
+            <CardDescription>Member activity in the last 30 days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary">{stats.newMembers30Days}</div>
+                <p className="text-sm text-muted-foreground">New Members</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary">{stats.totalPosts}</div>
+                <p className="text-sm text-muted-foreground">Total Posts</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary">{stats.totalConnections}</div>
+                <p className="text-sm text-muted-foreground">Connections</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="text-2xl font-bold text-primary">{stats.onboardingCompletionRate}%</div>
+                <p className="text-sm text-muted-foreground">Completion Rate</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default AssociationAnalytics;
