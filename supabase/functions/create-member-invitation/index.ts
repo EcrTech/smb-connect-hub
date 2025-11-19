@@ -254,8 +254,7 @@ const handler = async (req: Request): Promise<Response> => {
       .insert({
         invitation_id: invitation.id,
         action: 'created',
-        performed_by: user.id,
-        notes: `Invitation created for ${email}`
+        performed_by: user.id
       });
 
     return new Response(
