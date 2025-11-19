@@ -399,17 +399,24 @@ export default function AssociationDashboard() {
         </div>
 
         {/* Onboarding Stats Section */}
-        <Card 
-          className="border-none shadow-lg cursor-pointer hover:shadow-xl transition-shadow group"
-          onClick={() => navigate('/association/analytics')}
-        >
+        <Card className="border-none shadow-lg">
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-primary" />
-              <CardTitle className="group-hover:text-primary transition-colors">Member Onboarding Analytics</CardTitle>
-              <BarChart3 className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                <CardTitle>Member Onboarding Analytics</CardTitle>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/association/analytics')}
+                className="gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Details
+              </Button>
             </div>
-            <CardDescription>Track how members in your association are completing onboarding (Click for detailed analytics)</CardDescription>
+            <CardDescription>Track how members in your association are completing onboarding</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
