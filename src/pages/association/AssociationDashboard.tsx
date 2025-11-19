@@ -399,13 +399,17 @@ export default function AssociationDashboard() {
         </div>
 
         {/* Onboarding Stats Section */}
-        <Card className="border-none shadow-lg">
+        <Card 
+          className="border-none shadow-lg cursor-pointer hover:shadow-xl transition-shadow group"
+          onClick={() => navigate('/association/analytics')}
+        >
           <CardHeader>
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              <CardTitle>Member Onboarding Analytics</CardTitle>
+              <CardTitle className="group-hover:text-primary transition-colors">Member Onboarding Analytics</CardTitle>
+              <BarChart3 className="h-4 w-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
             </div>
-            <CardDescription>Track how members in your association are completing onboarding</CardDescription>
+            <CardDescription>Track how members in your association are completing onboarding (Click for detailed analytics)</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -496,6 +500,10 @@ export default function AssociationDashboard() {
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/email-analytics')}>
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Email Analytics
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/association/analytics')}>
+                <TrendingUp className="w-4 h-4 mr-2" />
+                View Analytics
               </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/association/profile')}>
                 <Settings className="w-4 h-4 mr-2" />

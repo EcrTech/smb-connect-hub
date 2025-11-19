@@ -52,6 +52,7 @@ import AssociationBulkUploadCompanies from "./pages/association/BulkUploadCompan
 import AssociationEmailLists from "./pages/association/AssociationEmailLists";
 import AssociationEmailListDetail from "./pages/association/AssociationEmailListDetail";
 import AssociationEmailAnalytics from "./pages/association/AssociationEmailAnalytics";
+import AssociationAnalytics from "./pages/association/AssociationAnalytics";
 import CompanyDashboard from "./pages/company/CompanyDashboard";
 import CompanyMembers from "./pages/company/CompanyMembers";
 import CompanyEmailLists from "./pages/company/CompanyEmailLists";
@@ -389,6 +390,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <AssociationEmailAnalytics />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/association/analytics" 
+            element={
+              <ProtectedRoute>
+                <AssociationAnalytics />
               </ProtectedRoute>
             } 
           />
