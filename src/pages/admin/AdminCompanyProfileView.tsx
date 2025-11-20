@@ -138,7 +138,7 @@ export default function AdminCompanyProfileView() {
   if (!company) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 pl-20">
+        <div className="container mx-auto px-4 py-8 !pl-20 md:!pl-24">
           <BackButton fallbackPath="/admin/companies" variant="ghost" label="Back" />
           <div className="text-center mt-8">
             <p className="text-muted-foreground">Company not found</p>
@@ -150,7 +150,7 @@ export default function AdminCompanyProfileView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 pl-20">
+      <div className="container mx-auto px-4 py-8 !pl-20 md:!pl-24">
         <div className="flex items-center justify-between mb-8">
           <BackButton fallbackPath="/admin/companies" variant="ghost" label="Back" />
           <HomeButton />
