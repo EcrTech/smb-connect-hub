@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/BackButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, TrendingUp, Users, Building2, Activity, GraduationCap, CheckCircle2, Clock, BarChart3 } from "lucide-react";
+import { TrendingUp, Users, Building2, Activity, GraduationCap, CheckCircle2, Clock, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import {
   LineChart,
@@ -275,18 +276,17 @@ const AssociationAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 pl-20 md:pl-24 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
+            <BackButton 
+              fallbackPath="/association" 
+              variant="ghost" 
               size="icon"
-              onClick={() => navigate('/association')}
+              label=""
               className="hover:bg-primary/10"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            />
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                 Association Analytics
