@@ -276,7 +276,7 @@ const AssociationAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-4 md:p-6 lg:p-8 pl-20 md:pl-24 space-y-6">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 !pl-20 md:!pl-24 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

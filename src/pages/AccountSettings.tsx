@@ -42,7 +42,7 @@ export default function AccountSettings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 !pl-20 md:!pl-24 max-w-4xl">
         <BackButton fallbackPath="/dashboard" variant="ghost" label="Back" className="mb-6" />
 
         <div className="space-y-6">
