@@ -218,11 +218,11 @@ export default function CompanyEmailAnalytics() {
                       <p className="text-xs text-muted-foreground">Recipients</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-blue-600">{campaign.open_rate}%</p>
+                      <p className="text-2xl font-bold text-blue-600">{(campaign.open_rate || 0).toFixed(2)}%</p>
                       <p className="text-xs text-muted-foreground">Opened</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-green-600">{campaign.click_rate}%</p>
+                      <p className="text-2xl font-bold text-green-600">{(campaign.click_rate || 0).toFixed(2)}%</p>
                       <p className="text-xs text-muted-foreground">Clicked</p>
                     </div>
                   </div>
