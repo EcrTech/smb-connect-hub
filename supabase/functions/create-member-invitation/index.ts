@@ -275,16 +275,27 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log(`Successfully inserted ${insertedInvitations.length} invitations`);
 
-      // Send emails in background (non-blocking)
-      for (const invitation of insertedInvitations) {
+      // Batch insert audit logs immediately
+      const auditRecords = insertedInvitations.map(inv => ({
+        invitation_id: inv.id,
+        action: 'created',
+        performed_by: user.id
+      }));
+
+      try {
+        await supabase.from('member_invitation_audit').insert(auditRecords);
+      } catch (auditError) {
+        console.error('Audit log error:', auditError);
+      }
+
+      // Send all emails in background after response
+      const emailPromises = insertedInvitations.map(async (invitation) => {
         const rawToken = tokenMap.get(invitation.email);
-        if (!rawToken) continue;
+        if (!rawToken) return;
 
-        // Find original invitation data
         const invData = newInvitations.find(inv => inv.email === invitation.email);
-        if (!invData) continue;
+        if (!invData) return;
 
-          // Send email asynchronously (non-blocking)
         const registrationUrl = `${appUrl}/register?token=${rawToken}`;
         const emailHtml = `
           <!DOCTYPE html>
@@ -330,35 +341,27 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        // Send email in background (don't await)
-        resend.emails.send({
-          from: 'SMB Connect <noreply@smbconnect.in>',
-          to: [invitation.email],
-          subject: `You're invited to join ${organizationName} on SMB Connect`,
-          html: emailHtml,
-        }).catch(err => console.error(`Email error for ${invitation.email}:`, err));
+        try {
+          await resend.emails.send({
+            from: 'SMB Connect <noreply@smbconnect.in>',
+            to: [invitation.email],
+            subject: `You're invited to join ${organizationName} on SMB Connect`,
+            html: emailHtml,
+          });
+          results.successful.push(invitation.email);
+        } catch (err) {
+          console.error(`Email error for ${invitation.email}:`, err);
+        }
+      });
 
-        results.successful.push(invitation.email);
-      }
-
-      // Batch insert audit logs
-      const auditRecords = insertedInvitations.map(inv => ({
-        invitation_id: inv.id,
-        action: 'created',
-        performed_by: user.id
-      }));
-
-      try {
-        await supabase.from('member_invitation_audit').insert(auditRecords);
-      } catch (auditError) {
-        console.error('Audit log error:', auditError);
-      }
+      // Send all emails in background after response (fire and forget)
+      Promise.all(emailPromises).catch(err => console.error('Background email error:', err));
 
       return new Response(
         JSON.stringify({
           success: true,
           results,
-          message: `Processed ${invitations.length} invitations: ${results.successful.length} successful, ${results.failed.length} failed`
+          message: `Created ${insertedInvitations.length} invitations successfully. Emails are being sent in the background.`
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
