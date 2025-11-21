@@ -61,8 +61,8 @@ export function BulkInviteMembersDialog({
         const lines = text.trim().split('\n');
         const headers = lines[0].split(',').map(h => h.trim());
         
-        let success = 0;
-        let failed = 0;
+        // Parse all invitations
+        const invitations = [];
         const errors: string[] = [];
 
         for (let i = 1; i < lines.length; i++) {
@@ -76,40 +76,41 @@ export function BulkInviteMembersDialog({
           // Validate required fields
           if (!rowData.email || !rowData.first_name || !rowData.last_name) {
             errors.push(`Row ${i + 1}: Missing required fields (email, first_name, last_name)`);
-            failed++;
             continue;
           }
 
-          try {
-            const { data, error } = await supabase.functions.invoke(
-              'create-member-invitation',
-              {
-                body: {
-                  email: rowData.email,
-                  first_name: rowData.first_name,
-                  last_name: rowData.last_name,
-                  organization_id: organizationId,
-                  organization_type: organizationType,
-                  role: rowData.role || 'member',
-                  designation: rowData.designation || null,
-                  department: rowData.department || null,
-                },
-              }
-            );
-
-            if (error || (data && !data.success)) {
-              const errorMsg = data?.error || error?.message || 'Unknown error';
-              errors.push(`Row ${i + 1} (${rowData.email}): ${errorMsg}`);
-              failed++;
-            } else {
-              success++;
-            }
-          } catch (err: any) {
-            errors.push(`Row ${i + 1} (${rowData.email}): ${err.message}`);
-            failed++;
-          }
+          invitations.push({
+            email: rowData.email,
+            first_name: rowData.first_name,
+            last_name: rowData.last_name,
+            organization_id: organizationId,
+            organization_type: organizationType,
+            role: rowData.role || 'member',
+            designation: rowData.designation || null,
+            department: rowData.department || null,
+          });
         }
 
+        if (invitations.length === 0) {
+          toast.error('No valid invitations found in CSV');
+          setUploading(false);
+          return;
+        }
+
+        // Send all invitations in one request
+        const { data, error } = await supabase.functions.invoke(
+          'create-member-invitation',
+          {
+            body: {
+              invitations,
+            },
+          }
+        );
+
+        const success = data?.results?.successful?.length || 0;
+        const failed = data?.results?.failed?.length || 0;
+
+        
         setUploading(false);
         
         if (success > 0) {
@@ -120,12 +121,16 @@ export function BulkInviteMembersDialog({
           onSuccess?.();
         } else {
           toast.error('Failed to send invitations', {
-            description: errors.slice(0, 3).join('\n'),
+            description: data?.results?.failed?.slice(0, 3).map((f: any) => `${f.email}: ${f.error}`).join('\n'),
           });
         }
 
         if (errors.length > 0) {
-          console.error('Bulk invitation errors:', errors);
+          console.error('CSV validation errors:', errors);
+        }
+
+        if (data?.results?.failed?.length > 0) {
+          console.error('Bulk invitation failures:', data.results.failed);
         }
 
         // Reset file input
