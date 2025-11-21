@@ -169,7 +169,7 @@ export default function MemberInvitations() {
 
   const organizationId = role === 'association' ? userData?.association_id : userData?.company_id;
   const organizationType = role === 'association' ? 'association' : 'company';
-  const fallbackPath = role === 'association' ? '/association/dashboard' : role === 'company' ? '/company/dashboard' : '/dashboard';
+  const fallbackPath = role === 'association' ? '/association' : role === 'company' ? '/company' : '/dashboard';
 
   return (
     <div className="container mx-auto p-6 pt-20 !pl-20 md:!pl-24 space-y-6">
