@@ -26,6 +26,7 @@ export function BulkInviteMembersDialog({
 }: BulkInviteMembersDialogProps) {
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ current: 0, total: 0 });
 
   const downloadTemplate = () => {
     const csvContent = 'email,first_name,last_name,role,designation,department\n' +
@@ -97,6 +98,8 @@ export function BulkInviteMembersDialog({
           return;
         }
 
+        setProgress({ current: 0, total: invitations.length });
+
         // Send all invitations in one request
         const { data, error } = await supabase.functions.invoke(
           'create-member-invitation',
@@ -106,6 +109,8 @@ export function BulkInviteMembersDialog({
             },
           }
         );
+
+        setProgress({ current: invitations.length, total: invitations.length });
 
         const success = data?.results?.successful?.length || 0;
         const failed = data?.results?.failed?.length || 0;
@@ -186,12 +191,12 @@ export function BulkInviteMembersDialog({
                 disabled={uploading}
                 onClick={() => document.getElementById('csv-upload')?.click()}
               >
-                {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing... {progress.total > 0 && `(${progress.current}/${progress.total})`}
+                </>
+              ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
                     Upload CSV
