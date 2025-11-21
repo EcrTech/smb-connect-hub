@@ -11,8 +11,7 @@ interface BackButtonProps {
 }
 
 /**
- * Smart back button that uses browser history with fallback
- * If user deep-linked or history is empty, navigates to fallbackPath
+ * Simple back button that always navigates to the fallbackPath
  */
 export const BackButton = ({ 
   fallbackPath = '/dashboard', 
@@ -24,13 +23,7 @@ export const BackButton = ({
   const navigate = useNavigate();
 
   const handleBack = () => {
-    // Check if there's history to go back to
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      // Fallback for deep links
-      navigate(fallbackPath);
-    }
+    navigate(fallbackPath);
   };
 
   return (
