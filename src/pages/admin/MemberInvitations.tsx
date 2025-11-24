@@ -51,12 +51,20 @@ export default function MemberInvitations() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && role && (role === 'admin' || role === 'god-admin' || 
+        (role === 'association' && userData?.association_id) || 
+        (role === 'company' && userData?.company_id))) {
       loadInvitations();
     }
-  }, [user, userData]);
+  }, [user, role, userData?.association_id, userData?.company_id]);
 
   const loadInvitations = async () => {
+    if (!role) {
+      console.log('No role available yet, skipping invitation load');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -66,23 +74,39 @@ export default function MemberInvitations() {
         .order('created_at', { ascending: false });
 
       // Filter based on user role
-      if (role === 'association' && userData?.association_id) {
+      if (role === 'association') {
+        if (!userData?.association_id) {
+          console.log('No association_id available');
+          setLoading(false);
+          return;
+        }
         query = query
           .eq('organization_type', 'association')
           .eq('organization_id', userData.association_id);
-      } else if (role === 'company' && userData?.company_id) {
+      } else if (role === 'company') {
+        if (!userData?.company_id) {
+          console.log('No company_id available');
+          setLoading(false);
+          return;
+        }
         query = query
           .eq('organization_type', 'company')
           .eq('organization_id', userData.company_id);
       }
+      // For admin roles, no filter needed (will fetch all)
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Loaded invitations:', data?.length);
       setInvitations((data as any) || []);
     } catch (error: any) {
       console.error('Error loading invitations:', error);
-      toast.error('Failed to load invitations');
+      toast.error('Failed to load invitations: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
