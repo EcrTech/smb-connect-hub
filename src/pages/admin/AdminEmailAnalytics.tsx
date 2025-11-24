@@ -88,7 +88,7 @@ export default function AdminEmailAnalytics() {
     <div className="container mx-auto p-6 !pl-20 md:!pl-24 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <BackButton />
+          <BackButton fallbackPath="/admin/actions" variant="ghost" />
           <div>
             <h1 className="text-3xl font-bold">Bulk Email Analytics</h1>
             <p className="text-muted-foreground">Track email campaign performance across all organizations</p>
