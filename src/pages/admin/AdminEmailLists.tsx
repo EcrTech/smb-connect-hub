@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, Upload, Mail, Trash2, Users } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, Mail, Trash2, Users, Building2 } from 'lucide-react';
 import { CreateEmailListDialog } from '@/components/admin/CreateEmailListDialog';
 import { BulkEmailDialog } from '@/components/admin/BulkEmailDialog';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useRoleContext } from '@/contexts/RoleContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface EmailList {
   id: string;
@@ -22,6 +24,7 @@ export default function AdminEmailLists() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { role, isSuperAdmin } = useUserRole();
+  const { selectedAssociationId, setRole } = useRoleContext();
   const [lists, setLists] = useState<EmailList[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,17 +34,50 @@ export default function AdminEmailLists() {
     listIds: [] 
   });
   const [selectedLists, setSelectedLists] = useState<string[]>([]);
+  const [associations, setAssociations] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    loadEmailLists();
+    loadAssociations();
   }, []);
 
+  useEffect(() => {
+    if (selectedAssociationId) {
+      loadEmailLists();
+    }
+  }, [selectedAssociationId]);
+
+  const loadAssociations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('associations')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setAssociations(data || []);
+      
+      // Auto-select first association if none selected
+      if (data && data.length > 0 && !selectedAssociationId) {
+        setRole('admin', data[0].id);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load associations',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const loadEmailLists = async () => {
+    if (!selectedAssociationId) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('email_lists')
         .select('*')
+        .eq('association_id', selectedAssociationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -117,24 +153,53 @@ export default function AdminEmailLists() {
       </header>
 
       <main className="container mx-auto px-4 py-6 pl-20">
-        {/* Search and Actions */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <Input
-            placeholder="Search bulk email lists..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="max-w-md"
-          />
-          {selectedLists.length > 0 && (
-            <Button 
-              onClick={() => setBulkEmailDialog({ open: true, listIds: selectedLists })}
-              className="whitespace-nowrap"
-            >
-              <Mail className="w-4 h-4 mr-2" />
-              Send to {selectedLists.length} List{selectedLists.length !== 1 ? 's' : ''}
-            </Button>
-          )}
-        </div>
+        {/* Association Selector */}
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <Building2 className="w-5 h-5 text-muted-foreground" />
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Select Association</label>
+                <Select
+                  value={selectedAssociationId || ''}
+                  onValueChange={(value) => setRole('admin', value)}
+                >
+                  <SelectTrigger className="max-w-md">
+                    <SelectValue placeholder="Choose an association" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {associations.map((assoc) => (
+                      <SelectItem key={assoc.id} value={assoc.id}>
+                        {assoc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {selectedAssociationId ? (
+          <>
+            {/* Search and Actions */}
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <Input
+                placeholder="Search bulk email lists..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="max-w-md"
+              />
+              {selectedLists.length > 0 && (
+                <Button 
+                  onClick={() => setBulkEmailDialog({ open: true, listIds: selectedLists })}
+                  className="whitespace-nowrap"
+                >
+                  <Mail className="w-4 h-4 mr-2" />
+                  Send to {selectedLists.length} List{selectedLists.length !== 1 ? 's' : ''}
+                </Button>
+              )}
+            </div>
 
         {/* Email Lists */}
         {loading ? (
@@ -233,6 +298,15 @@ export default function AdminEmailLists() {
               </Card>
             ))}
           </div>
+        )}
+          </>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Building2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <p className="text-muted-foreground">Please select an association to manage email lists</p>
+            </CardContent>
+          </Card>
         )}
       </main>
 
