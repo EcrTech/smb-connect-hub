@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { BackButton } from '@/components/BackButton';
 
 export default function AdminActions() {
   const navigate = useNavigate();
@@ -120,6 +121,7 @@ export default function AdminActions() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <BackButton fallbackPath="/dashboard" variant="ghost" />
             <div>
               <h1 className="text-2xl font-bold">Admin Actions</h1>
               <p className="text-sm text-muted-foreground">Manage Platform Resources</p>
