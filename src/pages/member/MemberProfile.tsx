@@ -109,6 +109,8 @@ export default function MemberProfile() {
   const [uploading, setUploading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'none' | 'pending' | 'connected'>('none');
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [isReceiver, setIsReceiver] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
 
   const isOwnProfile = currentUser === userId;
@@ -149,11 +151,15 @@ export default function MemberProfile() {
       // Check connection status
       const { data: connection } = await supabase
         .from('connections')
-        .select('id, status')
+        .select('id, status, sender_id, receiver_id')
         .or(`and(sender_id.eq.${currentMember.id},receiver_id.eq.${otherMember.id}),and(sender_id.eq.${otherMember.id},receiver_id.eq.${currentMember.id})`)
         .maybeSingle();
 
       if (connection) {
+        setConnectionId(connection.id);
+        // Check if current user is the receiver
+        setIsReceiver(connection.receiver_id === currentMember.id);
+        
         if (connection.status === 'accepted') {
           setConnectionStatus('connected');
           // Find existing chat
@@ -163,6 +169,8 @@ export default function MemberProfile() {
         }
       } else {
         setConnectionStatus('none');
+        setConnectionId(null);
+        setIsReceiver(false);
       }
     } catch (error) {
       console.error('Error checking connection:', error);
@@ -403,6 +411,58 @@ export default function MemberProfile() {
     }
   };
 
+  const handleAcceptConnection = async () => {
+    if (!connectionId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'accepted', responded_at: new Date().toISOString() })
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Connection request accepted',
+      });
+
+      await checkConnectionStatus();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to accept connection',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRejectConnection = async () => {
+    if (!connectionId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'rejected', responded_at: new Date().toISOString() })
+        .eq('id', connectionId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Connection request rejected',
+      });
+
+      await checkConnectionStatus();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to reject connection',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Present';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -545,6 +605,17 @@ export default function MemberProfile() {
 
                   {/* Contact & Social Links */}
                   <div className="flex flex-wrap gap-3 mt-4">
+                    {/* Accept/Reject Buttons for Pending Connection Requests */}
+                    {!isOwnProfile && connectionStatus === 'pending' && isReceiver && (
+                      <>
+                        <Button variant="default" size="sm" onClick={handleAcceptConnection}>
+                          Accept
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleRejectConnection}>
+                          Reject
+                        </Button>
+                      </>
+                    )}
                     {/* Message Button for Connected Users */}
                     {!isOwnProfile && connectionStatus === 'connected' && (
                       <Button variant="default" size="sm" onClick={handleStartMessage}>
