@@ -12,9 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import { JOB_TITLES, INDIAN_CITIES } from '@/lib/profileOptions';
 
 interface EditWorkExperienceDialogProps {
   onSave: () => void;
@@ -97,12 +99,12 @@ export function EditWorkExperienceDialog({ onSave }: EditWorkExperienceDialogPro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              placeholder="e.g., Senior Software Engineer"
+            <Combobox
+              options={JOB_TITLES}
               value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
+              onValueChange={(value) => setFormData({ ...formData, title: value })}
+              placeholder="Select or type job title..."
+              searchPlaceholder="Search titles..."
             />
           </div>
 
@@ -119,11 +121,12 @@ export function EditWorkExperienceDialog({ onSave }: EditWorkExperienceDialogPro
 
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="e.g., San Francisco, CA"
+            <Combobox
+              options={INDIAN_CITIES}
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              onValueChange={(value) => setFormData({ ...formData, location: value })}
+              placeholder="Select or type city..."
+              searchPlaceholder="Search cities..."
             />
           </div>
 

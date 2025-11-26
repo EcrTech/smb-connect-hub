@@ -8,11 +8,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import { SKILLS } from '@/lib/profileOptions';
 
 interface EditSkillsDialogProps {
   onSave: () => void;
@@ -75,12 +76,12 @@ export function EditSkillsDialog({ onSave }: EditSkillsDialogProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="skill_name">Skill Name *</Label>
-            <Input
-              id="skill_name"
-              placeholder="e.g., React, Project Management, Python"
+            <Combobox
+              options={SKILLS}
               value={skillName}
-              onChange={(e) => setSkillName(e.target.value)}
-              required
+              onValueChange={setSkillName}
+              placeholder="Select or type skill..."
+              searchPlaceholder="Search skills..."
             />
           </div>
 

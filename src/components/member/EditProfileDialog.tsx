@@ -13,9 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Edit } from 'lucide-react';
+import { INDIAN_CITIES } from '@/lib/profileOptions';
 
 interface EditProfileDialogProps {
   profile: {
@@ -230,11 +232,12 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
 
           <div className="space-y-2">
             <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              placeholder="e.g., San Francisco, CA"
+            <Combobox
+              options={INDIAN_CITIES}
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              onValueChange={(value) => setFormData({ ...formData, location: value })}
+              placeholder="Select or type city..."
+              searchPlaceholder="Search cities..."
             />
           </div>
 
