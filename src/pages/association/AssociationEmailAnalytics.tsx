@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Send, Eye, MousePointer, AlertCircle, Ban, TrendingUp } from 'lucide-react';
+import { Mail, Send, CheckCircle, Eye, MousePointer, AlertCircle, Ban, TrendingUp } from 'lucide-react';
 import { BackButton } from '@/components/BackButton';
 import { Progress } from '@/components/ui/progress';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -180,8 +180,13 @@ export default function AssociationEmailAnalytics() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalSent.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.totalDelivered.toLocaleString()} delivered ({stats.deliveryRate.toFixed(1)}%)
+              {stats.totalDelivered.toLocaleString()} confirmed delivered
             </p>
+            {stats.totalSent > stats.totalDelivered && (
+              <p className="text-xs text-amber-600 mt-1">
+                {(stats.totalSent - stats.totalDelivered).toLocaleString()} pending confirmation
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -216,12 +221,35 @@ export default function AssociationEmailAnalytics() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Delivery Rate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold mb-2">{stats.deliveryRate.toFixed(1)}%</div>
+            <Progress value={stats.deliveryRate} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {stats.totalDelivered.toLocaleString()} of {stats.totalSent.toLocaleString()} sent
+            </p>
+            {stats.totalSent > stats.totalDelivered && (
+              <p className="text-xs text-amber-600 mt-1">
+                Note: Delivery confirmations update via webhooks
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Eye className="h-4 w-4" />
               Open Rate
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold mb-2">{stats.avgOpenRate.toFixed(1)}%</div>
+            <div className="text-3xl font-bold mb-2">
+              {stats.totalDelivered > 0 ? stats.avgOpenRate.toFixed(1) : '—'}%
+            </div>
             <Progress value={stats.avgOpenRate} className="h-2" />
             <p className="text-xs text-muted-foreground mt-2">
               {stats.totalOpened.toLocaleString()} of {stats.totalDelivered.toLocaleString()} delivered
@@ -237,7 +265,9 @@ export default function AssociationEmailAnalytics() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold mb-2">{stats.avgClickRate.toFixed(1)}%</div>
+            <div className="text-3xl font-bold mb-2">
+              {stats.totalOpened > 0 ? stats.avgClickRate.toFixed(1) : '—'}%
+            </div>
             <Progress value={stats.avgClickRate} className="h-2" />
             <p className="text-xs text-muted-foreground mt-2">
               {stats.totalClicked.toLocaleString()} of {stats.totalOpened.toLocaleString()} opened
