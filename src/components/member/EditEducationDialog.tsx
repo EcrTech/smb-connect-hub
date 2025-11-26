@@ -11,9 +11,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import { DEGREES, FIELDS_OF_STUDY } from '@/lib/profileOptions';
 
 interface EditEducationDialogProps {
   onSave: () => void;
@@ -107,21 +109,23 @@ export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
 
           <div className="space-y-2">
             <Label htmlFor="degree">Degree</Label>
-            <Input
-              id="degree"
-              placeholder="e.g., Bachelor's Degree"
+            <Combobox
+              options={DEGREES}
               value={formData.degree}
-              onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+              onValueChange={(value) => setFormData({ ...formData, degree: value })}
+              placeholder="Select or type degree..."
+              searchPlaceholder="Search degrees..."
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="field_of_study">Field of Study</Label>
-            <Input
-              id="field_of_study"
-              placeholder="e.g., Computer Science"
+            <Combobox
+              options={FIELDS_OF_STUDY}
               value={formData.field_of_study}
-              onChange={(e) => setFormData({ ...formData, field_of_study: e.target.value })}
+              onValueChange={(value) => setFormData({ ...formData, field_of_study: value })}
+              placeholder="Select or type field of study..."
+              searchPlaceholder="Search fields..."
             />
           </div>
 

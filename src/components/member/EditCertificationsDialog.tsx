@@ -10,9 +10,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import { CERTIFICATIONS, ISSUING_ORGANIZATIONS } from '@/lib/profileOptions';
 
 interface EditCertificationsDialogProps {
   onSave: () => void;
@@ -92,25 +94,23 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              placeholder="e.g., AWS Certified Solutions Architect"
+            <Combobox
+              options={CERTIFICATIONS}
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
+              onValueChange={(value) => setFormData({ ...formData, name: value })}
+              placeholder="Select or type certification..."
+              searchPlaceholder="Search certifications..."
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="issuing_organization">Issuing Organization *</Label>
-            <Input
-              id="issuing_organization"
-              placeholder="e.g., Amazon Web Services"
+            <Combobox
+              options={ISSUING_ORGANIZATIONS}
               value={formData.issuing_organization}
-              onChange={(e) =>
-                setFormData({ ...formData, issuing_organization: e.target.value })
-              }
-              required
+              onValueChange={(value) => setFormData({ ...formData, issuing_organization: value })}
+              placeholder="Select or type organization..."
+              searchPlaceholder="Search organizations..."
             />
           </div>
 
