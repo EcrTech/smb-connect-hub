@@ -272,7 +272,9 @@ export default function AssociationFeed() {
   const filteredPosts = posts.filter(post => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    const authorName = `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase();
+    const authorName = post.profiles 
+      ? `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase()
+      : 'unknown user';
     const content = post.content.toLowerCase();
     return authorName.includes(query) || content.includes(query);
   });
@@ -370,9 +372,9 @@ export default function AssociationFeed() {
                       className="cursor-pointer"
                       onClick={() => navigate(`/profile/${post.user_id}`)}
                     >
-                      <AvatarImage src={post.profiles.avatar || undefined} />
+                      <AvatarImage src={post.profiles?.avatar || undefined} />
                       <AvatarFallback>
-                        {post.profiles.first_name[0]}{post.profiles.last_name[0]}
+                        {post.profiles?.first_name?.[0] || '?'}{post.profiles?.last_name?.[0] || '?'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
@@ -382,7 +384,7 @@ export default function AssociationFeed() {
                             className="font-semibold cursor-pointer hover:underline"
                             onClick={() => navigate(`/profile/${post.user_id}`)}
                           >
-                            {post.profiles.first_name} {post.profiles.last_name}
+                            {post.profiles?.first_name || 'Unknown'} {post.profiles?.last_name || 'User'}
                           </p>
                           {post.members?.companies && (
                             <p className="text-sm text-muted-foreground">
