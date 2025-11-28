@@ -1841,6 +1841,8 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number | null
+          original_author_id: string | null
+          original_post_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1851,6 +1853,8 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          original_author_id?: string | null
+          original_post_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1861,10 +1865,27 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          original_author_id?: string | null
+          original_post_id?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_original_author_id_fkey"
+            columns: ["original_author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_original_post_id_fkey"
+            columns: ["original_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
