@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, X, ArrowLeft, Search } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, X, ArrowLeft, Search, Share2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
@@ -265,6 +265,23 @@ export default function AssociationFeed() {
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
+  const handleShare = async (postId: string) => {
+    try {
+      const url = `${window.location.origin}/association/feed?post=${postId}`;
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: 'Link copied',
+        description: 'Post link copied to clipboard',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy link',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleCommentAdded = async () => {
     await loadPosts();
   };
@@ -440,6 +457,14 @@ export default function AssociationFeed() {
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       {post.comments_count}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleShare(post.id)}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
                     </Button>
                   </div>
 
