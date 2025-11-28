@@ -463,6 +463,53 @@ export default function MemberProfile() {
     }
   };
 
+  const handleSendConnection = async () => {
+    try {
+      // Get both members
+      const { data: currentMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', currentUser)
+        .single();
+
+      const { data: otherMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (!currentMember || !otherMember) {
+        toast({
+          title: 'Error',
+          description: 'Unable to find member profiles',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('connections').insert({
+        sender_id: currentMember.id,
+        receiver_id: otherMember.id,
+        status: 'pending',
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Connection request sent',
+      });
+
+      await checkConnectionStatus();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send connection request',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Present';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -605,7 +652,19 @@ export default function MemberProfile() {
 
                   {/* Contact & Social Links */}
                   <div className="flex flex-wrap gap-3 mt-4">
-                    {/* Accept/Reject Buttons for Pending Connection Requests */}
+                    {/* Connect Button for No Connection */}
+                    {!isOwnProfile && connectionStatus === 'none' && (
+                      <Button variant="default" size="sm" onClick={handleSendConnection}>
+                        Connect
+                      </Button>
+                    )}
+                    {/* Pending Status for Sent Requests */}
+                    {!isOwnProfile && connectionStatus === 'pending' && !isReceiver && (
+                      <Button variant="outline" size="sm" disabled>
+                        Request Pending
+                      </Button>
+                    )}
+                    {/* Accept/Reject Buttons for Received Requests */}
                     {!isOwnProfile && connectionStatus === 'pending' && isReceiver && (
                       <>
                         <Button variant="default" size="sm" onClick={handleAcceptConnection}>
