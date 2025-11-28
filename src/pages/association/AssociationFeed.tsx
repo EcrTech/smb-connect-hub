@@ -78,17 +78,30 @@ export default function AssociationFeed() {
 
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (first_name, last_name, avatar)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      if (postsData) {
+      if (postsData && postsData.length > 0) {
+        const userIds = Array.from(new Set(postsData.map((post: any) => post.user_id)));
+
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar')
+          .in('id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        const profilesById = (profilesData || []).reduce((acc: Record<string, any>, profile: any) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>);
+
         const postsWithDetails = await Promise.all(
-          postsData.map(async (post) => {
+          postsData.map(async (post: any) => {
+            const profile = profilesById[post.user_id] || null;
+
             const { data: memberData } = await supabase
               .from('members')
               .select('company_id, companies (name)')
@@ -104,13 +117,16 @@ export default function AssociationFeed() {
 
             return {
               ...post,
+              profiles: profile,
               members: memberData,
-              liked_by_user: !!likeData
+              liked_by_user: !!likeData,
             };
           })
         );
 
         setPosts(postsWithDetails as any);
+      } else {
+        setPosts([]);
       }
     } catch (error: any) {
       console.error('Error loading posts:', error);
