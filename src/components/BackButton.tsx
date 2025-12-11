@@ -23,11 +23,7 @@ export const BackButton = ({
   const navigate = useNavigate();
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate(fallbackPath);
-    }
+    navigate(fallbackPath);
   };
 
   return (
