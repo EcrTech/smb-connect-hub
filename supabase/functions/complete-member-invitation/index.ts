@@ -138,32 +138,43 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.log('Member record created');
       } else if (invitation.organization_type === 'association') {
-        // Create association manager record
-        const { error: managerError } = await supabase
-          .from('association_managers')
-          .insert({
-            user_id: authData.user.id,
-            association_id: invitation.organization_id,
-            is_active: true,
-          });
+        // Only create association_managers record for admin/manager roles
+        if (['admin', 'manager'].includes(invitation.role)) {
+          const { error: managerError } = await supabase
+            .from('association_managers')
+            .insert({
+              user_id: authData.user.id,
+              association_id: invitation.organization_id,
+              is_active: true,
+            });
 
-        if (managerError) {
-          console.error('Error creating association manager:', managerError);
-          // Rollback: Delete auth user
-          await supabase.auth.admin.deleteUser(authData.user.id);
-          throw new Error(`Failed to create association manager record: ${managerError.message}`);
+          if (managerError) {
+            console.error('Error creating association manager:', managerError);
+            // Rollback: Delete auth user
+            await supabase.auth.admin.deleteUser(authData.user.id);
+            throw new Error(`Failed to create association manager record: ${managerError.message}`);
+          }
+
+          console.log('Association manager record created for admin/manager role');
         }
 
-        console.log('Association manager record created');
-
-        // Also create a member record (for general platform access)
-        await supabase
+        // Create a member record for ALL association invitees (for general platform access)
+        const { error: memberError } = await supabase
           .from('members')
           .insert({
             user_id: authData.user.id,
-            role: 'member',
+            role: invitation.role, // Use the actual role from invitation
             is_active: true,
           });
+
+        if (memberError) {
+          console.error('Error creating member:', memberError);
+          // Rollback: Delete auth user
+          await supabase.auth.admin.deleteUser(authData.user.id);
+          throw new Error(`Failed to create member record: ${memberError.message}`);
+        }
+
+        console.log('Member record created for association invitee with role:', invitation.role);
       }
 
       // Update invitation status to 'accepted' (atomic operation for single-use enforcement)
