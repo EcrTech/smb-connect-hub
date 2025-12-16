@@ -27,8 +27,10 @@ import {
   Search,
   MessageSquare,
   Users,
-  Calendar
+  Calendar,
+  UserPlus
 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/BackButton';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -76,11 +78,13 @@ export default function MemberFeed() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
   const [associations, setAssociations] = useState<Association[]>([]);
+  const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
     loadPosts();
+    loadPendingConnectionsCount();
 
     // Set up real-time subscription for new posts
     const channel = supabase
@@ -98,10 +102,54 @@ export default function MemberFeed() {
       )
       .subscribe();
 
+    // Set up real-time subscription for connections
+    const connectionsChannel = supabase
+      .channel('connections-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connections'
+        },
+        () => {
+          loadPendingConnectionsCount();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(connectionsChannel);
     };
   }, []);
+
+  const loadPendingConnectionsCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get the current user's member ID
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!memberData) return;
+
+      // Count pending connection requests where user is the receiver
+      const { count } = await supabase
+        .from('connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', memberData.id)
+        .eq('status', 'pending');
+
+      setPendingConnectionsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading pending connections count:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -469,6 +517,26 @@ export default function MemberFeed() {
               >
                 <Users className="w-5 h-5" />
                 <span className="text-xs">Members</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
+                onClick={() => navigate('/connections')}
+                data-tour="connections"
+              >
+                <div className="relative">
+                  <UserPlus className="w-5 h-5" />
+                  {pendingConnectionsCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center"
+                    >
+                      {pendingConnectionsCount}
+                    </Badge>
+                  )}
+                </div>
+                <span className="text-xs">Connections</span>
               </Button>
               <Button 
                 variant="ghost" 
