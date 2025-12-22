@@ -51,8 +51,10 @@ export default function MemberConnections() {
   const [pendingSent, setPendingSent] = useState<ConnectionWithDetails[]>([]);
 
   useEffect(() => {
-    loadConnections();
-  }, []);
+    if (userData?.id) {
+      loadConnections();
+    }
+  }, [userData?.id]);
 
   const loadConnections = async () => {
     try {
