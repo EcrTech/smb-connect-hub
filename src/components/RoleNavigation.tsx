@@ -1,13 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
 import { useRoleContext } from '@/contexts/RoleContext';
+import { useAvailableRoles } from '@/hooks/useAvailableRoles';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RoleSwitcher } from './RoleSwitcher';
 import { 
   Shield, 
   Building2, 
-  Users, 
   UserCircle,
   ArrowRight
 } from 'lucide-react';
@@ -15,52 +14,76 @@ import {
 export function RoleNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { role } = useUserRole();
-  const { selectedRole } = useRoleContext();
-  
-  // Use selected role from context if available
-  const activeRole = selectedRole || role;
+  const { availableRoles, loading } = useAvailableRoles();
+  const { setRole } = useRoleContext();
 
   // Don't show on auth pages
   if (location.pathname.startsWith('/auth') || location.pathname === '/') {
     return null;
   }
 
+  // Wait for roles to load
+  if (loading || !availableRoles) {
+    return null;
+  }
+
   const navigationOptions = [];
 
-  // All users can access member features
-  navigationOptions.push({
-    label: 'Member View',
-    icon: UserCircle,
-    path: '/feed',
-    description: 'Browse members and connect'
-  });
+  // Add Member View if user is a member
+  if (availableRoles.isMember) {
+    navigationOptions.push({
+      label: 'Member View',
+      icon: UserCircle,
+      path: '/feed',
+      description: 'Browse members and connect',
+      onClick: () => {
+        setRole('member');
+        navigate('/feed');
+      }
+    });
+  }
 
-  // Add role-specific navigation
-  if (activeRole === 'admin' || activeRole === 'god-admin') {
+  // Add Admin Dashboard if user is admin
+  if (availableRoles.isAdmin || availableRoles.isSuperAdmin || availableRoles.isGodAdmin) {
     navigationOptions.push({
       label: 'Admin Dashboard',
       icon: Shield,
       path: '/admin',
-      description: 'Manage platform'
+      description: 'Manage platform',
+      onClick: () => {
+        setRole('admin');
+        navigate('/admin');
+      }
     });
   }
 
-  if (activeRole === 'association') {
+  // Add Association Dashboard if user manages any associations
+  if (availableRoles.associations && availableRoles.associations.length > 0) {
     navigationOptions.push({
       label: 'Association Dashboard',
       icon: Building2,
       path: '/association',
-      description: 'Manage association'
+      description: 'Manage association',
+      onClick: () => {
+        const firstAssociation = availableRoles.associations[0];
+        setRole('association', firstAssociation.id);
+        navigate('/association');
+      }
     });
   }
 
-  if (activeRole === 'company') {
+  // Add Company Dashboard if user manages any companies
+  if (availableRoles.companies && availableRoles.companies.length > 0) {
     navigationOptions.push({
       label: 'Company Dashboard',
       icon: Building2,
       path: '/company',
-      description: 'Manage company'
+      description: 'Manage company',
+      onClick: () => {
+        const firstCompany = availableRoles.companies[0];
+        setRole('company', undefined, firstCompany.id);
+        navigate('/company');
+      }
     });
   }
 
@@ -86,7 +109,7 @@ export function RoleNavigation() {
                 key={option.path}
                 variant={isActive ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => navigate(option.path)}
+                onClick={option.onClick}
                 className="flex items-center gap-2"
               >
                 <Icon className="h-4 w-4" />
