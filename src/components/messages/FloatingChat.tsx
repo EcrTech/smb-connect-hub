@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, X, Minus, Search } from 'lucide-react';
+import { MessageCircle, X, Minus, Search, ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MessageThread } from './MessageThread';
 import { cn } from '@/lib/utils';
@@ -215,7 +215,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
               className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
               onClick={handleBackToList}
             >
-              <X className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
             </Button>
           )}
           <Button
