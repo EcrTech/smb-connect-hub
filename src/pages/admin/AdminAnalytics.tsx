@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, TrendingUp, Users, Building2, Mail, MessageCircle, Activity, Settings, LogOut, GraduationCap, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LineChart,
@@ -349,6 +350,7 @@ const AdminAnalytics = () => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <RoleSwitcher />
             {profile && currentUserId && (
               <Avatar 
                 className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
