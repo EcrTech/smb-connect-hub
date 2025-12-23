@@ -13,7 +13,7 @@ import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { FloatingChat } from '@/components/messages/FloatingChat';
 import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
 import { RoleNavigation } from '@/components/RoleNavigation';
-import { RoleSwitcher } from '@/components/RoleSwitcher';
+
 import { 
   ArrowLeft, 
   Heart, 
@@ -571,7 +571,6 @@ export default function MemberFeed() {
               
               {/* Profile Dropdown */}
               <div className="flex items-center gap-2 border-l pl-4">
-                <RoleSwitcher />
                 {profile && currentUserId && (
                   <Avatar 
                     className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
