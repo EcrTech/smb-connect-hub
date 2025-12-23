@@ -133,17 +133,19 @@ export default function MemberProfile() {
 
   const checkConnectionStatus = async () => {
     try {
-      // Get both members
+      // Get both members with company_id
       const { data: currentMember } = await supabase
         .from('members')
-        .select('id')
+        .select('id, company_id')
         .eq('user_id', currentUser)
+        .eq('is_active', true)
         .single();
 
       const { data: otherMember } = await supabase
         .from('members')
-        .select('id')
+        .select('id, company_id')
         .eq('user_id', userId)
+        .eq('is_active', true)
         .single();
 
       if (!currentMember || !otherMember) return;
@@ -162,8 +164,10 @@ export default function MemberProfile() {
         
         if (connection.status === 'accepted') {
           setConnectionStatus('connected');
-          // Find existing chat
-          await findExistingChat(currentMember.id, otherMember.id);
+          // Find existing chat using company_id
+          if (currentMember.company_id && otherMember.company_id) {
+            await findExistingChat(currentMember.company_id, otherMember.company_id);
+          }
         } else {
           setConnectionStatus('pending');
         }
@@ -177,17 +181,17 @@ export default function MemberProfile() {
     }
   };
 
-  const findExistingChat = async (currentMemberId: string, otherMemberId: string) => {
+  const findExistingChat = async (currentCompanyId: string, otherCompanyId: string) => {
     try {
-      // Get chats where current member is participant
+      // Get chats where current member's company is participant
       const { data: currentChats } = await supabase
         .from('chat_participants')
         .select('chat_id')
-        .eq('company_id', currentMemberId);
+        .eq('company_id', currentCompanyId);
 
       if (!currentChats || currentChats.length === 0) return;
 
-      // Check each chat to see if other member is also in it
+      // Check each chat to see if other company is also in it
       for (const chat of currentChats) {
         const { data: participants } = await supabase
           .from('chat_participants')
@@ -195,8 +199,8 @@ export default function MemberProfile() {
           .eq('chat_id', chat.chat_id);
 
         if (participants && participants.length === 2) {
-          const otherParticipant = participants.find(p => p.company_id !== currentMemberId);
-          if (otherParticipant?.company_id === otherMemberId) {
+          const otherParticipant = participants.find(p => p.company_id !== currentCompanyId);
+          if (otherParticipant?.company_id === otherCompanyId) {
             setChatId(chat.chat_id);
             return;
           }
@@ -217,17 +221,35 @@ export default function MemberProfile() {
       // Create new chat
       const { data: currentMember } = await supabase
         .from('members')
-        .select('id')
+        .select('id, company_id')
         .eq('user_id', currentUser)
+        .eq('is_active', true)
         .single();
 
       const { data: otherMember } = await supabase
         .from('members')
-        .select('id')
+        .select('id, company_id')
         .eq('user_id', userId)
+        .eq('is_active', true)
         .single();
 
-      if (!currentMember || !otherMember) return;
+      if (!currentMember || !otherMember) {
+        toast({
+          title: 'Error',
+          description: 'Unable to find member information',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!currentMember.company_id || !otherMember.company_id) {
+        toast({
+          title: 'Error',
+          description: 'Members must belong to a company to chat',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       const { data: newChat, error: chatError } = await supabase
         .from('chats')
@@ -243,8 +265,8 @@ export default function MemberProfile() {
       const { error: participantError } = await supabase
         .from('chat_participants')
         .insert([
-          { chat_id: newChat.id, company_id: currentMember.id },
-          { chat_id: newChat.id, company_id: otherMember.id }
+          { chat_id: newChat.id, company_id: currentMember.company_id },
+          { chat_id: newChat.id, company_id: otherMember.company_id }
         ]);
 
       if (participantError) throw participantError;
