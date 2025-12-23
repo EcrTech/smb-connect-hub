@@ -24,7 +24,8 @@ import {
   Edit,
   Camera,
   MessageSquare,
-  Building2
+  Building2,
+  Users
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
 import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperienceDialog';
@@ -112,6 +113,7 @@ export default function MemberProfile() {
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [isReceiver, setIsReceiver] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
+  const [connectionCount, setConnectionCount] = useState(0);
 
   const isOwnProfile = currentUser === userId;
 
@@ -361,6 +363,24 @@ export default function MemberProfile() {
           .order('name');
         
         setAssociations(associationsData || []);
+      }
+
+      // Load connection count
+      const { data: userMember } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (userMember) {
+        const { count } = await supabase
+          .from('connections')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'accepted')
+          .or(`sender_id.eq.${userMember.id},receiver_id.eq.${userMember.id}`);
+        
+        setConnectionCount(count || 0);
       }
 
     } catch (error: any) {
@@ -642,12 +662,20 @@ export default function MemberProfile() {
                       {profile.headline && (
                         <p className="text-lg text-muted-foreground mt-1">{profile.headline}</p>
                       )}
-                      {profile.location && (
-                        <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                          <MapPin className="w-4 h-4" />
-                          <span>{profile.location}</span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-4 mt-2 text-muted-foreground">
+                        {profile.location && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            <span>{profile.location}</span>
+                          </div>
+                        )}
+                        <button 
+                          onClick={() => navigate('/member/connections')}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {connectionCount > 500 ? '500+' : connectionCount} connection{connectionCount !== 1 ? 's' : ''}
+                        </button>
+                      </div>
                       {/* Employment Status Badge */}
                       {profile.employment_status && (
                         <div className="mt-3">
