@@ -298,7 +298,7 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
               onMouseLeave={() => setHoveredMessageId(null)}
             >
               {!message.isOwn && (
-                <Avatar className="w-8 h-8">
+                <Avatar className="w-8 h-8 flex-shrink-0">
                   <AvatarImage src={message.sender.profiles.avatar} />
                   <AvatarFallback>
                     {message.sender.profiles.first_name[0]}
@@ -307,141 +307,130 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
                 </Avatar>
               )}
               
-              <div className="flex items-center gap-1">
-                {/* Message Actions - Show on hover */}
-                {hoveredMessageId === message.id && (
-                  <div className={cn(
-                    "flex items-center gap-1",
-                    message.isOwn ? "order-first" : "order-last"
-                  )}>
-                    {/* Emoji Reaction */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 opacity-70 hover:opacity-100"
-                        >
-                          <Smile className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" side="top">
-                        <div className="flex gap-1">
-                          {EMOJI_OPTIONS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              onClick={() => handleEmojiReaction(message.id, emoji)}
-                              className="text-xl hover:scale-125 transition-transform p-1"
-                            >
-                              {emoji}
-                            </button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Reply */}
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7 opacity-70 hover:opacity-100"
-                      onClick={() => handleReply(message)}
-                    >
-                      <Reply className="h-4 w-4" />
-                    </Button>
-
-                    {/* More Options (Edit/Delete for own messages) */}
-                    {message.isOwn && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-7 w-7 opacity-70 hover:opacity-100"
+              {/* Message Actions - Show on hover (before message for own, after for others) */}
+              {hoveredMessageId === message.id && message.isOwn && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                        <Smile className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" side="top">
+                      <div className="flex gap-1">
+                        {EMOJI_OPTIONS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleEmojiReaction(message.id, emoji)}
+                            className="text-xl hover:scale-125 transition-transform p-1"
                           >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align={message.isOwn ? "end" : "start"}>
-                          <DropdownMenuItem onClick={() => startEditing(message)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteMessage(message.id)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                )}
-
-                {/* Message Bubble */}
-                <div
-                  className={cn(
-                    "max-w-[70%] rounded-lg p-3",
-                    message.isOwn
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  )}
-                >
-                  {!message.isOwn && (
-                    <p className="text-xs font-semibold mb-1">
-                      {message.sender.profiles.first_name} {message.sender.profiles.last_name}
-                    </p>
-                  )}
-                  
-                  {editingMessageId === message.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="bg-background text-foreground"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleEditMessage(message.id);
-                          }
-                          if (e.key === 'Escape') {
-                            cancelEditing();
-                          }
-                        }}
-                      />
-                      <div className="flex gap-2 text-xs">
-                        <button 
-                          onClick={() => handleEditMessage(message.id)}
-                          className="text-primary-foreground/80 hover:text-primary-foreground underline"
-                        >
-                          Save
-                        </button>
-                        <button 
-                          onClick={cancelEditing}
-                          className="text-primary-foreground/80 hover:text-primary-foreground underline"
-                        >
-                          Cancel
-                        </button>
+                            {emoji}
+                          </button>
+                        ))}
                       </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100" onClick={() => handleReply(message)}>
+                    <Reply className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => startEditing(message)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+
+              {/* Message Bubble */}
+              <div
+                className={cn(
+                  "rounded-lg p-3 max-w-[280px]",
+                  message.isOwn
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                )}
+              >
+                {!message.isOwn && (
+                  <p className="text-xs font-semibold mb-1">
+                    {message.sender.profiles.first_name} {message.sender.profiles.last_name}
+                  </p>
+                )}
+                
+                {editingMessageId === message.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="bg-background text-foreground"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleEditMessage(message.id);
+                        }
+                        if (e.key === 'Escape') {
+                          cancelEditing();
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2 text-xs">
+                      <button onClick={() => handleEditMessage(message.id)} className="text-primary-foreground/80 hover:text-primary-foreground underline">Save</button>
+                      <button onClick={cancelEditing} className="text-primary-foreground/80 hover:text-primary-foreground underline">Cancel</button>
                     </div>
-                  ) : (
-                    <p className="text-sm break-words">{message.content}</p>
-                  )}
-                  
-                  <div className={cn(
-                    "flex items-center gap-2 mt-1",
-                    message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
-                  )}>
-                    <span className="text-xs">{formatMessageTime(message.created_at)}</span>
-                    {message.is_edited && (
-                      <span className="text-xs italic">(edited)</span>
-                    )}
                   </div>
+                ) : (
+                  <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
+                )}
+                
+                <div className={cn(
+                  "flex items-center gap-2 mt-1",
+                  message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                )}>
+                  <span className="text-xs">{formatMessageTime(message.created_at)}</span>
+                  {message.is_edited && <span className="text-xs italic">(edited)</span>}
                 </div>
               </div>
+
+              {/* Message Actions for received messages */}
+              {hoveredMessageId === message.id && !message.isOwn && (
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                        <Smile className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" side="top">
+                      <div className="flex gap-1">
+                        {EMOJI_OPTIONS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleEmojiReaction(message.id, emoji)}
+                            className="text-xl hover:scale-125 transition-transform p-1"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100" onClick={() => handleReply(message)}>
+                    <Reply className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
           <div ref={scrollRef} />
