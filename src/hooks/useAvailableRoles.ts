@@ -106,15 +106,32 @@ export function useAvailableRoles() {
         }
       }
 
-      // Check member status
-      const { data: memberData } = await supabase
+      // Check member status - all users with a member record can access member features
+      const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
+      if (memberError) {
+        console.error('Error checking member status:', memberError);
+      }
+      
       roles.isMember = !!memberData;
+      
+      // If user is an admin but also has a member record, ensure isMember is true
+      // This ensures admins can still access member features
+      if (!roles.isMember && roles.isAdmin) {
+        // Double-check with a broader query for admins
+        const { data: adminMemberCheck } = await supabase
+          .from('members')
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1);
+        
+        roles.isMember = !!(adminMemberCheck && adminMemberCheck.length > 0);
+      }
 
       setAvailableRoles(roles);
       setLoading(false);
