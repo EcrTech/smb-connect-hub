@@ -4,11 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageCircle, X, Minus, Search, ArrowLeft } from 'lucide-react';
+import { MessageCircle, X, Minus, Search, ArrowLeft, Video, MoreHorizontal, Maximize2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { MessageThread } from './MessageThread';
 import { cn } from '@/lib/utils';
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 interface FloatingChatProps {
   currentUserId: string | null;
   initialChatId?: string | null;
@@ -197,26 +203,102 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
     );
   }
 
+  const selectedConversation = conversations.find(c => c.id === selectedChatId);
+
+  const handleVideoCall = () => {
+    toast.info('Video call feature coming soon!');
+  };
+
+  const handleOpenInNewWindow = () => {
+    toast.info('Open in new window feature coming soon!');
+  };
+
+  const handleMuteConversation = () => {
+    toast.success('Conversation muted');
+  };
+
+  const handleDeleteConversation = () => {
+    toast.success('Conversation deleted');
+    handleBackToList();
+  };
+
   return (
     <Card className="fixed bottom-20 right-6 w-96 h-[600px] shadow-xl z-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
-        <div className="flex items-center gap-2">
-          <MessageCircle className="w-5 h-5" />
-          <span className="font-semibold">
-            {showConversationList ? 'Messages' : 'Chat'}
-          </span>
-        </div>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between p-3 border-b bg-primary text-primary-foreground rounded-t-lg">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           {!showConversationList && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+              className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20 flex-shrink-0"
               onClick={handleBackToList}
             >
               <ArrowLeft className="w-4 h-4" />
             </Button>
+          )}
+          {!showConversationList && selectedConversation ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src={selectedConversation.avatar} />
+                <AvatarFallback className="text-xs bg-primary-foreground/20">
+                  {selectedConversation.name.split(' ').map(n => n[0]).join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{selectedConversation.name}</p>
+                <p className="text-xs text-primary-foreground/70">Active now</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              <span className="font-semibold">Messages</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!showConversationList && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                  >
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleMuteConversation}>
+                    Mute conversation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleOpenInNewWindow}>
+                    Open in new window
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDeleteConversation} className="text-destructive">
+                    Delete conversation
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={handleVideoCall}
+              >
+                <Video className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={handleOpenInNewWindow}
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"
