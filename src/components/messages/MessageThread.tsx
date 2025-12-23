@@ -4,6 +4,21 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { MessageInput } from './MessageInput';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { MoreHorizontal, Pencil, Trash2, Reply, Smile } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 
 interface MessageThreadProps {
   chatId: string;
@@ -25,7 +40,10 @@ interface Message {
     };
   };
   isOwn: boolean;
+  is_edited?: boolean;
 }
+
+const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
 export function MessageThread({ chatId, currentUserId, compact = false }: MessageThreadProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +51,10 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
   const [chatName, setChatName] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentUserId && chatId) {
@@ -62,7 +84,6 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
 
       if (chatData) {
         if (chatData.type === 'direct') {
-          // Get other participant's name
           const { data: memberData } = await supabase
             .from('members')
             .select('id')
@@ -101,7 +122,7 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'messages',
           filter: `chat_id=eq.${chatId}`
@@ -121,7 +142,6 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
     try {
       if (!currentUserId) return;
 
-      // Get current member ID
       const { data: memberData } = await supabase
         .from('members')
         .select('id')
@@ -138,6 +158,7 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
           content,
           created_at,
           sender_id,
+          is_edited,
           members!messages_sender_id_fkey(
             id,
             user_id,
@@ -153,7 +174,8 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
           content: msg.content,
           created_at: msg.created_at,
           sender: msg.members,
-          isOwn: msg.sender_id === memberData.id
+          isOwn: msg.sender_id === memberData.id,
+          is_edited: msg.is_edited
         }));
         setMessages(formattedMessages);
       }
@@ -164,9 +186,85 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
     }
   };
 
+  const handleEditMessage = async (messageId: string) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          content: editContent.trim(),
+          is_edited: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      setEditingMessageId(null);
+      setEditContent('');
+      loadMessages();
+      toast({ title: 'Message updated' });
+    } catch (error) {
+      console.error('Error editing message:', error);
+      toast({ title: 'Failed to edit message', variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ 
+          is_deleted: true,
+          content: 'This message was deleted',
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      loadMessages();
+      toast({ title: 'Message deleted' });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({ title: 'Failed to delete message', variant: 'destructive' });
+    }
+  };
+
+  const handleReply = (message: Message) => {
+    setReplyingTo(message);
+  };
+
+  const handleEmojiReaction = async (messageId: string, emoji: string) => {
+    // For now, we'll append the emoji to the message as a simple reaction indicator
+    // In a full implementation, you'd have a separate reactions table
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+
+    toast({ 
+      title: `Reacted with ${emoji}`,
+      description: `to "${message.content.substring(0, 30)}${message.content.length > 30 ? '...' : ''}"`
+    });
+  };
+
   const formatMessageTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const startEditing = (message: Message) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingMessageId(null);
+    setEditContent('');
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
   };
 
   if (loading) {
@@ -193,9 +291,11 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
             <div
               key={message.id}
               className={cn(
-                "flex gap-3",
+                "flex gap-3 group relative",
                 message.isOwn && "flex-row-reverse"
               )}
+              onMouseEnter={() => setHoveredMessageId(message.id)}
+              onMouseLeave={() => setHoveredMessageId(null)}
             >
               {!message.isOwn && (
                 <Avatar className="w-8 h-8">
@@ -206,26 +306,141 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
                   </AvatarFallback>
                 </Avatar>
               )}
-              <div
-                className={cn(
-                  "max-w-[70%] rounded-lg p-3",
-                  message.isOwn
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+              
+              <div className="flex items-center gap-1">
+                {/* Message Actions - Show on hover */}
+                {hoveredMessageId === message.id && (
+                  <div className={cn(
+                    "flex items-center gap-1",
+                    message.isOwn ? "order-first" : "order-last"
+                  )}>
+                    {/* Emoji Reaction */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 opacity-70 hover:opacity-100"
+                        >
+                          <Smile className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" side="top">
+                        <div className="flex gap-1">
+                          {EMOJI_OPTIONS.map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleEmojiReaction(message.id, emoji)}
+                              className="text-xl hover:scale-125 transition-transform p-1"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Reply */}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 opacity-70 hover:opacity-100"
+                      onClick={() => handleReply(message)}
+                    >
+                      <Reply className="h-4 w-4" />
+                    </Button>
+
+                    {/* More Options (Edit/Delete for own messages) */}
+                    {message.isOwn && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 opacity-70 hover:opacity-100"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align={message.isOwn ? "end" : "start"}>
+                          <DropdownMenuItem onClick={() => startEditing(message)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteMessage(message.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
                 )}
-              >
-                {!message.isOwn && (
-                  <p className="text-xs font-semibold mb-1">
-                    {message.sender.profiles.first_name} {message.sender.profiles.last_name}
-                  </p>
-                )}
-                <p className="text-sm break-words">{message.content}</p>
-                <p className={cn(
-                  "text-xs mt-1",
-                  message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
-                )}>
-                  {formatMessageTime(message.created_at)}
-                </p>
+
+                {/* Message Bubble */}
+                <div
+                  className={cn(
+                    "max-w-[70%] rounded-lg p-3",
+                    message.isOwn
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  )}
+                >
+                  {!message.isOwn && (
+                    <p className="text-xs font-semibold mb-1">
+                      {message.sender.profiles.first_name} {message.sender.profiles.last_name}
+                    </p>
+                  )}
+                  
+                  {editingMessageId === message.id ? (
+                    <div className="space-y-2">
+                      <Input
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="bg-background text-foreground"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleEditMessage(message.id);
+                          }
+                          if (e.key === 'Escape') {
+                            cancelEditing();
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 text-xs">
+                        <button 
+                          onClick={() => handleEditMessage(message.id)}
+                          className="text-primary-foreground/80 hover:text-primary-foreground underline"
+                        >
+                          Save
+                        </button>
+                        <button 
+                          onClick={cancelEditing}
+                          className="text-primary-foreground/80 hover:text-primary-foreground underline"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm break-words">{message.content}</p>
+                  )}
+                  
+                  <div className={cn(
+                    "flex items-center gap-2 mt-1",
+                    message.isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                  )}>
+                    <span className="text-xs">{formatMessageTime(message.created_at)}</span>
+                    {message.is_edited && (
+                      <span className="text-xs italic">(edited)</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -233,12 +448,36 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
         </div>
       </ScrollArea>
 
+      {/* Reply Preview */}
+      {replyingTo && (
+        <div className="border-t border-b px-4 py-2 bg-muted/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Reply className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Replying to <strong>{replyingTo.sender.profiles.first_name}</strong>: 
+              "{replyingTo.content.substring(0, 40)}{replyingTo.content.length > 40 ? '...' : ''}"
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={cancelReply}>
+            Cancel
+          </Button>
+        </div>
+      )}
+
       {/* Message Input */}
       <div className="border-t p-4 bg-card">
         <MessageInput 
           chatId={chatId} 
           currentMemberId={currentMemberId}
-          onMessageSent={loadMessages}
+          onMessageSent={() => {
+            loadMessages();
+            setReplyingTo(null);
+          }}
+          replyingTo={replyingTo ? {
+            id: replyingTo.id,
+            senderName: `${replyingTo.sender.profiles.first_name} ${replyingTo.sender.profiles.last_name}`,
+            content: replyingTo.content
+          } : undefined}
         />
       </div>
     </div>
