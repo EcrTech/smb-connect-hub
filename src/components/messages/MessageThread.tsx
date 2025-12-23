@@ -308,11 +308,14 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
               )}
               
               {/* Message Actions - Show on hover (before message for own, after for others) */}
-              {hoveredMessageId === message.id && message.isOwn && (
-                <div className="flex items-center gap-1 flex-shrink-0">
+              {message.isOwn && (
+                <div className={cn(
+                  "flex items-center gap-1 flex-shrink-0 transition-opacity",
+                  hoveredMessageId === message.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted">
                         <Smile className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
@@ -330,12 +333,12 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
                       </div>
                     </PopoverContent>
                   </Popover>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100" onClick={() => handleReply(message)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={() => handleReply(message)}>
                     <Reply className="h-4 w-4" />
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -404,11 +407,14 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
               </div>
 
               {/* Message Actions for received messages */}
-              {hoveredMessageId === message.id && !message.isOwn && (
-                <div className="flex items-center gap-1 flex-shrink-0">
+              {!message.isOwn && (
+                <div className={cn(
+                  "flex items-center gap-1 flex-shrink-0 transition-opacity",
+                  hoveredMessageId === message.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100">
+                      <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted">
                         <Smile className="h-4 w-4" />
                       </Button>
                     </PopoverTrigger>
@@ -426,7 +432,7 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
                       </div>
                     </PopoverContent>
                   </Popover>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-70 hover:opacity-100" onClick={() => handleReply(message)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted" onClick={() => handleReply(message)}>
                     <Reply className="h-4 w-4" />
                   </Button>
                 </div>
