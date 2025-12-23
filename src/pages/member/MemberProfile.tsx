@@ -912,13 +912,15 @@ export default function MemberProfile() {
         )}
 
         {/* Associated Associations */}
-        {associations.length > 0 && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Building2 className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Associated Associations</h2>
-              </div>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Associated Associations</h2>
+            </div>
+            {associations.length === 0 ? (
+              <p className="text-muted-foreground">No associations yet</p>
+            ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {associations.map((association) => (
                   <Card key={association.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/member/associations/${association.id}`)}>
@@ -958,9 +960,9 @@ export default function MemberProfile() {
                   </Card>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* Floating Chat Widget */}
