@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Mail, Lock, User, Phone } from 'lucide-react';
 import logo from '@/assets/smb-connect-logo.jpg';
 
 const registerSchema = z.object({
@@ -117,6 +118,7 @@ export default function Register() {
                   id="firstName"
                   placeholder="John"
                   disabled={loading}
+                  icon={<User className="h-4 w-4" />}
                 />
                 {errors.firstName && (
                   <p className="text-sm text-destructive">{errors.firstName.message}</p>
@@ -130,6 +132,7 @@ export default function Register() {
                   id="lastName"
                   placeholder="Doe"
                   disabled={loading}
+                  icon={<User className="h-4 w-4" />}
                 />
                 {errors.lastName && (
                   <p className="text-sm text-destructive">{errors.lastName.message}</p>
@@ -145,6 +148,7 @@ export default function Register() {
                 type="email"
                 placeholder="you@company.com"
                 disabled={loading}
+                icon={<Mail className="h-4 w-4" />}
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -159,6 +163,7 @@ export default function Register() {
                 type="tel"
                 placeholder="+91-9876543210"
                 disabled={loading}
+                icon={<Phone className="h-4 w-4" />}
               />
             </div>
 
@@ -170,6 +175,7 @@ export default function Register() {
                 type="password"
                 placeholder="••••••••"
                 disabled={loading}
+                icon={<Lock className="h-4 w-4" />}
               />
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -184,6 +190,7 @@ export default function Register() {
                 type="password"
                 placeholder="••••••••"
                 disabled={loading}
+                icon={<Lock className="h-4 w-4" />}
               />
               {errors.confirmPassword && (
                 <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>

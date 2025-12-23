@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
+import { Mail, Lock } from 'lucide-react';
 import logo from '@/assets/smb-connect-logo.jpg';
 import heroImage from '@/assets/login-hero.png';
 
@@ -179,6 +180,7 @@ export default function Login() {
                 type="email"
                 placeholder="you@company.com"
                 disabled={loading}
+                icon={<Mail className="h-4 w-4" />}
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
@@ -193,6 +195,7 @@ export default function Login() {
                 type="password"
                 placeholder="••••••••"
                 disabled={loading}
+                icon={<Lock className="h-4 w-4" />}
               />
               {errors.password && (
                 <p className="text-sm text-destructive">{errors.password.message}</p>
