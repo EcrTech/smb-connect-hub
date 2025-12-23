@@ -490,6 +490,14 @@ const AppContent = () => {
             } 
           />
           <Route 
+            path="/member/connections" 
+            element={
+              <ProtectedRoute>
+                <MemberConnections />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/members" 
             element={
               <ProtectedRoute>
