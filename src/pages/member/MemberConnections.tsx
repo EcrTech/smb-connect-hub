@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Check, X, Clock, Users } from 'lucide-react';
+import { ArrowLeft, Check, X, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface ConnectionWithDetails {
   id: string;
@@ -44,28 +42,50 @@ interface ConnectionWithDetails {
 export default function MemberConnections() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { userData } = useUserRole();
   const [loading, setLoading] = useState(true);
+  const [currentMemberId, setCurrentMemberId] = useState<string | null>(null);
   const [connections, setConnections] = useState<ConnectionWithDetails[]>([]);
   const [pendingReceived, setPendingReceived] = useState<ConnectionWithDetails[]>([]);
   const [pendingSent, setPendingSent] = useState<ConnectionWithDetails[]>([]);
 
+  // First, get the current user's member ID
   useEffect(() => {
-    if (userData?.id) {
+    const loadCurrentMember = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (memberData) {
+        setCurrentMemberId(memberData.id);
+      }
+    };
+
+    loadCurrentMember();
+  }, []);
+
+  // Load connections when currentMemberId is available
+  useEffect(() => {
+    if (currentMemberId) {
       loadConnections();
     }
-  }, [userData?.id]);
+  }, [currentMemberId]);
 
   const loadConnections = async () => {
     try {
       setLoading(true);
-      if (!userData?.id) return;
+      if (!currentMemberId) return;
 
-      // First get connections
+      // First get connections using the correct member ID
       const { data: connectionsData, error: connectionsError } = await supabase
         .from('connections')
         .select('*')
-        .or(`sender_id.eq.${userData.id},receiver_id.eq.${userData.id}`);
+        .or(`sender_id.eq.${currentMemberId},receiver_id.eq.${currentMemberId}`);
 
       if (connectionsError) throw connectionsError;
 
@@ -112,21 +132,19 @@ export default function MemberConnections() {
         })
       );
 
-      const data = connectionsWithDetails;
-
-      const allConnections = data as ConnectionWithDetails[];
+      const allConnections = connectionsWithDetails as ConnectionWithDetails[];
       
       // Accepted connections
       setConnections(allConnections.filter(c => c.status === 'accepted'));
       
-      // Pending received (where I'm the receiver)
+      // Pending received (where I'm the receiver) - use currentMemberId
       setPendingReceived(
-        allConnections.filter(c => c.status === 'pending' && c.receiver.id === userData.id)
+        allConnections.filter(c => c.status === 'pending' && c.receiver.id === currentMemberId)
       );
       
-      // Pending sent (where I'm the sender)
+      // Pending sent (where I'm the sender) - use currentMemberId
       setPendingSent(
-        allConnections.filter(c => c.status === 'pending' && c.sender.id === userData.id)
+        allConnections.filter(c => c.status === 'pending' && c.sender.id === currentMemberId)
       );
     } catch (error: any) {
       console.error('Error loading connections:', error);
@@ -210,7 +228,8 @@ export default function MemberConnections() {
   };
 
   const renderConnectionCard = (conn: ConnectionWithDetails, showActions?: 'accept' | 'cancel') => {
-    const otherPerson = conn.sender.id === userData?.id ? conn.receiver : conn.sender;
+    // Use currentMemberId to determine the other person
+    const otherPerson = conn.sender.id === currentMemberId ? conn.receiver : conn.sender;
     const fullName = `${otherPerson.profile.first_name} ${otherPerson.profile.last_name}`;
     const initials = `${otherPerson.profile.first_name[0]}${otherPerson.profile.last_name[0]}`;
 
