@@ -5,13 +5,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+interface ReplyInfo {
+  id: string;
+  senderName: string;
+  content: string;
+}
+
 interface MessageInputProps {
   chatId: string;
   currentMemberId: string | null;
   onMessageSent?: () => void;
+  replyingTo?: ReplyInfo;
 }
 
-export function MessageInput({ chatId, currentMemberId, onMessageSent }: MessageInputProps) {
+export function MessageInput({ chatId, currentMemberId, onMessageSent, replyingTo }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
@@ -21,12 +28,18 @@ export function MessageInput({ chatId, currentMemberId, onMessageSent }: Message
 
     setSending(true);
     try {
+      // If replying, prepend the reply context
+      let finalContent = message.trim();
+      if (replyingTo) {
+        finalContent = `↩️ Replying to ${replyingTo.senderName}: "${replyingTo.content.substring(0, 30)}${replyingTo.content.length > 30 ? '...' : ''}"\n\n${finalContent}`;
+      }
+
       const { error } = await supabase
         .from('messages')
         .insert({
           chat_id: chatId,
           sender_id: currentMemberId,
-          content: message.trim()
+          content: finalContent
         });
 
       if (error) throw error;
@@ -61,7 +74,7 @@ export function MessageInput({ chatId, currentMemberId, onMessageSent }: Message
   return (
     <div className="flex gap-2">
       <Textarea
-        placeholder="Type a message..."
+        placeholder={replyingTo ? `Reply to ${replyingTo.senderName}...` : "Type a message..."}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
