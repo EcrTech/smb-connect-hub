@@ -34,8 +34,16 @@ export function usePosts() {
           schema: 'public',
           table: 'posts',
         },
-        () => {
-          loadPosts();
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setPosts(prev => [payload.new as Post, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setPosts(prev => prev.map(post => 
+              post.id === (payload.new as Post).id ? { ...post, ...payload.new } : post
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setPosts(prev => prev.filter(post => post.id !== (payload.old as Post).id));
+          }
         }
       )
       .subscribe();
