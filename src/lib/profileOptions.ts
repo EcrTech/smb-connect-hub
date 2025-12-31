@@ -34,6 +34,19 @@ export const FIELDS_OF_STUDY = [
   "Graphic Design",
   "Biotechnology",
   "Pharmacy",
+  "Commerce",
+  "B.Com (Bachelor of Commerce)",
+  "M.Com (Master of Commerce)",
+  "CA (Chartered Accountancy)",
+  "BBA (Bachelor of Business Administration)",
+  "Arts",
+  "Science",
+  "Liberal Arts",
+  "English Literature",
+  "History",
+  "Political Science",
+  "Sociology",
+  "Philosophy",
 ];
 
 export const SKILLS = [
@@ -75,6 +88,7 @@ export const CERTIFICATIONS = [
   "SHRM-CP",
   "Digital Marketing",
   "Agile Certified",
+  "Other",
 ];
 
 export const ISSUING_ORGANIZATIONS = [
@@ -93,6 +107,7 @@ export const ISSUING_ORGANIZATIONS = [
   "LinkedIn Learning",
   "Coursera",
   "SAP",
+  "Other",
 ];
 
 export const JOB_TITLES = [
