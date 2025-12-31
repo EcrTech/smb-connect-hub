@@ -550,7 +550,7 @@ export default function AssociationFeed() {
         ) : (
           <div className="space-y-6">
             {filteredPosts.map((post) => (
-              <Card key={post.id} className="overflow-hidden">
+              <Card key={post.id}>
                 <CardContent className="pt-6">
                   {/* Engagement badge */}
                   <div className="flex items-center justify-between mb-3">
@@ -586,7 +586,7 @@ export default function AssociationFeed() {
                         }
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <div>
                           <p 
