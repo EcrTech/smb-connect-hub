@@ -935,7 +935,7 @@ export default function MemberFeed() {
               const isOwnPost = post.user_id === currentUserId;
 
               return (
-                <Card key={post.id} className="overflow-hidden">
+                <Card key={post.id}>
                   <CardContent className="pt-6">
                     {/* Engagement badge */}
                     <div className="flex items-center justify-between mb-3">
@@ -959,7 +959,7 @@ export default function MemberFeed() {
                         repostsCount={post.reposts_count || 0}
                       />
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 min-w-0">
                       <Avatar 
                         className="cursor-pointer"
                         onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
@@ -972,7 +972,7 @@ export default function MemberFeed() {
                           }
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 
