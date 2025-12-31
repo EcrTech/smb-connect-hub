@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, X, ArrowLeft, Search, Share2, Repeat2 } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Share2, Repeat2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
@@ -16,6 +16,7 @@ interface Post {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -53,6 +54,8 @@ export default function AssociationFeed() {
   const [showComments, setShowComments] = useState<{ [key: string]: boolean }>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -150,21 +153,75 @@ export default function AssociationFeed() {
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate post image upload (10MB limit)
+    const { validatePostImageUpload } = await import('@/lib/uploadValidation');
+    const validation = await validatePostImageUpload(file);
+    
+    if (!validation.valid) {
+      toast({
+        title: 'Validation Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
     }
+
+    // Clear video if selecting image
+    setVideoFile(null);
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setVideoPreview(null);
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate video upload (50MB limit)
+    const { validateVideoUpload } = await import('@/lib/uploadValidation');
+    const validation = validateVideoUpload(file);
+    
+    if (!validation.valid) {
+      toast({
+        title: 'Validation Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Clear image if selecting video
+    setImageFile(null);
+    setImagePreview(null);
+
+    setVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreview(url);
   };
 
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setVideoFile(null);
+    setVideoPreview(null);
   };
 
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -191,24 +248,40 @@ export default function AssociationFeed() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.trim() && !imageFile) return;
+    if (!newPost.trim() && !imageFile && !videoFile) return;
 
     setPosting(true);
     try {
       let imageUrl = null;
+      let videoUrl = null;
+      
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
+      }
+      
+      if (videoFile) {
+        videoUrl = await uploadImage(videoFile); // Same upload function works for videos
       }
 
       const { error } = await supabase
         .from('posts')
-        .insert([{ content: newPost.trim(), user_id: currentUserId, image_url: imageUrl }]);
+        .insert([{ 
+          content: newPost.trim(), 
+          user_id: currentUserId, 
+          image_url: imageUrl,
+          video_url: videoUrl,
+        }]);
 
       if (error) throw error;
 
       setNewPost('');
       setImageFile(null);
       setImagePreview(null);
+      setVideoFile(null);
+      if (videoPreview) {
+        URL.revokeObjectURL(videoPreview);
+      }
+      setVideoPreview(null);
       toast({
         title: 'Success',
         description: 'Post created successfully',
@@ -409,8 +482,21 @@ export default function AssociationFeed() {
                 </Button>
               </div>
             )}
+            {videoPreview && (
+              <div className="relative mb-4">
+                <video src={videoPreview} controls className="rounded-lg max-h-64 w-full" />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={removeVideo}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
             <div className="flex justify-between items-center">
-              <div>
+              <div className="flex gap-2">
                 <input
                   type="file"
                   accept="image/*"
@@ -419,15 +505,30 @@ export default function AssociationFeed() {
                   id="image-upload"
                 />
                 <label htmlFor="image-upload">
-                  <Button variant="outline" size="sm" type="button" asChild>
+                  <Button variant="outline" size="sm" type="button" asChild title="Add photo (max 10MB)">
                     <span className="cursor-pointer">
                       <ImageIcon className="w-4 h-4 mr-2" />
-                      Add Image
+                      Photo
+                    </span>
+                  </Button>
+                </label>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                  onChange={handleVideoSelect}
+                  className="hidden"
+                  id="video-upload"
+                />
+                <label htmlFor="video-upload">
+                  <Button variant="outline" size="sm" type="button" asChild title="Add video (max 50MB, MP4/WebM/MOV)">
+                    <span className="cursor-pointer">
+                      <Video className="w-4 h-4 mr-2" />
+                      Video
                     </span>
                   </Button>
                 </label>
               </div>
-              <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile) || posting}>
+              <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile) || posting}>
                 {posting ? 'Posting...' : 'Post'}
               </Button>
             </div>
@@ -514,6 +615,13 @@ export default function AssociationFeed() {
                           src={post.image_url} 
                           alt="Post" 
                           className="mt-3 rounded-lg max-h-96 w-full object-cover" 
+                        />
+                      )}
+                      {post.video_url && (
+                        <video 
+                          src={post.video_url} 
+                          controls
+                          className="mt-3 rounded-lg max-h-96 w-full" 
                         />
                       )}
                     </div>
