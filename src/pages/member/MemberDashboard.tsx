@@ -73,7 +73,7 @@ export default function MemberDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-20 flex items-center justify-between">
+        <div className="container mx-auto py-4 md:pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-bold">SMB Connect</h1>
@@ -105,7 +105,7 @@ export default function MemberDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">
             Welcome back, {profile?.first_name || 'User'}!

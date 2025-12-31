@@ -165,7 +165,7 @@ export default function SavedPosts() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-3 md:px-4">
+        <div className="container mx-auto">
           <div className="flex items-center h-14 gap-3 md:gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-5 h-5" />
@@ -178,7 +178,7 @@ export default function SavedPosts() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-3xl">
+      <main className="container mx-auto py-4 md:py-6 md:pl-20 max-w-3xl">
         {loading ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading saved posts...</p>

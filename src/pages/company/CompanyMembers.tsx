@@ -72,7 +72,7 @@ export default function CompanyMembers() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto py-4 md:pl-20">
           <Button variant="ghost" onClick={() => navigate('/company')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -80,7 +80,7 @@ export default function CompanyMembers() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">Company Members</h1>

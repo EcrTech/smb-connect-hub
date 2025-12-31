@@ -290,7 +290,7 @@ export default function AssociationDashboard() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-28 flex items-center justify-between">
+        <div className="container mx-auto py-4 md:pl-28 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-bold">Association Dashboard</h1>
@@ -324,7 +324,7 @@ export default function AssociationDashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8 pl-28">
+      <main className="container mx-auto py-4 md:py-8 md:pl-28">
         <RoleNavigation />
         
         <div className="mb-8">

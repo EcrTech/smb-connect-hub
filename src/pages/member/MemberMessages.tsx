@@ -63,7 +63,7 @@ export default function MemberMessages() {
     <div className="min-h-screen bg-background flex flex-col pb-16 md:pb-0">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:!pl-20 flex items-center justify-between">
+        <div className="container mx-auto py-3 md:py-4 md:!pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BackButton fallbackPath="/feed" variant="ghost" />
             <div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import { FloatingChat } from '@/components/messages/FloatingChat';
 import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
 import { RoleNavigation } from '@/components/RoleNavigation';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { PullToRefreshIndicator } from '@/components/PullToRefresh';
 
 import { 
   ArrowLeft, 
@@ -632,7 +634,7 @@ export default function MemberFeed() {
   return (
     <>
       <MemberOnboarding />
-      <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <div className="min-h-screen bg-background pb-20 md:pb-0 scrollbar-hide">
       {/* Header - Mobile-first design */}
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto">

@@ -584,7 +584,7 @@ export default function MemberProfile() {
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:pl-20">
+        <div className="container mx-auto py-3 md:py-4 md:pl-20">
           <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Back to Dashboard</span>
@@ -593,7 +593,7 @@ export default function MemberProfile() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-5xl">
+      <main className="container mx-auto py-4 md:py-6 md:pl-20 max-w-5xl">
         {/* Cover & Profile Photo */}
         <Card className="overflow-hidden mb-6">
           <div className="relative">

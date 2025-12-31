@@ -73,7 +73,7 @@ export default function BrowseAssociations() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 pl-20">
+      <div className="container mx-auto py-4 md:py-8 md:pl-20">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-2">Browse Associations</h1>

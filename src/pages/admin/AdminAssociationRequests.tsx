@@ -171,7 +171,7 @@ export default function AdminAssociationRequests() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto py-4 md:pl-20">
           <Button
             variant="ghost"
             onClick={() => navigate('/admin')}
@@ -183,7 +183,7 @@ export default function AdminAssociationRequests() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Association Requests</h2>
           <p className="text-muted-foreground">
