@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Share2, Repeat2 } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { Input } from '@/components/ui/input';
+import { SharePostDropdown } from '@/components/post/SharePostDropdown';
+import { BookmarkButton } from '@/components/post/BookmarkButton';
 
 interface Post {
   id: string;
@@ -22,6 +24,7 @@ interface Post {
   user_id: string;
   likes_count: number;
   comments_count: number;
+  shares_count: number;
   original_post_id: string | null;
   original_author_id: string | null;
   profiles: {
@@ -401,23 +404,6 @@ export default function AssociationFeed() {
     }
   };
 
-  const handleShare = async (postId: string) => {
-    try {
-      const url = `${window.location.origin}/association/feed?post=${postId}`;
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Link copied',
-        description: 'Post link copied to clipboard',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to copy link',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleCommentAdded = async () => {
     await loadPosts();
   };
@@ -627,7 +613,7 @@ export default function AssociationFeed() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 pt-4 border-t">
+                  <div className="flex items-center gap-4 pt-4 border-t">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -653,14 +639,13 @@ export default function AssociationFeed() {
                       <Repeat2 className="w-4 h-4 mr-2" />
                       Repost
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleShare(post.id)}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
+                    <SharePostDropdown
+                      postId={post.id}
+                      postContent={post.content}
+                      sharesCount={post.shares_count || 0}
+                      onShareComplete={loadPosts}
+                    />
+                    <BookmarkButton postId={post.id} userId={currentUserId} />
                   </div>
 
                   {showComments[post.id] && (
