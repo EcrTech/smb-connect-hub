@@ -5,6 +5,7 @@ interface PostEngagementBadgeProps {
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
+  repostsCount: number;
 }
 
 type EngagementLevel = 'viral' | 'popular' | 'trending' | 'hot' | null;
@@ -12,9 +13,10 @@ type EngagementLevel = 'viral' | 'popular' | 'trending' | 'hot' | null;
 export function getEngagementLevel(
   likesCount: number,
   commentsCount: number,
-  sharesCount: number
+  sharesCount: number,
+  repostsCount: number
 ): EngagementLevel {
-  const totalEngagement = likesCount + commentsCount * 2 + sharesCount * 3;
+  const totalEngagement = likesCount + commentsCount * 2 + sharesCount * 3 + repostsCount * 2;
   
   if (totalEngagement >= 100 || sharesCount >= 20) {
     return 'viral';
@@ -34,9 +36,10 @@ export function getEngagementLevel(
 export function PostEngagementBadge({ 
   likesCount, 
   commentsCount, 
-  sharesCount 
+  sharesCount,
+  repostsCount 
 }: PostEngagementBadgeProps) {
-  const level = getEngagementLevel(likesCount, commentsCount, sharesCount);
+  const level = getEngagementLevel(likesCount, commentsCount, sharesCount, repostsCount);
   
   if (!level) return null;
   

@@ -1919,6 +1919,7 @@ export type Database = {
           likes_count: number | null
           original_author_id: string | null
           original_post_id: string | null
+          reposts_count: number | null
           shares_count: number | null
           updated_at: string | null
           user_id: string
@@ -1933,6 +1934,7 @@ export type Database = {
           likes_count?: number | null
           original_author_id?: string | null
           original_post_id?: string | null
+          reposts_count?: number | null
           shares_count?: number | null
           updated_at?: string | null
           user_id: string
@@ -1947,6 +1949,7 @@ export type Database = {
           likes_count?: number | null
           original_author_id?: string | null
           original_post_id?: string | null
+          reposts_count?: number | null
           shares_count?: number | null
           updated_at?: string | null
           user_id?: string
