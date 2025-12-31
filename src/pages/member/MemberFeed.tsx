@@ -768,7 +768,7 @@ export default function MemberFeed() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-3xl">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-3xl overflow-x-hidden">
         <RoleNavigation />
         
         {/* Associated Associations Ribbon */}
@@ -935,7 +935,7 @@ export default function MemberFeed() {
               const isOwnPost = post.user_id === currentUserId;
 
               return (
-                <Card key={post.id}>
+                <Card key={post.id} className="overflow-hidden">
                   <CardContent className="pt-6">
                     {/* Engagement badge */}
                     <div className="flex items-center justify-between mb-3">
@@ -1018,13 +1018,13 @@ export default function MemberFeed() {
                           </div>
                         </div>
 
-                        <p className="mt-4 whitespace-pre-wrap">{post.content}</p>
+                        <p className="mt-4 whitespace-pre-wrap break-words overflow-hidden">{post.content}</p>
 
                         {post.image_url && (
                           <img
                             src={post.image_url}
                             alt="Post"
-                            className="mt-4 rounded-lg max-h-96 w-full object-cover"
+                            className="mt-4 rounded-lg max-h-96 w-full max-w-full object-cover"
                           />
                         )}
 
@@ -1032,7 +1032,7 @@ export default function MemberFeed() {
                           <video
                             src={post.video_url}
                             controls
-                            className="mt-4 rounded-lg max-h-96 w-full"
+                            className="mt-4 rounded-lg max-h-96 w-full max-w-full"
                           />
                         )}
 

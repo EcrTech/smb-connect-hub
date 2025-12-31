@@ -451,7 +451,7 @@ export default function AssociationFeed() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 pl-20 max-w-2xl overflow-x-hidden">
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -550,7 +550,7 @@ export default function AssociationFeed() {
         ) : (
           <div className="space-y-6">
             {filteredPosts.map((post) => (
-              <Card key={post.id}>
+              <Card key={post.id} className="overflow-hidden">
                 <CardContent className="pt-6">
                   {/* Engagement badge */}
                   <div className="flex items-center justify-between mb-3">
@@ -624,19 +624,19 @@ export default function AssociationFeed() {
                           </div>
                         )}
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap">{post.content}</p>
+                      <p className="mt-3 whitespace-pre-wrap break-words overflow-hidden">{post.content}</p>
                       {post.image_url && (
                         <img 
                           src={post.image_url} 
                           alt="Post" 
-                          className="mt-3 rounded-lg max-h-96 w-full object-cover" 
+                          className="mt-3 rounded-lg max-h-96 w-full max-w-full object-cover" 
                         />
                       )}
                       {post.video_url && (
                         <video 
                           src={post.video_url} 
                           controls
-                          className="mt-3 rounded-lg max-h-96 w-full" 
+                          className="mt-3 rounded-lg max-h-96 w-full max-w-full" 
                         />
                       )}
                     </div>
