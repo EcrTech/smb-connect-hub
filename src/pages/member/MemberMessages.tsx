@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageThread } from '@/components/messages/MessageThread';
 import { BackButton } from '@/components/BackButton';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 export default function MemberMessages() {
   const navigate = useNavigate();
@@ -59,18 +60,18 @@ export default function MemberMessages() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-16 md:pb-0">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 !pl-20 md:!pl-24 flex items-center justify-between">
+        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:!pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BackButton fallbackPath="/feed" variant="ghost" />
             <div>
-              <h1 className="text-2xl font-bold">Messaging</h1>
-              <p className="text-sm text-muted-foreground">Stay connected</p>
+              <h1 className="text-lg md:text-2xl font-bold">Messaging</h1>
+              <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">Stay connected</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-3">
             {profile && currentUserId && (
               <Avatar 
                 className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
@@ -94,11 +95,11 @@ export default function MemberMessages() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - Mobile-first layout */}
       <main className="flex-1 flex overflow-hidden">
-        <div className="flex w-full h-[calc(100vh-73px)]">
-          {/* Conversations List */}
-          <div className="w-80 border-r bg-card flex-shrink-0">
+        <div className="flex w-full h-[calc(100vh-73px-64px)] md:h-[calc(100vh-73px)]">
+          {/* Conversations List - full width on mobile when no chat selected */}
+          <div className={`${selectedChatId ? 'hidden md:block' : 'w-full'} md:w-80 border-r bg-card flex-shrink-0`}>
             <ConversationList 
               selectedChatId={selectedChatId}
               onSelectChat={setSelectedChatId}
@@ -106,15 +107,26 @@ export default function MemberMessages() {
             />
           </div>
 
-          {/* Message Thread */}
-          <div className="flex-1 flex flex-col">
+          {/* Message Thread - full width on mobile when chat selected */}
+          <div className={`${selectedChatId ? 'w-full' : 'hidden'} md:flex md:flex-1 flex-col`}>
             {selectedChatId ? (
-              <MessageThread 
-                chatId={selectedChatId}
-                currentUserId={currentUserId}
-              />
+              <div className="flex flex-col h-full">
+                {/* Mobile back button */}
+                <div className="md:hidden border-b p-2">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedChatId(null)}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to conversations
+                  </Button>
+                </div>
+                <div className="flex-1">
+                  <MessageThread 
+                    chatId={selectedChatId}
+                    currentUserId={currentUserId}
+                  />
+                </div>
+              </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="hidden md:flex flex-1 items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <p className="text-lg mb-2">Select a conversation to start messaging</p>
                   <p className="text-sm">Connect with members in your network</p>
@@ -124,6 +136,8 @@ export default function MemberMessages() {
           </div>
         </div>
       </main>
+      
+      <MobileNavigation />
     </div>
   );
 }

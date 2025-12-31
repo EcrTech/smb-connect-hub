@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { RoleNavigation } from '@/components/RoleNavigation';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 interface Member {
   id: string;
@@ -364,19 +365,19 @@ export default function BrowseMembers() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:pl-20">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-xl font-bold">Browse Members</h1>
+            <h1 className="text-lg md:text-xl font-bold">Browse Members</h1>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-8 md:pl-20">
         <RoleNavigation />
         
         <div className="mb-6">
@@ -666,6 +667,8 @@ export default function BrowseMembers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <MobileNavigation />
     </div>
   );
 }

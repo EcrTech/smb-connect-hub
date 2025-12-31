@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Check, X, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 interface ConnectionWithDetails {
   id: string;
@@ -288,19 +289,19 @@ export default function MemberConnections() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:pl-20">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="text-xl font-bold">My Connections</h1>
+            <h1 className="text-lg md:text-xl font-bold">My Connections</h1>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-8 md:pl-20">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">My Connections</h1>
@@ -368,6 +369,8 @@ export default function MemberConnections() {
           </TabsContent>
         </Tabs>
       </main>
+      
+      <MobileNavigation />
     </div>
   );
 }
