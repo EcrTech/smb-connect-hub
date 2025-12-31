@@ -38,6 +38,7 @@ import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/BackButton';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { PostEngagementBadge } from '@/components/post/PostEngagementBadge';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Post {
@@ -900,17 +901,27 @@ export default function MemberFeed() {
               return (
                 <Card key={post.id}>
                   <CardContent className="pt-6">
-                    {/* Repost indicator */}
-                    {post.original_post_id && post.original_author && (
-                      <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-                        <Repeat2 className="w-4 h-4" />
-                        <span>
-                          <span className="font-semibold">{post.profile.first_name} {post.profile.last_name}</span>
-                          {' '}reposted{' '}
-                          <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
-                        </span>
+                    {/* Engagement badge */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        {/* Repost indicator */}
+                        {post.original_post_id && post.original_author && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Repeat2 className="w-4 h-4" />
+                            <span>
+                              <span className="font-semibold">{post.profile.first_name} {post.profile.last_name}</span>
+                              {' '}reposted{' '}
+                              <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <PostEngagementBadge 
+                        likesCount={post.likes_count || 0}
+                        commentsCount={post.comments_count || 0}
+                        sharesCount={post.shares_count || 0}
+                      />
+                    </div>
                     <div className="flex gap-4">
                       <Avatar 
                         className="cursor-pointer"
