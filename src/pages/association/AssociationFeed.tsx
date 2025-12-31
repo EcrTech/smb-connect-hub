@@ -439,7 +439,7 @@ export default function AssociationFeed() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto md:pl-20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={() => navigate('/association')}>
@@ -451,7 +451,7 @@ export default function AssociationFeed() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20 max-w-2xl overflow-x-hidden">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20 max-w-2xl overflow-x-hidden">
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
