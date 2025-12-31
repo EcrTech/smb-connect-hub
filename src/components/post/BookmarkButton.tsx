@@ -99,7 +99,7 @@ export function BookmarkButton({ postId, userId }: BookmarkButtonProps) {
       size="sm"
       onClick={handleToggleBookmark}
       disabled={loading}
-      className={isBookmarked ? 'text-primary' : ''}
+      className={`px-2 sm:px-3 ${isBookmarked ? 'text-primary' : ''}`}
     >
       <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
     </Button>
