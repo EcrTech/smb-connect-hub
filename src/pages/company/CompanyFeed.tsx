@@ -67,8 +67,24 @@ export default function CompanyFeed() {
     
     const channel = supabase
       .channel('posts-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
-        loadPosts();
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+        if (payload.eventType === 'UPDATE') {
+          // Update post counts in place without full reload
+          setPosts(prev => prev.map(post => 
+            post.id === payload.new.id 
+              ? { 
+                  ...post, 
+                  likes_count: payload.new.likes_count ?? post.likes_count,
+                  comments_count: payload.new.comments_count ?? post.comments_count,
+                  shares_count: payload.new.shares_count ?? post.shares_count,
+                  reposts_count: payload.new.reposts_count ?? post.reposts_count
+                } 
+              : post
+          ));
+        } else {
+          // For INSERT and DELETE, reload all posts
+          loadPosts();
+        }
       })
       .subscribe();
 
