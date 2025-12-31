@@ -125,7 +125,7 @@ export default function RequestAssociation() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto py-4 md:pl-20">
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-2xl font-bold">Request Association</h1>
@@ -137,7 +137,7 @@ export default function RequestAssociation() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20 max-w-4xl">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20 max-w-4xl">
         {/* Existing Requests */}
         {!loadingRequests && existingRequests.length > 0 && (
           <Card className="mb-8">

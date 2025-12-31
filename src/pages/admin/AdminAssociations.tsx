@@ -13,7 +13,7 @@ export default function AdminAssociations() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto py-4 md:pl-20">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -45,7 +45,7 @@ export default function AdminAssociations() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <AssociationsList 
           onSelectionChange={setSelectedAssociations}
           selectedIds={selectedAssociations}

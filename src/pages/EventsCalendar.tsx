@@ -364,7 +364,7 @@ export default function EventsCalendar() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20 flex items-center justify-between">
+        <div className="container mx-auto py-4 md:pl-20 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
@@ -623,7 +623,7 @@ export default function EventsCalendar() {
         </DialogContent>
       </Dialog>
 
-      <main className="container mx-auto px-4 py-6 pl-20">
+      <main className="container mx-auto py-4 md:py-6 md:pl-20">
         <div className="bg-card rounded-lg p-4 shadow-sm" style={{ height: 'calc(100vh - 180px)' }}>
           <style>{`
             .rbc-event {

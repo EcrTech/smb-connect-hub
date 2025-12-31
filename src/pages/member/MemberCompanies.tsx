@@ -92,7 +92,7 @@ export default function MemberCompanies() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20">
+        <div className="container mx-auto py-4 md:pl-20">
           <Button
             variant="ghost"
             onClick={() => navigate('/member')}
@@ -104,7 +104,7 @@ export default function MemberCompanies() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <div className="space-y-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>

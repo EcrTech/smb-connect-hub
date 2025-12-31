@@ -367,7 +367,7 @@ export default function BrowseMembers() {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       <header className="border-b bg-card">
-        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:pl-20">
+        <div className="container mx-auto py-3 md:py-4 md:pl-20">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
               <ArrowLeft className="w-4 h-4" />
@@ -377,7 +377,7 @@ export default function BrowseMembers() {
         </div>
       </header>
 
-      <main className="container mx-auto px-3 py-4 md:px-4 md:py-8 md:pl-20">
+      <main className="container mx-auto py-4 md:py-8 md:pl-20">
         <RoleNavigation />
         
         <div className="mb-6">

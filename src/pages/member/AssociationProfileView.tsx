@@ -120,7 +120,7 @@ export default function AssociationProfileView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 !pl-20 md:!pl-24">
+      <div className="container mx-auto py-4 md:py-8 md:!pl-20 md:!pl-24">
         <div className="flex items-center justify-between mb-8">
           <BackButton fallbackPath="/dashboard" variant="ghost" label="Back" />
           <HomeButton />
