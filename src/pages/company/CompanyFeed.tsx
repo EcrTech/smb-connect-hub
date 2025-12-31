@@ -521,7 +521,7 @@ export default function CompanyFeed() {
                           </div>
                         )}
                       </div>
-                      <p className="mt-3 whitespace-pre-wrap break-words overflow-hidden">{post.content}</p>
+                      <p className="mt-3 whitespace-pre-wrap break-words">{post.content}</p>
                       {post.image_url && (
                         <img 
                           src={post.image_url} 
