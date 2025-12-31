@@ -639,13 +639,13 @@ export default function MemberFeed() {
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto">
           <div className="flex items-center justify-between h-14 gap-3">
-            {/* Left - Logo (mobile) or Back Button (desktop) */}
+            {/* Left - Favicon (mobile) or Back Button (desktop) */}
             <div className="flex items-center gap-3 flex-shrink-0">
-              {/* Logo for mobile */}
+              {/* Favicon for mobile */}
               <img 
-                src="/smb-connect-logo.png" 
+                src="/favicon.png" 
                 alt="SMB Connect" 
-                className="h-8 w-auto md:hidden cursor-pointer"
+                className="h-8 w-8 md:hidden cursor-pointer"
                 onClick={() => navigate('/dashboard')}
               />
               {/* Back button for desktop */}
