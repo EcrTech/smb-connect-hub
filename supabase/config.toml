@@ -35,3 +35,6 @@ verify_jwt = true
 
 [functions.accept-company-invitation]
 verify_jwt = false
+
+[functions.fetch-link-preview]
+verify_jwt = false
