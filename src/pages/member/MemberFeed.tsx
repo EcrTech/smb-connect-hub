@@ -638,133 +638,135 @@ export default function MemberFeed() {
       {/* Header - Mobile-first design */}
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto">
-          <div className="flex items-center justify-between h-14">
-            {/* Left - Back Button & Search */}
-            <div className="flex items-center gap-2 md:gap-4 flex-1 max-w-2xl">
-              <BackButton fallbackPath="/dashboard" variant="ghost" size="icon" label="" />
-              <div className="flex-1 max-w-md">
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-9 bg-muted/50"
-                  />
-                </div>
+          <div className="flex items-center justify-between h-14 gap-3">
+            {/* Left - Logo (mobile) or Back Button (desktop) */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              {/* Logo for mobile */}
+              <img 
+                src="/smb-connect-logo.png" 
+                alt="SMB Connect" 
+                className="h-8 w-auto md:hidden cursor-pointer"
+                onClick={() => navigate('/dashboard')}
+              />
+              {/* Back button for desktop */}
+              <BackButton fallbackPath="/dashboard" variant="ghost" size="icon" label="" className="hidden md:flex" />
+            </div>
+
+            {/* Center - Search */}
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 h-9 bg-muted/50"
+                />
               </div>
             </div>
 
-            {/* Right - Navigation Icons (hidden on mobile, shown on md+) */}
-            <div className="hidden md:flex items-center gap-6">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                onClick={() => navigate('/feed')}
-                data-tour="feed"
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="text-xs">Feed</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                onClick={() => navigate('/members')}
-                data-tour="browse-members"
-              >
-                <Users className="w-5 h-5" />
-                <span className="text-xs">Members</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
-                onClick={() => navigate('/connections')}
-                data-tour="connections"
-              >
-                <div className="relative">
-                  <UserPlus className="w-5 h-5" />
-                  {pendingConnectionsCount > 0 && (
-                    <Badge 
-                      variant="destructive" 
-                      className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center"
-                    >
-                      {pendingConnectionsCount}
-                    </Badge>
-                  )}
-                </div>
-                <span className="text-xs">Connections</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                onClick={() => navigate('/messages')}
-                data-tour="messages"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-xs">Messages</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                onClick={() => navigate('/calendar')}
-                data-tour="calendar"
-              >
-                <Calendar className="w-5 h-5" />
-                <span className="text-xs">Calendar</span>
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                onClick={() => navigate('/companies')}
-              >
-                <Building2 className="w-5 h-5" />
-                <span className="text-xs">Companies</span>
-              </Button>
-              
-              {/* Profile Dropdown - Desktop only */}
-              <div className="flex items-center gap-2 border-l pl-4">
-                {profile && currentUserId && (
-                  <Avatar 
-                    className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
-                    onClick={() => navigate(`/profile/${currentUserId}`)}
-                  >
-                    <AvatarImage src={profile.avatar || undefined} />
-                    <AvatarFallback className="text-xs">
-                      {profile.first_name?.[0]}{profile.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <Button variant="ghost" size="sm" onClick={() => navigate('/account-settings')}>
+            {/* Right - Mobile: Settings only, Desktop: Full nav */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Mobile icons */}
+              <div className="flex md:hidden items-center gap-1">
+                <Button variant="ghost" size="icon" onClick={() => navigate('/account-settings')} className="h-9 w-9">
                   <Settings className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={handleLogout}>
-                  <LogOut className="w-4 h-4" />
-                </Button>
               </div>
-            </div>
 
-            {/* Mobile - Profile avatar and settings */}
-            <div className="flex md:hidden items-center gap-2">
-              {profile && currentUserId && (
-                <Avatar 
-                  className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
-                  onClick={() => navigate(`/profile/${currentUserId}`)}
+              {/* Desktop Navigation */}
+              <div className="hidden md:flex items-center gap-6">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  onClick={() => navigate('/feed')}
+                  data-tour="feed"
                 >
-                  <AvatarImage src={profile.avatar || undefined} />
-                  <AvatarFallback className="text-xs">
-                    {profile.first_name?.[0]}{profile.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <Button variant="ghost" size="icon" onClick={() => navigate('/account-settings')} className="h-9 w-9">
-                <Settings className="w-4 h-4" />
-              </Button>
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="text-xs">Feed</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  onClick={() => navigate('/members')}
+                  data-tour="browse-members"
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-xs">Members</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
+                  onClick={() => navigate('/connections')}
+                  data-tour="connections"
+                >
+                  <div className="relative">
+                    <UserPlus className="w-5 h-5" />
+                    {pendingConnectionsCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center"
+                      >
+                        {pendingConnectionsCount}
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="text-xs">Connections</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  onClick={() => navigate('/messages')}
+                  data-tour="messages"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  <span className="text-xs">Messages</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  onClick={() => navigate('/calendar')}
+                  data-tour="calendar"
+                >
+                  <Calendar className="w-5 h-5" />
+                  <span className="text-xs">Calendar</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  onClick={() => navigate('/companies')}
+                >
+                  <Building2 className="w-5 h-5" />
+                  <span className="text-xs">Companies</span>
+                </Button>
+                
+                {/* Profile Dropdown - Desktop only */}
+                <div className="flex items-center gap-2 border-l pl-4">
+                  {profile && currentUserId && (
+                    <Avatar 
+                      className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
+                      onClick={() => navigate(`/profile/${currentUserId}`)}
+                    >
+                      <AvatarImage src={profile.avatar || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {profile.first_name?.[0]}{profile.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/account-settings')}>
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
