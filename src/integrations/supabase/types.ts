@@ -1845,6 +1845,7 @@ export type Database = {
           original_post_id: string | null
           updated_at: string | null
           user_id: string
+          video_url: string | null
         }
         Insert: {
           comments_count?: number | null
@@ -1857,6 +1858,7 @@ export type Database = {
           original_post_id?: string | null
           updated_at?: string | null
           user_id: string
+          video_url?: string | null
         }
         Update: {
           comments_count?: number | null
@@ -1869,6 +1871,7 @@ export type Database = {
           original_post_id?: string | null
           updated_at?: string | null
           user_id?: string
+          video_url?: string | null
         }
         Relationships: [
           {

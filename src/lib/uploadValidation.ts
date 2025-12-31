@@ -4,7 +4,9 @@
 
 // File size limits in bytes
 export const FILE_SIZE_LIMITS = {
-  IMAGE: 5 * 1024 * 1024,      // 5MB for images
+  IMAGE: 5 * 1024 * 1024,       // 5MB for general images
+  POST_IMAGE: 10 * 1024 * 1024, // 10MB for post images
+  VIDEO: 50 * 1024 * 1024,      // 50MB for videos
   DOCUMENT: 10 * 1024 * 1024,   // 10MB for documents (CSV, PDF, etc.)
   AVATAR: 2 * 1024 * 1024,      // 2MB for avatars
   COVER: 5 * 1024 * 1024,       // 5MB for cover images
@@ -22,6 +24,7 @@ export const IMAGE_DIMENSION_LIMITS = {
 // Allowed file types
 export const ALLOWED_FILE_TYPES = {
   IMAGES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
+  VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
   DOCUMENTS: ['text/csv', 'application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
 } as const;
 
@@ -152,6 +155,41 @@ export const validateImageUpload = async (file: File): Promise<ValidationResult>
   // Check dimensions
   const dimensionCheck = await validateImageDimensions(file);
   return dimensionCheck;
+};
+
+/**
+ * Complete validation for post image uploads (10MB limit)
+ */
+export const validatePostImageUpload = async (file: File): Promise<ValidationResult> => {
+  // Check file type
+  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.IMAGES);
+  if (!typeCheck.valid) return typeCheck;
+  
+  // Check file size (10MB for posts)
+  const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.POST_IMAGE);
+  if (!sizeCheck.valid) return sizeCheck;
+  
+  // Check dimensions
+  const dimensionCheck = await validateImageDimensions(file);
+  return dimensionCheck;
+};
+
+/**
+ * Complete validation for video uploads (50MB limit)
+ */
+export const validateVideoUpload = (file: File): ValidationResult => {
+  // Check file type
+  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.VIDEOS);
+  if (!typeCheck.valid) {
+    return {
+      valid: false,
+      error: 'Invalid video format. Allowed formats: MP4, WebM, MOV, AVI',
+    };
+  }
+  
+  // Check file size (50MB for videos)
+  const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.VIDEO);
+  return sizeCheck;
 };
 
 /**

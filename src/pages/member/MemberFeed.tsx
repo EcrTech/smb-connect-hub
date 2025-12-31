@@ -24,6 +24,7 @@ import {
   LogOut,
   Settings,
   Image as ImageIcon,
+  Video,
   X,
   Search,
   MessageSquare,
@@ -39,6 +40,7 @@ interface Post {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -76,11 +78,14 @@ export default function MemberFeed() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
   const [associations, setAssociations] = useState<Association[]>([]);
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadProfile();
@@ -294,6 +299,7 @@ export default function MemberFeed() {
       if (!user) throw new Error('Not authenticated');
 
       let imageUrl = null;
+      let videoUrl = null;
 
       // Upload image if present
       if (imageFile) {
@@ -313,10 +319,29 @@ export default function MemberFeed() {
         imageUrl = publicUrl;
       }
 
+      // Upload video if present
+      if (videoFile) {
+        const fileExt = videoFile.name.split('.').pop();
+        const fileName = `${user.id}/video-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile-images')
+          .upload(fileName, videoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-images')
+          .getPublicUrl(fileName);
+
+        videoUrl = publicUrl;
+      }
+
       const { error } = await supabase.from('posts').insert({
         user_id: user.id,
         content: newPostContent.trim(),
         image_url: imageUrl,
+        video_url: videoUrl,
       });
 
       if (error) throw error;
@@ -328,6 +353,8 @@ export default function MemberFeed() {
       setNewPostContent('');
       setImagePreview(null);
       setImageFile(null);
+      setVideoPreview(null);
+      setVideoFile(null);
       loadPosts();
     } catch (error: any) {
       toast({
@@ -344,9 +371,9 @@ export default function MemberFeed() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate image upload
-    const { validateImageUpload } = await import('@/lib/uploadValidation');
-    const validation = await validateImageUpload(file);
+    // Validate post image upload (10MB limit)
+    const { validatePostImageUpload } = await import('@/lib/uploadValidation');
+    const validation = await validatePostImageUpload(file);
     
     if (!validation.valid) {
       toast({
@@ -357,6 +384,13 @@ export default function MemberFeed() {
       return;
     }
 
+    // Clear video if selecting image
+    setVideoFile(null);
+    setVideoPreview(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+
     setImageFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -365,11 +399,51 @@ export default function MemberFeed() {
     reader.readAsDataURL(file);
   };
 
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate video upload (50MB limit)
+    const { validateVideoUpload } = await import('@/lib/uploadValidation');
+    const validation = validateVideoUpload(file);
+    
+    if (!validation.valid) {
+      toast({
+        title: 'Validation Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Clear image if selecting video
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    setVideoFile(file);
+    const url = URL.createObjectURL(file);
+    setVideoPreview(url);
+  };
+
   const removeImage = () => {
     setImagePreview(null);
     setImageFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const removeVideo = () => {
+    if (videoPreview) {
+      URL.revokeObjectURL(videoPreview);
+    }
+    setVideoPreview(null);
+    setVideoFile(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
 
@@ -667,23 +741,61 @@ export default function MemberFeed() {
               </div>
             )}
 
+            {videoPreview && (
+              <div className="relative mb-4">
+                <video
+                  src={videoPreview}
+                  controls
+                  className="rounded-lg max-h-64 w-full object-cover"
+                />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={removeVideo}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-3 border-t">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-muted-foreground hover:text-foreground hover:bg-transparent"
-              >
-                <ImageIcon className="w-5 h-5 mr-2" />
-                Photo
-              </Button>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                  onChange={handleVideoSelect}
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  title="Add photo (max 10MB)"
+                >
+                  <ImageIcon className="w-5 h-5 mr-2" />
+                  Photo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => videoInputRef.current?.click()}
+                  className="text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  title="Add video (max 50MB, MP4/WebM/MOV)"
+                >
+                  <Video className="w-5 h-5 mr-2" />
+                  Video
+                </Button>
+              </div>
               <Button
                 onClick={handleCreatePost}
                 disabled={!newPostContent.trim() || posting}
@@ -783,6 +895,14 @@ export default function MemberFeed() {
                             src={post.image_url}
                             alt="Post"
                             className="mt-4 rounded-lg max-h-96 w-full object-cover"
+                          />
+                        )}
+
+                        {post.video_url && (
+                          <video
+                            src={post.video_url}
+                            controls
+                            className="mt-4 rounded-lg max-h-96 w-full"
                           />
                         )}
 
