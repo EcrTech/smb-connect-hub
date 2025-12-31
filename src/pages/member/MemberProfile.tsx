@@ -805,7 +805,14 @@ export default function MemberProfile() {
                   <div key={exp.id}>
                     <div className="flex gap-4">
                       <div className="flex-1">
-                        <h3 className="font-semibold">{exp.title}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold">{exp.title}</h3>
+                          {exp.is_current && (
+                            <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                              Currently Working
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-muted-foreground">{exp.company}</p>
                         {exp.location && (
                           <p className="text-sm text-muted-foreground">{exp.location}</p>
