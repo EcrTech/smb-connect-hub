@@ -1784,6 +1784,35 @@ export type Database = {
         }
         Relationships: []
       }
+      post_bookmarks: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           content: string
@@ -1848,6 +1877,38 @@ export type Database = {
           },
         ]
       }
+      post_shares: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform: string
+          post_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform: string
+          post_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform?: string
+          post_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_shares_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments_count: number | null
@@ -1858,6 +1919,7 @@ export type Database = {
           likes_count: number | null
           original_author_id: string | null
           original_post_id: string | null
+          shares_count: number | null
           updated_at: string | null
           user_id: string
           video_url: string | null
@@ -1871,6 +1933,7 @@ export type Database = {
           likes_count?: number | null
           original_author_id?: string | null
           original_post_id?: string | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id: string
           video_url?: string | null
@@ -1884,6 +1947,7 @@ export type Database = {
           likes_count?: number | null
           original_author_id?: string | null
           original_post_id?: string | null
+          shares_count?: number | null
           updated_at?: string | null
           user_id?: string
           video_url?: string | null

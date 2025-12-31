@@ -5,22 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, X, ArrowLeft, Search } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, X, ArrowLeft, Search, Repeat2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { Input } from '@/components/ui/input';
+import { SharePostDropdown } from '@/components/post/SharePostDropdown';
+import { BookmarkButton } from '@/components/post/BookmarkButton';
 
 interface Post {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;
   likes_count: number;
   comments_count: number;
+  shares_count: number;
+  original_post_id: string | null;
+  original_author_id: string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -32,6 +38,11 @@ interface Post {
       name: string;
     } | null;
   };
+  original_author?: {
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  } | null;
   liked_by_user?: boolean;
 }
 
@@ -78,17 +89,30 @@ export default function CompanyFeed() {
 
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey (first_name, last_name, avatar)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      if (postsData) {
+      if (postsData && postsData.length > 0) {
+        const userIds = Array.from(new Set(postsData.map((post: any) => post.user_id)));
+        const originalAuthorIds = Array.from(new Set(postsData.map((post: any) => post.original_author_id).filter(Boolean)));
+        const allUserIds = Array.from(new Set([...userIds, ...originalAuthorIds]));
+
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, avatar')
+          .in('id', allUserIds);
+
+        const profilesById = (profilesData || []).reduce((acc: Record<string, any>, profile: any) => {
+          acc[profile.id] = profile;
+          return acc;
+        }, {} as Record<string, any>);
+
         const postsWithDetails = await Promise.all(
-          postsData.map(async (post) => {
+          postsData.map(async (post: any) => {
+            const profile = profilesById[post.user_id] || null;
+
             const { data: memberData } = await supabase
               .from('members')
               .select('company_id, companies (name)')
@@ -104,13 +128,17 @@ export default function CompanyFeed() {
 
             return {
               ...post,
+              profiles: profile,
               members: memberData,
+              original_author: post.original_author_id ? profilesById[post.original_author_id] : null,
               liked_by_user: !!likeData
             };
           })
         );
 
         setPosts(postsWithDetails as any);
+      } else {
+        setPosts([]);
       }
     } catch (error: any) {
       console.error('Error loading posts:', error);
@@ -265,6 +293,44 @@ export default function CompanyFeed() {
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }));
   };
 
+  const handleRepost = async (post: Post) => {
+    if (post.user_id === currentUserId) {
+      toast({
+        title: 'Cannot repost',
+        description: 'You cannot repost your own post',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .insert([{
+          content: post.content,
+          image_url: post.image_url,
+          video_url: post.video_url,
+          user_id: currentUserId,
+          original_post_id: post.original_post_id || post.id,
+          original_author_id: post.original_author_id || post.user_id,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Post reposted successfully',
+      });
+      loadPosts();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to repost',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleCommentAdded = async () => {
     await loadPosts();
   };
@@ -272,7 +338,7 @@ export default function CompanyFeed() {
   const filteredPosts = posts.filter(post => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    const authorName = `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase();
+    const authorName = post.profiles ? `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase() : '';
     const content = post.content.toLowerCase();
     return authorName.includes(query) || content.includes(query);
   });
@@ -365,14 +431,27 @@ export default function CompanyFeed() {
             {filteredPosts.map((post) => (
               <Card key={post.id}>
                 <CardContent className="pt-6">
+                  {post.original_post_id && post.original_author && (
+                    <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+                      <Repeat2 className="w-4 h-4" />
+                      <span>
+                        <span className="font-semibold">{post.profiles?.first_name} {post.profiles?.last_name}</span>
+                        {' '}reposted{' '}
+                        <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-start gap-4 mb-4">
                     <Avatar 
                       className="cursor-pointer"
-                      onClick={() => navigate(`/profile/${post.user_id}`)}
+                      onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
                     >
-                      <AvatarImage src={post.profiles.avatar || undefined} />
+                      <AvatarImage src={post.original_author?.avatar || post.profiles?.avatar || undefined} />
                       <AvatarFallback>
-                        {post.profiles.first_name[0]}{post.profiles.last_name[0]}
+                        {post.original_author ? 
+                          `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
+                          `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
+                        }
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
@@ -380,11 +459,14 @@ export default function CompanyFeed() {
                         <div>
                           <p 
                             className="font-semibold cursor-pointer hover:underline"
-                            onClick={() => navigate(`/profile/${post.user_id}`)}
+                            onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
                           >
-                            {post.profiles.first_name} {post.profiles.last_name}
+                            {post.original_author ? 
+                              `${post.original_author.first_name} ${post.original_author.last_name}` :
+                              `${post.profiles?.first_name} ${post.profiles?.last_name}`
+                            }
                           </p>
-                          {post.members?.companies && (
+                          {post.members?.companies && !post.original_post_id && (
                             <p className="text-sm text-muted-foreground">
                               {post.members.companies.name}
                             </p>
@@ -418,10 +500,17 @@ export default function CompanyFeed() {
                           className="mt-3 rounded-lg max-h-96 w-full object-cover" 
                         />
                       )}
+                      {post.video_url && (
+                        <video 
+                          src={post.video_url} 
+                          controls
+                          className="mt-3 rounded-lg max-h-96 w-full" 
+                        />
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-6 pt-4 border-t">
+                  <div className="flex items-center gap-4 pt-4 border-t">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -439,6 +528,21 @@ export default function CompanyFeed() {
                       <MessageCircle className="w-4 h-4 mr-2" />
                       {post.comments_count}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRepost(post)}
+                    >
+                      <Repeat2 className="w-4 h-4 mr-2" />
+                      Repost
+                    </Button>
+                    <SharePostDropdown
+                      postId={post.id}
+                      postContent={post.content}
+                      sharesCount={post.shares_count || 0}
+                      onShareComplete={loadPosts}
+                    />
+                    <BookmarkButton postId={post.id} userId={currentUserId} />
                   </div>
 
                   {showComments[post.id] && (

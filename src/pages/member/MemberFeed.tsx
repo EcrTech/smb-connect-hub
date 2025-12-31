@@ -30,10 +30,14 @@ import {
   MessageSquare,
   Users,
   Calendar,
-  UserPlus
+  UserPlus,
+  Repeat2,
+  Bookmark
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/BackButton';
+import { SharePostDropdown } from '@/components/post/SharePostDropdown';
+import { BookmarkButton } from '@/components/post/BookmarkButton';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Post {
@@ -43,14 +47,22 @@ interface Post {
   video_url: string | null;
   likes_count: number;
   comments_count: number;
+  shares_count: number;
   created_at: string;
   user_id: string;
+  original_post_id: string | null;
+  original_author_id: string | null;
   profile: {
     first_name: string;
     last_name: string;
     avatar: string | null;
     headline: string | null;
   };
+  original_author?: {
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  } | null;
   member: {
     company: {
       name: string;
@@ -234,14 +246,26 @@ export default function MemberFeed() {
         return;
       }
 
+      // Get unique user IDs including original authors
+      const userIds = Array.from(new Set(postsData.map((post: any) => post.user_id)));
+      const originalAuthorIds = Array.from(new Set(postsData.map((post: any) => post.original_author_id).filter(Boolean)));
+      const allUserIds = Array.from(new Set([...userIds, ...originalAuthorIds]));
+
+      // Batch fetch all profiles
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar, headline')
+        .in('id', allUserIds);
+
+      const profilesById = (profilesData || []).reduce((acc: Record<string, any>, profile: any) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>);
+
       // Load profile and member data for each post
       const postsWithProfiles = await Promise.all(
         postsData.map(async (post) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, avatar, headline')
-            .eq('id', post.user_id)
-            .maybeSingle();
+          const profileData = profilesById[post.user_id] || { first_name: '', last_name: '', avatar: null, headline: null };
 
           const { data: memberData } = await supabase
             .from('members')
@@ -251,7 +275,8 @@ export default function MemberFeed() {
 
           return {
             ...post,
-            profile: profileData || { first_name: '', last_name: '', avatar: null, headline: null },
+            profile: profileData,
+            original_author: post.original_author_id ? profilesById[post.original_author_id] : null,
             member: memberData
           };
         })
@@ -525,6 +550,44 @@ export default function MemberFeed() {
       toast({
         title: 'Error',
         description: 'Failed to delete post',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRepost = async (post: Post) => {
+    if (post.user_id === currentUserId) {
+      toast({
+        title: 'Cannot repost',
+        description: 'You cannot repost your own post',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .insert([{
+          content: post.content,
+          image_url: post.image_url,
+          video_url: post.video_url,
+          user_id: currentUserId,
+          original_post_id: post.original_post_id || post.id,
+          original_author_id: post.original_author_id || post.user_id,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Post reposted successfully',
+      });
+      loadPosts();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to repost',
         variant: 'destructive',
       });
     }
@@ -837,29 +900,48 @@ export default function MemberFeed() {
               return (
                 <Card key={post.id}>
                   <CardContent className="pt-6">
+                    {/* Repost indicator */}
+                    {post.original_post_id && post.original_author && (
+                      <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
+                        <Repeat2 className="w-4 h-4" />
+                        <span>
+                          <span className="font-semibold">{post.profile.first_name} {post.profile.last_name}</span>
+                          {' '}reposted{' '}
+                          <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
+                        </span>
+                      </div>
+                    )}
                     <div className="flex gap-4">
                       <Avatar 
                         className="cursor-pointer"
-                        onClick={() => navigate(`/profile/${post.user_id}`)}
+                        onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
                       >
-                        <AvatarImage src={post.profile.avatar || undefined} />
-                        <AvatarFallback>{initials}</AvatarFallback>
+                        <AvatarImage src={post.original_author?.avatar || post.profile.avatar || undefined} />
+                        <AvatarFallback>
+                          {post.original_author ? 
+                            `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
+                            initials
+                          }
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
                             <h3 
                               className="font-semibold hover:underline cursor-pointer"
-                              onClick={() => navigate(`/profile/${post.user_id}`)}
+                              onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
                             >
-                              {fullName}
+                              {post.original_author ? 
+                                `${post.original_author.first_name} ${post.original_author.last_name}` :
+                                fullName
+                              }
                             </h3>
-                            {post.profile.headline && (
+                            {!post.original_post_id && post.profile.headline && (
                               <p className="text-sm text-muted-foreground">
                                 {post.profile.headline}
                               </p>
                             )}
-                            {post.member?.company && (
+                            {!post.original_post_id && post.member?.company && (
                               <p className="text-sm text-muted-foreground">
                                 {post.member.company.name}
                               </p>
@@ -906,7 +988,7 @@ export default function MemberFeed() {
                           />
                         )}
 
-                        <div className="flex items-center gap-6 mt-4 pt-4 border-t">
+                        <div className="flex items-center gap-4 mt-4 pt-4 border-t">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -924,6 +1006,21 @@ export default function MemberFeed() {
                             <MessageCircle className="w-4 h-4 mr-2" />
                             {post.comments_count > 0 && post.comments_count}
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRepost(post)}
+                          >
+                            <Repeat2 className="w-4 h-4 mr-2" />
+                            Repost
+                          </Button>
+                          <SharePostDropdown
+                            postId={post.id}
+                            postContent={post.content}
+                            sharesCount={post.shares_count || 0}
+                            onShareComplete={loadPosts}
+                          />
+                          <BookmarkButton postId={post.id} userId={currentUserId} />
                         </div>
 
                         {/* Comments Section */}

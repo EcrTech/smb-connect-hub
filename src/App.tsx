@@ -65,6 +65,7 @@ import BrowseMembers from "./pages/member/BrowseMembers";
 import MemberProfile from "./pages/member/MemberProfile";
 import MemberFeed from "./pages/member/MemberFeed";
 import MemberMessages from "./pages/member/MemberMessages";
+import SavedPosts from "./pages/member/SavedPosts";
 import CompanyFeed from "./pages/company/CompanyFeed";
 import AssociationFeed from "./pages/association/AssociationFeed";
 import NotFound from "./pages/NotFound";
@@ -558,6 +559,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <MemberMessages />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/saved-posts" 
+            element={
+              <ProtectedRoute>
+                <SavedPosts />
               </ProtectedRoute>
             } 
           />
