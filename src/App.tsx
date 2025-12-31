@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HomeButton } from "./components/HomeButton";
-import { FloatingEventRequisition } from "./components/FloatingEventRequisition";
 import { RoleProvider } from "./contexts/RoleContext";
 import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
@@ -25,7 +24,6 @@ import AdminAssociations from "./pages/admin/AdminAssociations";
 import AdminCompanies from "./pages/admin/AdminCompanies";
 import AdminAssociationRequests from "./pages/admin/AdminAssociationRequests";
 import AdminCompanyRequests from "./pages/admin/AdminCompanyRequests";
-import AdminEventRequests from "./pages/admin/AdminEventRequests";
 import AssociationProfileView from "./pages/admin/AssociationProfileView";
 import AdminCompanyProfileView from "./pages/admin/AdminCompanyProfileView";
 import CreateAssociation from "./pages/admin/CreateAssociation";
@@ -76,12 +74,10 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const hideHomeButton = ['/', '/auth/login', '/auth/register'].includes(location.pathname);
-  const showEventRequisition = !['/auth/login', '/auth/register', '/'].includes(location.pathname);
 
   return (
     <>
       {!hideHomeButton && <HomeButton />}
-      {showEventRequisition && <FloatingEventRequisition />}
       <Routes>
         <Route path="/" element={<Login />} />
             <Route path="/auth/login" element={<Login />} />
@@ -202,14 +198,7 @@ const AppContent = () => {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/admin/event-requests" 
-            element={
-              <ProtectedRoute>
-                <AdminEventRequests />
-              </ProtectedRoute>
-            } 
-          />
+          
           <Route 
             path="/admin/create-association"
             element={

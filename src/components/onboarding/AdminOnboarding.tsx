@@ -42,12 +42,6 @@ export function AdminOnboarding() {
       description: 'Oversee company registrations and manage company profiles.',
       action: () => navigate('/admin/companies'),
     },
-    {
-      id: 'events',
-      title: 'Event Management',
-      description: 'Review and manage events on the calendar.',
-      action: () => navigate('/admin/event-requests'),
-    },
   ];
 
   if (!showOnboarding) return null;
