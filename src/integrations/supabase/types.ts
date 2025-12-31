@@ -1374,10 +1374,15 @@ export type Database = {
           created_by: string
           description: string | null
           end_date: string
+          event_link: string | null
           event_type: string | null
           id: string
+          link_preview_description: string | null
+          link_preview_image: string | null
+          link_preview_title: string | null
           location: string | null
           start_date: string
+          thumbnail_url: string | null
           title: string
           updated_at: string
         }
@@ -1386,10 +1391,15 @@ export type Database = {
           created_by: string
           description?: string | null
           end_date: string
+          event_link?: string | null
           event_type?: string | null
           id?: string
+          link_preview_description?: string | null
+          link_preview_image?: string | null
+          link_preview_title?: string | null
           location?: string | null
           start_date: string
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
         }
@@ -1398,10 +1408,15 @@ export type Database = {
           created_by?: string
           description?: string | null
           end_date?: string
+          event_link?: string | null
           event_type?: string | null
           id?: string
+          link_preview_description?: string | null
+          link_preview_image?: string | null
+          link_preview_title?: string | null
           location?: string | null
           start_date?: string
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }

@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft, Link as LinkIcon, Image, X, Loader2, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
+import { validatePostImageUpload } from '@/lib/uploadValidation';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const locales = {
@@ -36,6 +37,18 @@ interface Event {
   location: string | null;
   event_type: string | null;
   created_by: string;
+  event_link: string | null;
+  thumbnail_url: string | null;
+  link_preview_title: string | null;
+  link_preview_description: string | null;
+  link_preview_image: string | null;
+}
+
+interface LinkPreview {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  url: string;
 }
 
 export default function EventsCalendar() {
@@ -53,7 +66,17 @@ export default function EventsCalendar() {
     end_date: '',
     location: '',
     event_type: '',
+    event_link: '',
   });
+  
+  // Thumbnail and link preview states
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [existingThumbnail, setExistingThumbnail] = useState<string | null>(null);
+  const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
+  const [fetchingPreview, setFetchingPreview] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadEvents();
@@ -78,6 +101,11 @@ export default function EventsCalendar() {
         location: event.location,
         event_type: event.event_type,
         created_by: event.created_by,
+        event_link: event.event_link,
+        thumbnail_url: event.thumbnail_url,
+        link_preview_title: event.link_preview_title,
+        link_preview_description: event.link_preview_description,
+        link_preview_image: event.link_preview_image,
       }));
 
       setEvents(formattedEvents);
@@ -92,6 +120,13 @@ export default function EventsCalendar() {
     }
   };
 
+  const resetFormState = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setExistingThumbnail(null);
+    setLinkPreview(null);
+  };
+
   const handleSelectEvent = (event: Event) => {
     console.log('=== EVENT CLICKED ===');
     console.log('Event:', event);
@@ -103,7 +138,21 @@ export default function EventsCalendar() {
       end_date: format(event.end, "yyyy-MM-dd'T'HH:mm"),
       location: event.location || '',
       event_type: event.event_type || '',
+      event_link: event.event_link || '',
     });
+    setExistingThumbnail(event.thumbnail_url);
+    if (event.link_preview_title || event.link_preview_image) {
+      setLinkPreview({
+        title: event.link_preview_title,
+        description: event.link_preview_description,
+        image: event.link_preview_image,
+        url: event.event_link || '',
+      });
+    } else {
+      setLinkPreview(null);
+    }
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
     setDialogOpen(true);
   };
 
@@ -117,26 +166,125 @@ export default function EventsCalendar() {
       end_date: format(end, "yyyy-MM-dd'T'HH:mm"),
       location: '',
       event_type: '',
+      event_link: '',
     });
+    resetFormState();
     setDialogOpen(true);
+  };
+
+  const handleFetchLinkPreview = async () => {
+    if (!formData.event_link.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a URL first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setFetchingPreview(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-link-preview', {
+        body: { url: formData.event_link },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setLinkPreview(data);
+      toast({
+        title: 'Success',
+        description: 'Link preview fetched successfully',
+      });
+    } catch (error: any) {
+      console.error('Error fetching link preview:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to fetch link preview',
+        variant: 'destructive',
+      });
+    } finally {
+      setFetchingPreview(false);
+    }
+  };
+
+  const handleThumbnailSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = await validatePostImageUpload(file);
+    if (!validation.valid) {
+      toast({
+        title: 'Invalid file',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setThumbnailFile(file);
+    setThumbnailPreview(URL.createObjectURL(file));
+  };
+
+  const removeThumbnail = () => {
+    if (thumbnailPreview) {
+      URL.revokeObjectURL(thumbnailPreview);
+    }
+    setThumbnailFile(null);
+    setThumbnailPreview(null);
+    setExistingThumbnail(null);
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
 
     try {
+      let thumbnailUrl = existingThumbnail;
+
+      // Upload thumbnail if new file selected
+      if (thumbnailFile) {
+        const fileExt = thumbnailFile.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('event-media')
+          .upload(fileName, thumbnailFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('event-media')
+          .getPublicUrl(fileName);
+
+        thumbnailUrl = publicUrl;
+      }
+
+      const eventData = {
+        title: formData.title,
+        description: formData.description || null,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        location: formData.location || null,
+        event_type: formData.event_type || null,
+        event_link: formData.event_link || null,
+        thumbnail_url: thumbnailUrl,
+        link_preview_title: linkPreview?.title || null,
+        link_preview_description: linkPreview?.description || null,
+        link_preview_image: linkPreview?.image || null,
+      };
+
       if (selectedEvent) {
         // Update existing event
         const { error } = await supabase
           .from('events')
-          .update({
-            title: formData.title,
-            description: formData.description || null,
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            location: formData.location || null,
-            event_type: formData.event_type || null,
-          })
+          .update(eventData)
           .eq('id', selectedEvent.id);
 
         if (error) throw error;
@@ -148,12 +296,7 @@ export default function EventsCalendar() {
         const { error } = await supabase
           .from('events')
           .insert([{
-            title: formData.title,
-            description: formData.description || null,
-            start_date: formData.start_date,
-            end_date: formData.end_date,
-            location: formData.location || null,
-            event_type: formData.event_type || null,
+            ...eventData,
             created_by: user.id,
           }]);
 
@@ -166,6 +309,7 @@ export default function EventsCalendar() {
       });
 
       setDialogOpen(false);
+      resetFormState();
       loadEvents();
     } catch (error: any) {
       toast({
@@ -173,6 +317,8 @@ export default function EventsCalendar() {
         description: error.message || 'Failed to save event',
         variant: 'destructive',
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -193,6 +339,7 @@ export default function EventsCalendar() {
       });
 
       setDialogOpen(false);
+      resetFormState();
       loadEvents();
     } catch (error: any) {
       toast({
@@ -202,6 +349,9 @@ export default function EventsCalendar() {
       });
     }
   };
+
+  // Get display thumbnail (uploaded > existing > link preview)
+  const displayThumbnail = thumbnailPreview || existingThumbnail || linkPreview?.image;
 
   if (loading) {
     return (
@@ -230,7 +380,9 @@ export default function EventsCalendar() {
                 end_date: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
                 location: '',
                 event_type: '',
+                event_link: '',
               });
+              resetFormState();
               setDialogOpen(true);
             }}>
               <Plus className="w-4 h-4 mr-2" />
@@ -241,8 +393,11 @@ export default function EventsCalendar() {
         </div>
       </header>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        setDialogOpen(open);
+        if (!open) resetFormState();
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedEvent ? 'Edit Event' : 'Create Event'}</DialogTitle>
           </DialogHeader>
@@ -321,9 +476,126 @@ export default function EventsCalendar() {
               </Select>
             </div>
 
-            <div className="flex justify-between gap-2">
+            {/* Event Link with Preview */}
+            <div className="space-y-2">
+              <Label htmlFor="event_link">Event Link</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="event_link"
+                    value={formData.event_link}
+                    onChange={(e) => setFormData({ ...formData, event_link: e.target.value })}
+                    placeholder="https://example.com/event"
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleFetchLinkPreview}
+                  disabled={fetchingPreview || !formData.event_link.trim()}
+                >
+                  {fetchingPreview ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Fetch Preview'
+                  )}
+                </Button>
+              </div>
+              
+              {/* Link Preview Card */}
+              {linkPreview && (
+                <div className="mt-2 border rounded-lg p-3 bg-muted/50">
+                  <div className="flex items-start gap-3">
+                    {linkPreview.image && (
+                      <img 
+                        src={linkPreview.image} 
+                        alt="Link preview" 
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm line-clamp-1">{linkPreview.title}</p>
+                      {linkPreview.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                          {linkPreview.description}
+                        </p>
+                      )}
+                      <a 
+                        href={linkPreview.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        {new URL(linkPreview.url).hostname}
+                      </a>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => setLinkPreview(null)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnail Upload */}
+            <div className="space-y-2">
+              <Label>Event Thumbnail</Label>
+              <p className="text-xs text-muted-foreground">Upload a custom thumbnail (max 10MB). If not uploaded, the link preview image will be used.</p>
+              
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleThumbnailSelect}
+                className="hidden"
+              />
+              
+              {displayThumbnail ? (
+                <div className="relative inline-block">
+                  <img 
+                    src={displayThumbnail} 
+                    alt="Thumbnail preview" 
+                    className="max-w-xs h-32 object-cover rounded-lg border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={removeThumbnail}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                  {(thumbnailPreview || existingThumbnail) && (
+                    <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
+                      Custom
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => thumbnailInputRef.current?.click()}
+                >
+                  <Image className="w-4 h-4 mr-2" />
+                  Upload Thumbnail
+                </Button>
+              )}
+            </div>
+
+            <div className="flex justify-between gap-2 pt-4">
               <div>
-                {selectedEvent && (
+                {selectedEvent && isSuperAdmin && (
                   <Button type="button" variant="destructive" onClick={handleDelete}>
                     Delete Event
                   </Button>
@@ -333,9 +605,18 @@ export default function EventsCalendar() {
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">
-                  {selectedEvent ? 'Update' : 'Create'} Event
-                </Button>
+                {isSuperAdmin && (
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      `${selectedEvent ? 'Update' : 'Create'} Event`
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </form>
