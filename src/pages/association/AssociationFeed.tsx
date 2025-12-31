@@ -13,6 +13,7 @@ import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { Input } from '@/components/ui/input';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { PostEngagementBadge } from '@/components/post/PostEngagementBadge';
 
 interface Post {
   id: string;
@@ -534,18 +535,28 @@ export default function AssociationFeed() {
             {filteredPosts.map((post) => (
               <Card key={post.id}>
                 <CardContent className="pt-6">
-                  {post.original_post_id && post.original_author && (
-                    <div className="flex items-center gap-2 mb-3 text-sm text-muted-foreground">
-                      <Repeat2 className="w-4 h-4" />
-                      <span>
-                        <span className="font-semibold">{post.profiles?.first_name} {post.profiles?.last_name}</span>
-                        {' '}reposted{' '}
-                        <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
-                      </span>
+                  {/* Engagement badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {post.original_post_id && post.original_author && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Repeat2 className="w-4 h-4" />
+                          <span>
+                            <span className="font-semibold">{post.profiles?.first_name} {post.profiles?.last_name}</span>
+                            {' '}reposted{' '}
+                            <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
+                          </span>
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <PostEngagementBadge 
+                      likesCount={post.likes_count || 0}
+                      commentsCount={post.comments_count || 0}
+                      sharesCount={post.shares_count || 0}
+                    />
+                  </div>
                   <div className="flex items-start gap-4 mb-4">
-                    <Avatar 
+                    <Avatar
                       className="cursor-pointer"
                       onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
                     >
