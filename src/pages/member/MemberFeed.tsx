@@ -49,6 +49,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   shares_count: number;
+  reposts_count: number;
   created_at: string;
   user_id: string;
   original_post_id: string | null;
@@ -920,6 +921,7 @@ export default function MemberFeed() {
                         likesCount={post.likes_count || 0}
                         commentsCount={post.comments_count || 0}
                         sharesCount={post.shares_count || 0}
+                        repostsCount={post.reposts_count || 0}
                       />
                     </div>
                     <div className="flex gap-4">
@@ -1023,7 +1025,7 @@ export default function MemberFeed() {
                             onClick={() => handleRepost(post)}
                           >
                             <Repeat2 className="w-4 h-4 mr-2" />
-                            Repost
+                            {post.reposts_count > 0 && post.reposts_count}
                           </Button>
                           <SharePostDropdown
                             postId={post.id}
