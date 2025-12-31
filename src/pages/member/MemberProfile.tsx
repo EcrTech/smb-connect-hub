@@ -32,6 +32,7 @@ import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperience
 import { EditEducationDialog } from '@/components/member/EditEducationDialog';
 import { EditSkillsDialog } from '@/components/member/EditSkillsDialog';
 import { EditCertificationsDialog } from '@/components/member/EditCertificationsDialog';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 interface ProfileData {
   id: string;
@@ -580,18 +581,19 @@ export default function MemberProfile() {
   const initials = `${profile.first_name[0]}${profile.last_name[0]}`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header */}
       <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 pl-20">
-          <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+        <div className="container mx-auto px-3 py-3 md:px-4 md:py-4 md:pl-20">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 pl-20 max-w-5xl">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-5xl">
         {/* Cover & Profile Photo */}
         <Card className="overflow-hidden mb-6">
           <div className="relative">
@@ -1004,6 +1006,8 @@ export default function MemberProfile() {
       {!isOwnProfile && connectionStatus === 'connected' && (
         <FloatingChat currentUserId={currentUser} initialChatId={chatId} />
       )}
+      
+      <MobileNavigation />
     </div>
   );
 }

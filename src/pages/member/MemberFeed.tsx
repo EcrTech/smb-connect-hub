@@ -13,6 +13,7 @@ import { EditPostDialog } from '@/components/member/EditPostDialog';
 import { FloatingChat } from '@/components/messages/FloatingChat';
 import { MemberOnboarding } from '@/components/onboarding/MemberOnboarding';
 import { RoleNavigation } from '@/components/RoleNavigation';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 import { 
   ArrowLeft, 
@@ -631,19 +632,19 @@ export default function MemberFeed() {
   return (
     <>
       <MemberOnboarding />
-      <div className="min-h-screen bg-background">
-      {/* Header - LinkedIn style */}
+      <div className="min-h-screen bg-background pb-20 md:pb-0">
+      {/* Header - Mobile-first design */}
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-3 md:px-4">
           <div className="flex items-center justify-between h-14">
             {/* Left - Back Button & Search */}
-            <div className="flex items-center gap-4 flex-1 max-w-2xl">
+            <div className="flex items-center gap-2 md:gap-4 flex-1 max-w-2xl">
               <BackButton fallbackPath="/dashboard" variant="ghost" size="icon" label="" />
               <div className="flex-1 max-w-md">
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search posts..."
+                    placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 h-9 bg-muted/50"
@@ -652,8 +653,8 @@ export default function MemberFeed() {
               </div>
             </div>
 
-            {/* Right - Navigation Icons */}
-            <div className="flex items-center gap-6">
+            {/* Right - Navigation Icons (hidden on mobile, shown on md+) */}
+            <div className="hidden md:flex items-center gap-6">
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -724,7 +725,7 @@ export default function MemberFeed() {
                 <span className="text-xs">Companies</span>
               </Button>
               
-              {/* Profile Dropdown */}
+              {/* Profile Dropdown - Desktop only */}
               <div className="flex items-center gap-2 border-l pl-4">
                 {profile && currentUserId && (
                   <Avatar 
@@ -745,11 +746,29 @@ export default function MemberFeed() {
                 </Button>
               </div>
             </div>
+
+            {/* Mobile - Profile avatar and settings */}
+            <div className="flex md:hidden items-center gap-2">
+              {profile && currentUserId && (
+                <Avatar 
+                  className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
+                  onClick={() => navigate(`/profile/${currentUserId}`)}
+                >
+                  <AvatarImage src={profile.avatar || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {profile.first_name?.[0]}{profile.last_name?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <Button variant="ghost" size="icon" onClick={() => navigate('/account-settings')} className="h-9 w-9">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 pl-20 max-w-3xl">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-3xl">
         <RoleNavigation />
         
         {/* Associated Associations Ribbon */}
@@ -1072,6 +1091,9 @@ export default function MemberFeed() {
 
       {/* Floating Chat Widget */}
       <FloatingChat currentUserId={currentUserId} />
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileNavigation />
     </div>
     </>
   );

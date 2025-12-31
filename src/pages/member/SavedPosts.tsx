@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 interface SavedPost {
   id: string;
@@ -162,22 +163,22 @@ export default function SavedPosts() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
       <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center h-14 gap-4">
+        <div className="container mx-auto px-3 md:px-4">
+          <div className="flex items-center h-14 gap-3 md:gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-2">
               <Bookmark className="w-5 h-5 text-primary" />
-              <h1 className="text-xl font-bold">Saved Posts</h1>
+              <h1 className="text-lg md:text-xl font-bold">Saved Posts</h1>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 pl-20 max-w-3xl">
+      <main className="container mx-auto px-3 py-4 md:px-4 md:py-6 md:pl-20 max-w-3xl">
         {loading ? (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Loading saved posts...</p>
@@ -294,6 +295,8 @@ export default function SavedPosts() {
           </div>
         )}
       </main>
+      
+      <MobileNavigation />
     </div>
   );
 }
