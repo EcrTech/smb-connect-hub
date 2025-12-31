@@ -539,31 +539,33 @@ export default function CompanyFeed() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 pt-4 border-t">
+                  <div className="flex items-center gap-1 sm:gap-4 pt-4 border-t flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleLike(post.id, post.liked_by_user || false)}
-                      className={post.liked_by_user ? 'text-red-500' : ''}
+                      className={`px-2 sm:px-3 ${post.liked_by_user ? 'text-red-500' : ''}`}
                     >
-                      <Heart className={`w-4 h-4 mr-2 ${post.liked_by_user ? 'fill-current' : ''}`} />
-                      {post.likes_count}
+                      <Heart className={`w-4 h-4 sm:mr-1 ${post.liked_by_user ? 'fill-current' : ''}`} />
+                      <span className="text-xs ml-1">{post.likes_count > 0 && post.likes_count}</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleComments(post.id)}
+                      className="px-2 sm:px-3"
                     >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      {post.comments_count}
+                      <MessageCircle className="w-4 h-4 sm:mr-1" />
+                      <span className="text-xs ml-1">{post.comments_count > 0 && post.comments_count}</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRepost(post)}
+                      className="px-2 sm:px-3"
                     >
-                      <Repeat2 className="w-4 h-4 mr-2" />
-                      {post.reposts_count > 0 && post.reposts_count}
+                      <Repeat2 className="w-4 h-4 sm:mr-1" />
+                      <span className="text-xs ml-1">{post.reposts_count > 0 && post.reposts_count}</span>
                     </Button>
                     <SharePostDropdown
                       postId={post.id}

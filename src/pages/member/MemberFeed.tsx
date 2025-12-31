@@ -1036,31 +1036,36 @@ export default function MemberFeed() {
                           />
                         )}
 
-                        <div className="flex items-center gap-4 mt-4 pt-4 border-t">
+                        <div className="flex items-center gap-1 sm:gap-4 mt-4 pt-4 border-t flex-wrap">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleLikePost(post.id, post.user_liked)}
-                            className={post.user_liked ? 'text-red-500' : ''}
+                            className={`px-2 sm:px-3 ${post.user_liked ? 'text-red-500' : ''}`}
                           >
-                            <Heart className={`w-4 h-4 mr-2 ${post.user_liked ? 'fill-current' : ''}`} />
-                            {post.likes_count > 0 && post.likes_count}
+                            <Heart className={`w-4 h-4 sm:mr-1 ${post.user_liked ? 'fill-current' : ''}`} />
+                            <span className="hidden sm:inline">{post.likes_count > 0 && post.likes_count}</span>
+                            <span className="sm:hidden text-xs ml-1">{post.likes_count > 0 && post.likes_count}</span>
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm"
                             onClick={() => toggleComments(post.id)}
+                            className="px-2 sm:px-3"
                           >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            {post.comments_count > 0 && post.comments_count}
+                            <MessageCircle className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{post.comments_count > 0 && post.comments_count}</span>
+                            <span className="sm:hidden text-xs ml-1">{post.comments_count > 0 && post.comments_count}</span>
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRepost(post)}
+                            className="px-2 sm:px-3"
                           >
-                            <Repeat2 className="w-4 h-4 mr-2" />
-                            {post.reposts_count > 0 && post.reposts_count}
+                            <Repeat2 className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{post.reposts_count > 0 && post.reposts_count}</span>
+                            <span className="sm:hidden text-xs ml-1">{post.reposts_count > 0 && post.reposts_count}</span>
                           </Button>
                           <SharePostDropdown
                             postId={post.id}

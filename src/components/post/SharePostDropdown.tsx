@@ -127,9 +127,10 @@ export function SharePostDropdown({
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Share2 className="w-4 h-4 mr-2" />
-          {sharesCount > 0 ? sharesCount : 'Share'}
+        <Button variant="ghost" size="sm" className="px-2 sm:px-3">
+          <Share2 className="w-4 h-4 sm:mr-1" />
+          <span className="hidden sm:inline">{sharesCount > 0 ? sharesCount : 'Share'}</span>
+          <span className="sm:hidden text-xs ml-1">{sharesCount > 0 && sharesCount}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-48">
