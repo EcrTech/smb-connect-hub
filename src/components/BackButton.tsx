@@ -11,7 +11,8 @@ interface BackButtonProps {
 }
 
 /**
- * Simple back button that always navigates to the fallbackPath
+ * Back button that navigates to the previous page in browser history,
+ * or falls back to the specified path if no history exists
  */
 export const BackButton = ({ 
   fallbackPath = '/dashboard', 
@@ -23,7 +24,11 @@ export const BackButton = ({
   const navigate = useNavigate();
 
   const handleBack = () => {
-    navigate(fallbackPath);
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(fallbackPath);
+    }
   };
 
   return (
