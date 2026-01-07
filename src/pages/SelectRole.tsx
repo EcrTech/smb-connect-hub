@@ -25,8 +25,8 @@ export default function SelectRole() {
         (availableRoles.isMember ? 1 : 0);
 
       if (totalRoles === 0) {
-        // No roles - redirect to request association
-        navigate('/request-association');
+        // No roles - redirect to member feed (new users should see the feed, not request forms)
+        navigate('/feed');
       } else if (totalRoles === 1) {
         // Only one role - auto-select and navigate
         if (availableRoles.isAdmin) {
