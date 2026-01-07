@@ -48,7 +48,7 @@ export function ComposeMessageDialog({
       // Get current member record
       const { data: currentMember } = await supabase
         .from('members')
-        .select('id, company_id')
+        .select('id')
         .eq('user_id', currentUserId)
         .single();
 
@@ -98,13 +98,13 @@ export function ComposeMessageDialog({
       // Get current member record
       const { data: currentMember } = await supabase
         .from('members')
-        .select('id, company_id')
+        .select('id')
         .eq('user_id', currentUserId)
         .single();
 
       if (!currentMember) return;
 
-      // Check if chat already exists
+      // Check if chat already exists between these members
       const { data: existingChats } = await supabase
         .from('chat_participants')
         .select('chat_id')
@@ -142,7 +142,7 @@ export function ComposeMessageDialog({
 
       if (chatError) throw chatError;
 
-      // Add participants
+      // Add participants using member.id (stored in company_id column)
       const { error: participantError } = await supabase
         .from('chat_participants')
         .insert([

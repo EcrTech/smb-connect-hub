@@ -54,14 +54,16 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
     try {
       if (!currentUserId) return;
 
+      // Get member record for current user
       const { data: memberData } = await supabase
         .from('members')
-        .select('id, company_id')
+        .select('id')
         .eq('user_id', currentUserId)
         .single();
 
       if (!memberData) return;
 
+      // Get chats where current member is participant
       const { data: participantData } = await supabase
         .from('chat_participants')
         .select('chat_id')
