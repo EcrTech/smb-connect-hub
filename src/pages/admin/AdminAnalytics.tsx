@@ -23,6 +23,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { formatDate } from "@/lib/formatters";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface TimeSeriesData {
   date: string;
@@ -339,38 +340,29 @@ const AdminAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto py-4 md:pl-28 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">Platform Analytics</h1>
-              <p className="text-sm text-muted-foreground">Comprehensive Platform Insights</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {profile && currentUserId && (
-              <Avatar 
-                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
-                onClick={() => navigate(`/profile/${currentUserId}`)}
-              >
-                <AvatarImage src={profile.avatar || undefined} />
-                <AvatarFallback>
-                  {profile.first_name?.[0]}{profile.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <Button variant="outline" onClick={() => navigate('/account-settings')}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+      <PageHeader title="Platform Analytics" description="Comprehensive Platform Insights">
+        <div className="flex items-center gap-3 ml-auto">
+          {profile && currentUserId && (
+            <Avatar 
+              className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+              onClick={() => navigate(`/profile/${currentUserId}`)}
+            >
+              <AvatarImage src={profile.avatar || undefined} />
+              <AvatarFallback>
+                {profile.first_name?.[0]}{profile.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <Button variant="outline" onClick={() => navigate('/account-settings')}>
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <main className="container mx-auto p-6 space-y-6">

@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useRoleContext } from '@/contexts/RoleContext';
-import { UniversalSearch } from '@/components/UniversalSearch';
 import logo from '@/assets/smb-connect-logo.png';
 
 export const HomeButton = () => {
@@ -10,7 +9,6 @@ export const HomeButton = () => {
   const { role } = useUserRole();
   const { selectedRole } = useRoleContext();
   
-  // Use selected role from context if available, otherwise fall back to role from hook
   const activeRole = selectedRole || role;
 
   const getHomePath = () => {
@@ -30,28 +28,25 @@ export const HomeButton = () => {
   };
 
   return (
-    <>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => navigate(getHomePath())}
-              className="fixed top-4 left-4 z-50"
-            >
-              <img 
-                src={logo} 
-                alt="SMB Connect" 
-                className="w-auto rounded-lg"
-                style={{ height: '2.8rem' }}
-              />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>Go to {activeRole === 'admin' || activeRole === 'god-admin' ? 'Admin Dashboard' : activeRole === 'association' ? 'Association Dashboard' : activeRole === 'company' ? 'Company Dashboard' : activeRole === 'member' ? 'Feed' : 'Dashboard'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-      <UniversalSearch />
-    </>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={() => navigate(getHomePath())}
+            className="fixed top-4 left-4 z-50"
+          >
+            <img 
+              src={logo} 
+              alt="SMB Connect" 
+              className="w-auto rounded-lg"
+              style={{ height: '2.8rem' }}
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p>Go to {activeRole === 'admin' || activeRole === 'god-admin' ? 'Admin Dashboard' : activeRole === 'association' ? 'Association Dashboard' : activeRole === 'company' ? 'Company Dashboard' : activeRole === 'member' ? 'Feed' : 'Dashboard'}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };

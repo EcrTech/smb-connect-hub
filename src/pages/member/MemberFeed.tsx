@@ -16,6 +16,7 @@ import { RoleNavigation } from '@/components/RoleNavigation';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { PullToRefreshIndicator } from '@/components/PullToRefresh';
+import { UniversalSearch } from '@/components/UniversalSearch';
 
 import { 
   ArrowLeft, 
@@ -652,17 +653,9 @@ export default function MemberFeed() {
               <BackButton fallbackPath="/dashboard" variant="ghost" size="icon" label="" className="hidden md:flex" />
             </div>
 
-            {/* Center - Search */}
+            {/* Center - Universal Member Search */}
             <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-9 bg-muted/50"
-                />
-              </div>
+              <UniversalSearch />
             </div>
 
             {/* Right - Mobile: Settings only, Desktop: Full nav */}
