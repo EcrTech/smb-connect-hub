@@ -355,27 +355,27 @@ export type Database = {
       chat_participants: {
         Row: {
           chat_id: string
-          company_id: string
           id: string
           is_muted: boolean | null
           joined_at: string | null
           last_read_at: string | null
+          member_id: string
         }
         Insert: {
           chat_id: string
-          company_id: string
           id?: string
           is_muted?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
+          member_id: string
         }
         Update: {
           chat_id?: string
-          company_id?: string
           id?: string
           is_muted?: boolean | null
           joined_at?: string | null
           last_read_at?: string | null
+          member_id?: string
         }
         Relationships: [
           {
@@ -386,17 +386,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "chat_participants_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: "chat_participants_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_participants_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies_public"
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]

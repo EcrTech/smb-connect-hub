@@ -188,7 +188,7 @@ export default function MemberProfile() {
       const { data: currentChats } = await supabase
         .from('chat_participants')
         .select('chat_id')
-        .eq('company_id', currentMemberId);
+        .eq('member_id', currentMemberId);
 
       if (!currentChats || currentChats.length === 0) return;
 
@@ -196,12 +196,12 @@ export default function MemberProfile() {
       for (const chat of currentChats) {
         const { data: participants } = await supabase
           .from('chat_participants')
-          .select('company_id')
+          .select('member_id')
           .eq('chat_id', chat.chat_id);
 
         if (participants && participants.length === 2) {
-          const otherParticipant = participants.find(p => p.company_id !== currentMemberId);
-          if (otherParticipant?.company_id === otherMemberId) {
+          const otherParticipant = participants.find(p => p.member_id !== currentMemberId);
+          if (otherParticipant?.member_id === otherMemberId) {
             setChatId(chat.chat_id);
             return;
           }
@@ -254,12 +254,12 @@ export default function MemberProfile() {
 
       if (chatError) throw chatError;
 
-      // Use member.id for chat_participants (company_id column stores member.id)
+      // Add participants
       const { error: participantError } = await supabase
         .from('chat_participants')
         .insert([
-          { chat_id: newChat.id, company_id: currentMember.id },
-          { chat_id: newChat.id, company_id: otherMember.id }
+          { chat_id: newChat.id, member_id: currentMember.id },
+          { chat_id: newChat.id, member_id: otherMember.id }
         ]);
 
       if (participantError) throw participantError;

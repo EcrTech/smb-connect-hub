@@ -99,7 +99,7 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
                 )
               `)
               .eq('chat_id', chatId)
-              .neq('company_id', memberData.id)
+              .neq('member_id', memberData.id)
               .maybeSingle();
 
             if (otherParticipant) {

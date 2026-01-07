@@ -108,19 +108,19 @@ export function ComposeMessageDialog({
       const { data: existingChats } = await supabase
         .from('chat_participants')
         .select('chat_id')
-        .eq('company_id', currentMember.id);
+        .eq('member_id', currentMember.id);
 
       if (existingChats && existingChats.length > 0) {
         // Check each chat to see if it's a direct chat with this member
         for (const chat of existingChats) {
           const { data: participants } = await supabase
             .from('chat_participants')
-            .select('company_id')
+            .select('member_id')
             .eq('chat_id', chat.chat_id);
 
           if (participants && participants.length === 2) {
-            const otherParticipant = participants.find(p => p.company_id !== currentMember.id);
-            if (otherParticipant?.company_id === memberId) {
+            const otherParticipant = participants.find(p => p.member_id !== currentMember.id);
+            if (otherParticipant?.member_id === memberId) {
               // Chat already exists
               onChatCreated(chat.chat_id);
               onOpenChange(false);
@@ -142,12 +142,12 @@ export function ComposeMessageDialog({
 
       if (chatError) throw chatError;
 
-      // Add participants using member.id (stored in company_id column)
+      // Add participants
       const { error: participantError } = await supabase
         .from('chat_participants')
         .insert([
-          { chat_id: newChat.id, company_id: currentMember.id },
-          { chat_id: newChat.id, company_id: memberId }
+          { chat_id: newChat.id, member_id: currentMember.id },
+          { chat_id: newChat.id, member_id: memberId }
         ]);
 
       if (participantError) throw participantError;
