@@ -167,10 +167,8 @@ export default function MemberProfile() {
         
         if (connection.status === 'accepted') {
           setConnectionStatus('connected');
-          // Find existing chat using company_id
-          if (currentMember.company_id && otherMember.company_id) {
-            await findExistingChat(currentMember.company_id, otherMember.company_id);
-          }
+          // Find existing chat using member.id
+          await findExistingChat(currentMember.id, otherMember.id);
         } else {
           setConnectionStatus('pending');
         }
@@ -184,17 +182,17 @@ export default function MemberProfile() {
     }
   };
 
-  const findExistingChat = async (currentCompanyId: string, otherCompanyId: string) => {
+  const findExistingChat = async (currentMemberId: string, otherMemberId: string) => {
     try {
-      // Get chats where current member's company is participant
+      // Get chats where current member is participant
       const { data: currentChats } = await supabase
         .from('chat_participants')
         .select('chat_id')
-        .eq('company_id', currentCompanyId);
+        .eq('company_id', currentMemberId);
 
       if (!currentChats || currentChats.length === 0) return;
 
-      // Check each chat to see if other company is also in it
+      // Check each chat to see if other member is also in it
       for (const chat of currentChats) {
         const { data: participants } = await supabase
           .from('chat_participants')
@@ -202,8 +200,8 @@ export default function MemberProfile() {
           .eq('chat_id', chat.chat_id);
 
         if (participants && participants.length === 2) {
-          const otherParticipant = participants.find(p => p.company_id !== currentCompanyId);
-          if (otherParticipant?.company_id === otherCompanyId) {
+          const otherParticipant = participants.find(p => p.company_id !== currentMemberId);
+          if (otherParticipant?.company_id === otherMemberId) {
             setChatId(chat.chat_id);
             return;
           }
@@ -224,14 +222,14 @@ export default function MemberProfile() {
       // Create new chat
       const { data: currentMember } = await supabase
         .from('members')
-        .select('id, company_id')
+        .select('id')
         .eq('user_id', currentUser)
         .eq('is_active', true)
         .single();
 
       const { data: otherMember } = await supabase
         .from('members')
-        .select('id, company_id')
+        .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
         .single();
@@ -240,15 +238,6 @@ export default function MemberProfile() {
         toast({
           title: 'Error',
           description: 'Unable to find member information',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (!currentMember.company_id || !otherMember.company_id) {
-        toast({
-          title: 'Error',
-          description: 'Members must belong to a company to chat',
           variant: 'destructive',
         });
         return;
@@ -265,11 +254,12 @@ export default function MemberProfile() {
 
       if (chatError) throw chatError;
 
+      // Use member.id for chat_participants (company_id column stores member.id)
       const { error: participantError } = await supabase
         .from('chat_participants')
         .insert([
-          { chat_id: newChat.id, company_id: currentMember.company_id },
-          { chat_id: newChat.id, company_id: otherMember.company_id }
+          { chat_id: newChat.id, company_id: currentMember.id },
+          { chat_id: newChat.id, company_id: otherMember.id }
         ]);
 
       if (participantError) throw participantError;
