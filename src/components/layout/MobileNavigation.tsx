@@ -1,6 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, MessageCircle, UserPlus, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavItem {
   icon: React.ElementType;
@@ -19,6 +22,16 @@ const navItems: NavItem[] = [
 export function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const unreadCount = useUnreadMessageCount(currentUserId);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    getUser();
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/feed") {
@@ -32,19 +45,27 @@ export function MobileNavigation() {
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const active = isActive(item.path);
+          const showBadge = item.path === "/messages" && unreadCount > 0;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors",
+                "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors relative",
                 "active:scale-95 touch-manipulation",
                 active
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className={cn("h-5 w-5", active && "stroke-[2.5px]")} />
+              <div className="relative">
+                <item.icon className={cn("h-5 w-5", active && "stroke-[2.5px]")} />
+                {showBadge && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className={cn("text-[10px]", active && "font-medium")}>
                 {item.label}
               </span>
