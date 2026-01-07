@@ -9,7 +9,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RoleNavigation } from '@/components/RoleNavigation';
 import { useRoleContext } from '@/contexts/RoleContext';
-
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function CompanyDashboard() {
   const navigate = useNavigate();
@@ -165,40 +165,29 @@ export default function CompanyDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 pl-28 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">Company Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                {company?.name || 'Loading...'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {profile && currentUserId && (
-              <Avatar 
-                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
-                onClick={() => navigate(`/profile/${currentUserId}`)}
-              >
-                <AvatarImage src={profile.avatar || undefined} />
-                <AvatarFallback>
-                  {profile.first_name?.[0]}{profile.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <Button variant="outline" onClick={() => navigate('/account-settings')}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+      <PageHeader title="Company Dashboard" description={company?.name || 'Loading...'}>
+        <div className="flex items-center gap-3 ml-auto">
+          {profile && currentUserId && (
+            <Avatar 
+              className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+              onClick={() => navigate(`/profile/${currentUserId}`)}
+            >
+              <AvatarImage src={profile.avatar || undefined} />
+              <AvatarFallback>
+                {profile.first_name?.[0]}{profile.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <Button variant="outline" onClick={() => navigate('/account-settings')}>
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 pl-28">

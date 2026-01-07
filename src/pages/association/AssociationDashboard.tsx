@@ -9,7 +9,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RoleNavigation } from '@/components/RoleNavigation';
 import { useRoleContext } from '@/contexts/RoleContext';
-
+import { PageHeader } from '@/components/layout/PageHeader';
 
 export default function AssociationDashboard() {
   const navigate = useNavigate();
@@ -288,40 +288,29 @@ export default function AssociationDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto py-4 md:pl-28 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-bold">Association Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                {association?.name || 'Loading...'}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {profile && currentUserId && (
-              <Avatar 
-                className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
-                onClick={() => navigate(`/profile/${currentUserId}`)}
-              >
-                <AvatarImage src={profile.avatar || undefined} />
-                <AvatarFallback>
-                  {profile.first_name?.[0]}{profile.last_name?.[0]}
-                </AvatarFallback>
-              </Avatar>
-            )}
-            <Button variant="outline" onClick={() => navigate('/account-settings')}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+      <PageHeader title="Association Dashboard" description={association?.name || 'Loading...'}>
+        <div className="flex items-center gap-3 ml-auto">
+          {profile && currentUserId && (
+            <Avatar 
+              className="cursor-pointer hover:ring-2 hover:ring-primary transition-all" 
+              onClick={() => navigate(`/profile/${currentUserId}`)}
+            >
+              <AvatarImage src={profile.avatar || undefined} />
+              <AvatarFallback>
+                {profile.first_name?.[0]}{profile.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <Button variant="outline" onClick={() => navigate('/account-settings')}>
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
+          </Button>
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {/* Main Content */}
       <main className="container mx-auto py-4 md:py-8 md:pl-28">
