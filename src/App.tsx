@@ -32,6 +32,7 @@ import BrowseAssociations from "./pages/member/BrowseAssociations";
 import CompanyProfileView from "./pages/member/CompanyProfileView";
 import MemberAssociationProfileView from "./pages/member/AssociationProfileView";
 import CreateCompany from "./pages/admin/CreateCompany";
+import CreateUser from "./pages/admin/CreateUser";
 import BulkUploadAssociations from "./pages/admin/BulkUploadAssociations";
 import BulkUploadCompanies from "./pages/admin/BulkUploadCompanies";
 import AdminEmailLists from "./pages/admin/AdminEmailLists";
@@ -147,6 +148,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <UserManagement />
+              </ProtectedRoute>
+            } 
+          />
+          <Route
+            path="/admin/create-user" 
+            element={
+              <ProtectedRoute>
+                <CreateUser />
               </ProtectedRoute>
             } 
           />
