@@ -67,7 +67,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
       const { data: participantData } = await supabase
         .from('chat_participants')
         .select('chat_id')
-        .eq('company_id', memberData.id);
+        .eq('member_id', memberData.id);
 
       if (!participantData || participantData.length === 0) {
         setConversations([]);
@@ -101,16 +101,16 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
           if (chat.type === 'direct') {
             const { data: otherParticipant } = await supabase
               .from('chat_participants')
-              .select('company_id')
+              .select('member_id')
               .eq('chat_id', chat.id)
-              .neq('company_id', memberData.id)
+              .neq('member_id', memberData.id)
               .maybeSingle();
 
             if (otherParticipant) {
               const { data: otherMember } = await supabase
                 .from('members')
                 .select('user_id')
-                .eq('id', (otherParticipant as any).company_id)
+                .eq('id', otherParticipant.member_id)
                 .single();
 
               if (otherMember) {
