@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 interface FloatingChatProps {
   currentUserId: string | null;
   initialChatId?: string | null;
@@ -162,14 +163,21 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const unreadCount = useUnreadMessageCount(currentUserId);
+
   if (!isOpen) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
         size="lg"
-        className="fixed bottom-20 right-6 rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all z-50"
+        className="fixed bottom-20 right-6 rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all z-50 relative"
       >
         <MessageCircle className="w-6 h-6" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] flex items-center justify-center bg-destructive text-destructive-foreground text-xs font-bold rounded-full px-1">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
       </Button>
     );
   }

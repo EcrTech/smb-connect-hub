@@ -61,8 +61,31 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
       loadMessages();
       loadChatInfo();
       subscribeToMessages();
+      markAsRead();
     }
   }, [chatId, currentUserId]);
+
+  const markAsRead = async () => {
+    if (!currentUserId || !chatId) return;
+
+    try {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .single();
+
+      if (memberData) {
+        await supabase
+          .from('chat_participants')
+          .update({ last_read_at: new Date().toISOString() })
+          .eq('chat_id', chatId)
+          .eq('member_id', memberData.id);
+      }
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
