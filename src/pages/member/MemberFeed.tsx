@@ -107,7 +107,7 @@ export default function MemberFeed() {
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   // Unread message count for desktop header badge
-  const unreadMessageCount = useUnreadMessageCount(currentUserId);
+  const { unreadCount: unreadMessageCount } = useUnreadMessageCount(currentUserId);
 
   useEffect(() => {
     loadProfile();

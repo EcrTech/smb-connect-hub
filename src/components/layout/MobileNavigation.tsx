@@ -24,7 +24,7 @@ export function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const unreadCount = useUnreadMessageCount(currentUserId);
+  const { unreadCount } = useUnreadMessageCount(currentUserId);
   const pendingConnectionCount = usePendingConnectionCount(currentUserId);
 
   useEffect(() => {

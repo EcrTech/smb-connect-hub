@@ -163,7 +163,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
     conv.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const unreadCount = useUnreadMessageCount(currentUserId);
+  const { unreadCount, refreshCount } = useUnreadMessageCount(currentUserId);
 
   // Floating button positioned bottom-right with scroll protection (above mobile nav)
   if (!isOpen) {
@@ -378,7 +378,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
             </ScrollArea>
           </div>
         ) : selectedChatId ? (
-          <MessageThread chatId={selectedChatId} currentUserId={currentUserId} compact />
+          <MessageThread chatId={selectedChatId} currentUserId={currentUserId} compact onMarkAsRead={refreshCount} />
         ) : null}
       </div>
     </Card>

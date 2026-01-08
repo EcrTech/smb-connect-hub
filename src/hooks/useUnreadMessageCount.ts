@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useUnreadMessageCount(currentUserId: string | null) {
@@ -103,5 +103,11 @@ export function useUnreadMessageCount(currentUserId: string | null) {
     }
   };
 
-  return unreadCount;
+  const refreshCount = useCallback(() => {
+    if (memberId) {
+      fetchUnreadCount(memberId);
+    }
+  }, [memberId]);
+
+  return { unreadCount, refreshCount };
 }
