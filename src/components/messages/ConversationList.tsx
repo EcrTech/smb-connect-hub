@@ -71,10 +71,10 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
 
       if (!memberData) return;
 
-      // Get all chats where user is a participant
+      // Get all chats where user is a participant with their read status
       const { data: participantData } = await supabase
         .from('chat_participants')
-        .select('chat_id')
+        .select('chat_id, last_read_at, joined_at')
         .eq('member_id', memberData.id);
 
       if (!participantData || participantData.length === 0) {
@@ -84,6 +84,12 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
       }
 
       const chatIds = participantData.map(p => p.chat_id);
+      
+      // Create a map for quick lookup of participant read status
+      const participantReadStatus = participantData.reduce((acc, p) => {
+        acc[p.chat_id] = { last_read_at: p.last_read_at, joined_at: p.joined_at };
+        return acc;
+      }, {} as Record<string, { last_read_at: string | null; joined_at: string | null }>);
 
       // Get chat details with last message
       const { data: chatsData } = await supabase
@@ -104,7 +110,7 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
         return;
       }
 
-      // For each chat, get the last message and other participant info
+      // For each chat, get the last message, other participant info, and unread count
       const conversationsWithDetails = await Promise.all(
         chatsData.map(async (chat) => {
           // Get last message
@@ -115,6 +121,17 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
+
+          // Calculate unread count for this chat
+          const readStatus = participantReadStatus[chat.id];
+          const cutoffTime = readStatus?.last_read_at || readStatus?.joined_at || new Date().toISOString();
+          
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('chat_id', chat.id)
+            .neq('sender_id', memberData.id)
+            .gt('created_at', cutoffTime);
 
           // Get other participant (for direct chats)
           if (chat.type === 'direct') {
@@ -139,7 +156,7 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
                 name: `${otherProfile.first_name} ${otherProfile.last_name}`,
                 lastMessage: lastMsg?.content || 'No messages yet',
                 lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString(),
-                unreadCount: 0,
+                unreadCount: unreadCount || 0,
                 avatar: otherProfile.avatar,
                 otherMemberId: (otherParticipant as any).members.id
               };
@@ -151,7 +168,7 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
             name: chat.name || 'Group Chat',
             lastMessage: lastMsg?.content || 'No messages yet',
             lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString(),
-            unreadCount: 0
+            unreadCount: unreadCount || 0
           };
         })
       );
@@ -236,12 +253,18 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline justify-between mb-1">
-                    <h3 className="font-semibold text-sm truncate">{conv.name}</h3>
+                    <h3 className={cn(
+                      "text-sm truncate",
+                      conv.unreadCount > 0 ? "font-bold" : "font-semibold"
+                    )}>{conv.name}</h3>
                     <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
                       {formatTime(conv.lastMessageAt)}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
+                  <p className={cn(
+                    "text-sm truncate",
+                    conv.unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                  )}>
                     {conv.lastMessage}
                   </p>
                 </div>

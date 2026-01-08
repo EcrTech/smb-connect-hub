@@ -68,10 +68,10 @@ export function useUnreadMessageCount(currentUserId: string | null) {
 
   const fetchUnreadCount = async (memberIdToUse: string) => {
     try {
-      // Get all chat participants records for this member
+      // Get all chat participants records for this member including joined_at as fallback
       const { data: participantsData } = await supabase
         .from('chat_participants')
-        .select('chat_id, last_read_at')
+        .select('chat_id, last_read_at, joined_at')
         .eq('member_id', memberIdToUse);
 
       if (!participantsData || participantsData.length === 0) {
@@ -81,16 +81,18 @@ export function useUnreadMessageCount(currentUserId: string | null) {
 
       let totalUnread = 0;
 
-      // For each chat, count messages after last_read_at from other senders
+      // For each chat, count messages after last_read_at (or joined_at fallback) from other senders
       for (const participant of participantsData) {
-        const lastReadAt = participant.last_read_at || '1970-01-01T00:00:00Z';
+        // Use last_read_at if available, otherwise use joined_at as fallback
+        // This ensures we only count messages received after joining the chat
+        const cutoffTime = participant.last_read_at || participant.joined_at || new Date().toISOString();
         
         const { count } = await supabase
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('chat_id', participant.chat_id)
           .neq('sender_id', memberIdToUse)
-          .gt('created_at', lastReadAt);
+          .gt('created_at', cutoffTime);
 
         totalUnread += count || 0;
       }
