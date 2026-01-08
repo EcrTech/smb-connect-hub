@@ -17,6 +17,7 @@ import { MobileNavigation } from '@/components/layout/MobileNavigation';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { PullToRefreshIndicator } from '@/components/PullToRefresh';
 import { UniversalSearch } from '@/components/UniversalSearch';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 
 import { 
   ArrowLeft, 
@@ -104,6 +105,9 @@ export default function MemberFeed() {
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Unread message count for desktop header badge
+  const unreadMessageCount = useUnreadMessageCount(currentUserId);
 
   useEffect(() => {
     loadProfile();
@@ -712,11 +716,21 @@ export default function MemberFeed() {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                  className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
                   onClick={() => navigate('/messages')}
                   data-tour="messages"
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <div className="relative">
+                    <MessageCircle className="w-5 h-5" />
+                    {unreadMessageCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center"
+                      >
+                        {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                      </Badge>
+                    )}
+                  </div>
                   <span className="text-xs">Messages</span>
                 </Button>
                 <Button 
