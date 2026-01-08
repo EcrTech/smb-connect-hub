@@ -9,6 +9,7 @@ import { ConversationList } from '@/components/messages/ConversationList';
 import { MessageThread } from '@/components/messages/MessageThread';
 import { BackButton } from '@/components/BackButton';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
 
 export default function MemberMessages() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function MemberMessages() {
   const [profile, setProfile] = useState<any>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const { refreshCount } = useUnreadMessageCount(currentUserId);
 
   useEffect(() => {
     loadProfile();
@@ -122,6 +124,7 @@ export default function MemberMessages() {
                   <MessageThread 
                     chatId={selectedChatId}
                     currentUserId={currentUserId}
+                    onMarkAsRead={refreshCount}
                   />
                 </div>
               </div>

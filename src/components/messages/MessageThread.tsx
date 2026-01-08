@@ -24,6 +24,7 @@ interface MessageThreadProps {
   chatId: string;
   currentUserId: string | null;
   compact?: boolean;
+  onMarkAsRead?: () => void;
 }
 
 interface Message {
@@ -45,7 +46,7 @@ interface Message {
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
-export function MessageThread({ chatId, currentUserId, compact = false }: MessageThreadProps) {
+export function MessageThread({ chatId, currentUserId, compact = false, onMarkAsRead }: MessageThreadProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatName, setChatName] = useState('');
@@ -81,6 +82,9 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
           .update({ last_read_at: new Date().toISOString() })
           .eq('chat_id', chatId)
           .eq('member_id', memberData.id);
+        
+        // Notify parent to refresh unread count
+        onMarkAsRead?.();
       }
     } catch (error) {
       console.error('Error marking chat as read:', error);
@@ -150,8 +154,12 @@ export function MessageThread({ chatId, currentUserId, compact = false }: Messag
           table: 'messages',
           filter: `chat_id=eq.${chatId}`
         },
-        () => {
+        (payload) => {
           loadMessages();
+          // If we receive a new message from someone else while chat is open, mark as read
+          if (payload.eventType === 'INSERT' && payload.new && (payload.new as any).sender_id !== currentMemberId) {
+            markAsRead();
+          }
         }
       )
       .subscribe();
