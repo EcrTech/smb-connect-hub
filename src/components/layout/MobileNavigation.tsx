@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, MessageCircle, UserPlus, User } from "lucide-react";
+import { Home, Users, MessageCircle, UserPlus, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
 import { usePendingConnectionCount } from "@/hooks/usePendingConnectionCount";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,7 +18,7 @@ const navItems: NavItem[] = [
   { icon: Users, label: "Members", path: "/members" },
   { icon: MessageCircle, label: "Messages", path: "/messages" },
   { icon: UserPlus, label: "Connect", path: "/connections" },
-  { icon: User, label: "Profile", path: "/profile" },
+  { icon: Bell, label: "Alerts", path: "/notifications" },
 ];
 
 export function MobileNavigation() {
@@ -26,6 +27,7 @@ export function MobileNavigation() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { unreadCount } = useUnreadMessageCount(currentUserId);
   const pendingConnectionCount = usePendingConnectionCount(currentUserId);
+  const { unreadCount: notificationCount } = useNotifications(currentUserId);
 
   useEffect(() => {
     const getUser = async () => {
@@ -45,6 +47,7 @@ export function MobileNavigation() {
   const getBadgeCount = (path: string): number => {
     if (path === "/messages") return unreadCount;
     if (path === "/connections") return pendingConnectionCount;
+    if (path === "/notifications") return notificationCount;
     return 0;
   };
 

@@ -37,8 +37,10 @@ import {
   Calendar,
   UserPlus,
   Repeat2,
-  Bookmark
+  Bookmark,
+  Bell
 } from 'lucide-react';
+import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
 import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/BackButton';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
@@ -733,6 +735,7 @@ export default function MemberFeed() {
                   </div>
                   <span className="text-xs">Messages</span>
                 </Button>
+                <NotificationsDropdown currentUserId={currentUserId} />
                 <Button 
                   variant="ghost" 
                   size="sm"
