@@ -34,6 +34,8 @@ interface Association {
 interface Company {
   id: string;
   name: string;
+  association_id?: string;
+  is_default?: boolean;
 }
 
 export default function CreateUser() {
@@ -68,11 +70,19 @@ export default function CreateUser() {
     try {
       const [associationsRes, companiesRes] = await Promise.all([
         supabase.from('associations').select('id, name').eq('is_active', true).order('name'),
-        supabase.from('companies').select('id, name').eq('is_active', true).order('name'),
+        supabase.from('companies').select('id, name, association_id, is_default').eq('is_active', true).order('name'),
       ]);
 
       if (associationsRes.data) setAssociations(associationsRes.data);
-      if (companiesRes.data) setCompanies(companiesRes.data);
+      if (companiesRes.data) {
+        // Sort companies to put default ones first
+        const sortedCompanies = companiesRes.data.sort((a, b) => {
+          if (a.is_default && !b.is_default) return -1;
+          if (!a.is_default && b.is_default) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        setCompanies(sortedCompanies);
+      }
     } catch (error) {
       console.error('Error loading organizations:', error);
     }
@@ -289,6 +299,9 @@ export default function CreateUser() {
                         {companies.map((company) => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name}
+                            {company.is_default && (
+                              <span className="text-muted-foreground text-xs ml-2">(Default)</span>
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>
