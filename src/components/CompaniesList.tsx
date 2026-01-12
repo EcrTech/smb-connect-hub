@@ -40,6 +40,7 @@ interface Company {
   state: string;
   is_active: boolean;
   is_verified: boolean;
+  is_default: boolean;
   subscription_tier: string;
   associations: {
     name: string;
@@ -477,7 +478,12 @@ export function CompaniesList({ onSelectionChange, selectedIds = [] }: Companies
                   )}
                 </div>
               </div>
-              <CardTitle className="mt-2">{company.name}</CardTitle>
+              <CardTitle className="mt-2">
+                {company.name}
+                {company.is_default && (
+                  <Badge variant="outline" className="ml-2 text-xs">Default</Badge>
+                )}
+              </CardTitle>
               <CardDescription>
                 <Badge variant="secondary" className="mt-1">
                   {company.associations?.name}

@@ -438,6 +438,7 @@ export type Database = {
           id: string
           industry_type: string | null
           is_active: boolean | null
+          is_default: boolean | null
           is_verified: boolean | null
           logo: string | null
           name: string
@@ -467,6 +468,7 @@ export type Database = {
           id?: string
           industry_type?: string | null
           is_active?: boolean | null
+          is_default?: boolean | null
           is_verified?: boolean | null
           logo?: string | null
           name: string
@@ -496,6 +498,7 @@ export type Database = {
           id?: string
           industry_type?: string | null
           is_active?: boolean | null
+          is_default?: boolean | null
           is_verified?: boolean | null
           logo?: string | null
           name?: string

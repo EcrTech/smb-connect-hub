@@ -50,6 +50,7 @@ interface Company {
   id: string;
   name: string;
   association_id: string;
+  is_default?: boolean;
 }
 
 export default function UserManagement() {
@@ -333,7 +334,7 @@ export default function UserManagement() {
 
       const { data: compData, error: compError } = await supabase
         .from('companies')
-        .select('id, name, association_id')
+        .select('id, name, association_id, is_default')
         .order('name');
       
       if (compError) {
@@ -957,27 +958,47 @@ export default function UserManagement() {
                                 </Select>
                               </div>
 
-                              {selectedAssociation && (
-                                <div className="space-y-2">
-                                  <Label>Company</Label>
-                                  <Select value={selectedCompany} onValueChange={setSelectedCompany}>
-                                    <SelectTrigger className="bg-background">
-                                      <SelectValue placeholder="Select company" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover z-50">
-                                      {filteredCompanies.length === 0 ? (
-                                        <SelectItem value="none" disabled>No companies found</SelectItem>
-                                      ) : (
-                                        filteredCompanies.map((company) => (
-                                          <SelectItem key={company.id} value={company.id}>
-                                            {company.name}
-                                          </SelectItem>
-                                        ))
-                                      )}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
+                              {selectedAssociation && (() => {
+                                // Filter and sort companies - default company first
+                                const assocCompanies = companies
+                                  .filter(c => c.association_id === selectedAssociation)
+                                  .sort((a, b) => {
+                                    if (a.is_default && !b.is_default) return -1;
+                                    if (!a.is_default && b.is_default) return 1;
+                                    return a.name.localeCompare(b.name);
+                                  });
+                                
+                                // Auto-select default company if nothing selected and only default exists
+                                const defaultCompany = assocCompanies.find(c => c.is_default);
+                                if (!selectedCompany && defaultCompany && assocCompanies.length === 1) {
+                                  setTimeout(() => setSelectedCompany(defaultCompany.id), 0);
+                                }
+                                
+                                return (
+                                  <div className="space-y-2">
+                                    <Label>Company</Label>
+                                    <Select value={selectedCompany} onValueChange={setSelectedCompany}>
+                                      <SelectTrigger className="bg-background">
+                                        <SelectValue placeholder="Select company" />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-popover z-50">
+                                        {assocCompanies.length === 0 ? (
+                                          <SelectItem value="none" disabled>No companies found</SelectItem>
+                                        ) : (
+                                          assocCompanies.map((company) => (
+                                            <SelectItem key={company.id} value={company.id}>
+                                              {company.name}
+                                              {company.is_default && (
+                                                <span className="text-muted-foreground text-xs ml-2">(Default)</span>
+                                              )}
+                                            </SelectItem>
+                                          ))
+                                        )}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                );
+                              })()}
 
                               {selectedCompany && (
                                 <div className="space-y-2">
