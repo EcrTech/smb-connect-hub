@@ -759,9 +759,10 @@ export default function AssociationFeed() {
                 </Button>
               </div>
               
-              {/* Logo and Info */}
-              <div className="px-6 pb-6">
-                <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12 md:-mt-16">
+              {/* Logo and Info Section */}
+              <div className="relative px-6 pb-6 pt-4">
+                {/* Avatar positioned to overlap banner */}
+                <div className="absolute -top-12 md:-top-16 left-6">
                   <div className="relative group/avatar">
                     <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
                       <AvatarImage src={associationInfo.logo || undefined} />
@@ -776,7 +777,10 @@ export default function AssociationFeed() {
                       <Pencil className="w-5 h-5 text-white" />
                     </button>
                   </div>
-                  
+                </div>
+                
+                {/* Info Section - positioned to the right of avatar on desktop, below on mobile */}
+                <div className="flex flex-col md:flex-row md:items-start gap-4 pt-14 md:pt-0 md:pl-36 lg:pl-40">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h1 className="text-2xl md:text-3xl font-bold">{associationInfo.name}</h1>
@@ -790,17 +794,19 @@ export default function AssociationFeed() {
                       </Button>
                     </div>
                     <p className="text-muted-foreground">{associationInfo.industry || 'Association'}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
                       {associationInfo.city && (
                         <span>{associationInfo.city}, {associationInfo.state}</span>
                       )}
                       <span>{associationInfo.company_count || 0} companies</span>
-                      <span>{associationInfo.member_count || 0} members</span>
                     </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {associationInfo.member_count || 0} members
+                    </p>
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex gap-3 mt-4 md:mt-0">
+                  <div className="flex gap-3">
                     <Button size="sm" onClick={() => navigate('/messages')}>
                       <Send className="w-4 h-4 mr-2" />
                       Message
