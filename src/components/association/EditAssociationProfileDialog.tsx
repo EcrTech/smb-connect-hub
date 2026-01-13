@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Camera, Image as ImageIcon, X } from 'lucide-react';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -48,9 +50,66 @@ export function EditAssociationProfileDialog({
   onSuccess 
 }: EditAssociationProfileDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(association.logo || null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const socialLinks = association.social_links || {};
+
+  const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please select an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Logo must be less than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadLogo = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${association.id}-logo-${Date.now()}.${fileExt}`;
+      const filePath = `associations/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      return null;
+    }
+  };
   
   const {
     register,
@@ -84,6 +143,15 @@ export function EditAssociationProfileDialog({
     try {
       setLoading(true);
 
+      // Upload logo if changed
+      let logoUrl = association.logo;
+      if (logoFile) {
+        const uploadedUrl = await uploadLogo(logoFile);
+        if (uploadedUrl) {
+          logoUrl = uploadedUrl;
+        }
+      }
+
       // Parse keywords from comma-separated string
       const keywordsArray = data.keywords
         ? data.keywords.split(',').map(k => k.trim()).filter(k => k)
@@ -113,6 +181,7 @@ export function EditAssociationProfileDialog({
           industry: data.industry || null,
           keywords: keywordsArray,
           social_links: socialLinksObj,
+          logo: logoUrl,
         })
         .eq('id', association.id);
 
@@ -122,6 +191,7 @@ export function EditAssociationProfileDialog({
         title: 'Success',
         description: 'Profile updated successfully',
       });
+      setLogoFile(null);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -150,6 +220,51 @@ export function EditAssociationProfileDialog({
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
+              {/* Logo Upload */}
+              <div className="flex items-center gap-4">
+                <div className="relative group">
+                  <Avatar className="w-20 h-20 border-2 border-muted">
+                    <AvatarImage src={logoPreview || undefined} />
+                    <AvatarFallback className="text-lg bg-primary text-primary-foreground">
+                      {association.name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    disabled={loading}
+                  >
+                    <Camera className="w-5 h-5 text-white" />
+                  </button>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoSelect}
+                    className="hidden"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Label>Logo</Label>
+                  <p className="text-sm text-muted-foreground">Click on the avatar to change the logo</p>
+                  {logoFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 text-destructive"
+                      onClick={() => {
+                        setLogoFile(null);
+                        setLogoPreview(association.logo || null);
+                      }}
+                    >
+                      <X className="w-3 h-3 mr-1" /> Remove new logo
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="name">Name *</Label>
                 <Input {...register('name')} id="name" disabled={loading} />
