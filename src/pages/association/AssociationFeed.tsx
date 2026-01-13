@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send, Pencil } from 'lucide-react';
+import { EditAssociationProfileDialog } from '@/components/association/EditAssociationProfileDialog';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
@@ -91,6 +92,7 @@ export default function AssociationFeed() {
   const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'members' | 'companies'>('posts');
   const [contentFilter, setContentFilter] = useState<'all' | 'images' | 'videos'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'top'>('recent');
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   
@@ -732,22 +734,50 @@ export default function AssociationFeed() {
           {associationInfo && (
             <Card className="mb-6 overflow-hidden">
               {/* Cover Banner */}
-              <div className="h-32 md:h-40 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 relative">
+              <div className="h-32 md:h-40 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 relative group">
                 <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-10 bg-cover bg-center" />
+                {/* Edit Button on Cover */}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => setShowEditProfile(true)}
+                >
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Profile
+                </Button>
               </div>
               
               {/* Logo and Info */}
               <div className="px-6 pb-6">
                 <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12 md:-mt-16">
-                  <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
-                    <AvatarImage src={associationInfo.logo || undefined} />
-                    <AvatarFallback className="text-2xl md:text-3xl bg-primary text-primary-foreground">
-                      {associationInfo.name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative group/avatar">
+                    <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
+                      <AvatarImage src={associationInfo.logo || undefined} />
+                      <AvatarFallback className="text-2xl md:text-3xl bg-primary text-primary-foreground">
+                        {associationInfo.name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <button
+                      onClick={() => setShowEditProfile(true)}
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity"
+                    >
+                      <Pencil className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
                   
                   <div className="flex-1">
-                    <h1 className="text-2xl md:text-3xl font-bold">{associationInfo.name}</h1>
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-2xl md:text-3xl font-bold">{associationInfo.name}</h1>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 md:hidden"
+                        onClick={() => setShowEditProfile(true)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </div>
                     <p className="text-muted-foreground">{associationInfo.industry || 'Association'}</p>
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                       {associationInfo.city && (
@@ -771,6 +801,16 @@ export default function AssociationFeed() {
                 </div>
               </div>
             </Card>
+          )}
+          
+          {/* Edit Profile Dialog */}
+          {associationInfo && (
+            <EditAssociationProfileDialog
+              association={associationInfo}
+              open={showEditProfile}
+              onOpenChange={setShowEditProfile}
+              onSuccess={loadAssociationInfo}
+            />
           )}
 
           {/* Tab Navigation */}
