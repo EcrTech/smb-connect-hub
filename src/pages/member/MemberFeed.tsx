@@ -261,9 +261,11 @@ export default function MemberFeed() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
 
+      // Only load member posts (exclude association/company posts)
       const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
+        .or('post_context.is.null,post_context.eq.member')
         .order('created_at', { ascending: false })
         .limit(50);
 
