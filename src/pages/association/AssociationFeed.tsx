@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2 } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { CommentsSection } from '@/components/member/CommentsSection';
@@ -14,6 +14,16 @@ import { Input } from '@/components/ui/input';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
 import { PostEngagementBadge } from '@/components/post/PostEngagementBadge';
+import { FloatingChat } from '@/components/messages/FloatingChat';
+import { MobileNavigation } from '@/components/layout/MobileNavigation';
+import { RoleNavigation } from '@/components/RoleNavigation';
+import { UniversalSearch } from '@/components/UniversalSearch';
+import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
+import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+import { Badge } from '@/components/ui/badge';
+import { BackButton } from '@/components/BackButton';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Post {
   id: string;
@@ -48,6 +58,19 @@ interface Post {
   liked_by_user?: boolean;
 }
 
+interface AssociationInfo {
+  id: string;
+  name: string;
+  logo: string | null;
+  description: string | null;
+  industry: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  member_count?: number;
+  company_count?: number;
+}
+
 export default function AssociationFeed() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -62,16 +85,28 @@ export default function AssociationFeed() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [profile, setProfile] = useState<any>(null);
+  const [associationInfo, setAssociationInfo] = useState<AssociationInfo | null>(null);
+  const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'members' | 'companies'>('posts');
+  const [contentFilter, setContentFilter] = useState<'all' | 'images' | 'videos'>('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'top'>('recent');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  
+  const { unreadCount: unreadMessageCount } = useUnreadMessageCount(currentUserId);
 
   useEffect(() => {
     loadCurrentUser();
+    loadProfile();
+    loadAssociationInfo();
     loadPosts();
+    loadPendingConnectionsCount();
     
     const channel = supabase
       .channel('posts-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
         if (payload.eventType === 'UPDATE') {
-          // Update post counts in place without full reload
           setPosts(prev => prev.map(post => 
             post.id === payload.new.id 
               ? { 
@@ -84,14 +119,21 @@ export default function AssociationFeed() {
               : post
           ));
         } else {
-          // For INSERT and DELETE, reload all posts
           loadPosts();
         }
       })
       .subscribe();
 
+    const connectionsChannel = supabase
+      .channel('connections-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
+        loadPendingConnectionsCount();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(connectionsChannel);
     };
   }, []);
 
@@ -99,6 +141,108 @@ export default function AssociationFeed() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setCurrentUserId(user.id);
+    }
+  };
+
+  const loadProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setProfile(profileData);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const loadAssociationInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get association where user is a manager
+      const { data: managerData } = await supabase
+        .from('association_managers')
+        .select('association_id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (managerData?.association_id) {
+        const { data: associationData } = await supabase
+          .from('associations')
+          .select('*')
+          .eq('id', managerData.association_id)
+          .maybeSingle();
+
+        if (associationData) {
+          // Get company count
+          const { count: companyCount } = await supabase
+            .from('companies')
+            .select('*', { count: 'exact', head: true })
+            .eq('association_id', associationData.id)
+            .eq('is_active', true);
+
+          // Get member count through companies
+          const { data: companies } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('association_id', associationData.id)
+            .eq('is_active', true);
+
+          let memberCount = 0;
+          if (companies && companies.length > 0) {
+            const companyIds = companies.map(c => c.id);
+            const { count } = await supabase
+              .from('members')
+              .select('*', { count: 'exact', head: true })
+              .in('company_id', companyIds)
+              .eq('is_active', true);
+            memberCount = count || 0;
+          }
+
+          setAssociationInfo({
+            ...associationData,
+            company_count: companyCount || 0,
+            member_count: memberCount
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading association info:', error);
+    }
+  };
+
+  const loadPendingConnectionsCount = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!memberData) return;
+
+      const { count } = await supabase
+        .from('connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', memberData.id)
+        .eq('status', 'pending');
+
+      setPendingConnectionsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading pending connections count:', error);
     }
   };
 
@@ -178,7 +322,6 @@ export default function AssociationFeed() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate post image upload (10MB limit)
     const { validatePostImageUpload } = await import('@/lib/uploadValidation');
     const validation = await validatePostImageUpload(file);
     
@@ -191,7 +334,6 @@ export default function AssociationFeed() {
       return;
     }
 
-    // Clear video if selecting image
     setVideoFile(null);
     if (videoPreview) {
       URL.revokeObjectURL(videoPreview);
@@ -210,7 +352,6 @@ export default function AssociationFeed() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate video upload (50MB limit)
     const { validateVideoUpload } = await import('@/lib/uploadValidation');
     const validation = validateVideoUpload(file);
     
@@ -223,7 +364,6 @@ export default function AssociationFeed() {
       return;
     }
 
-    // Clear image if selecting video
     setImageFile(null);
     setImagePreview(null);
 
@@ -281,7 +421,7 @@ export default function AssociationFeed() {
       }
       
       if (videoFile) {
-        videoUrl = await uploadImage(videoFile); // Same upload function works for videos
+        videoUrl = await uploadImage(videoFile);
       }
 
       const { error } = await supabase
@@ -426,274 +566,539 @@ export default function AssociationFeed() {
     await loadPosts();
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: 'Success',
+        description: 'You have been logged out',
+      });
+      navigate('/auth/login');
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to logout',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const filteredPosts = posts.filter(post => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    const authorName = post.profiles 
-      ? `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase()
-      : 'unknown user';
-    const content = post.content.toLowerCase();
-    return authorName.includes(query) || content.includes(query);
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const authorName = post.profiles 
+        ? `${post.profiles.first_name} ${post.profiles.last_name}`.toLowerCase()
+        : 'unknown user';
+      const content = post.content.toLowerCase();
+      if (!authorName.includes(query) && !content.includes(query)) {
+        return false;
+      }
+    }
+    
+    // Content type filter
+    if (contentFilter === 'images' && !post.image_url) return false;
+    if (contentFilter === 'videos' && !post.video_url) return false;
+    
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'top') {
+      return (b.likes_count + b.comments_count) - (a.likes_count + a.comments_count);
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-10">
-        <div className="container mx-auto md:pl-20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/association')}>
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <h1 className="text-2xl font-bold">Association Feed</h1>
+    <>
+      <div className="min-h-screen bg-background pb-20 md:pb-0 scrollbar-hide">
+        {/* Header */}
+        <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
+          <div className="container mx-auto">
+            <div className="flex items-center justify-between h-14 gap-3">
+              {/* Left - Favicon (mobile) or Back Button (desktop) */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <img 
+                  src="/favicon.png" 
+                  alt="SMB Connect" 
+                  className="h-8 w-8 md:hidden cursor-pointer"
+                  onClick={() => navigate('/dashboard')}
+                />
+                <BackButton fallbackPath="/association" variant="ghost" size="icon" label="" className="hidden md:flex" />
+              </div>
+
+              {/* Center - Universal Search */}
+              <div className="flex-1 max-w-md">
+                <UniversalSearch />
+              </div>
+
+              {/* Right - Mobile: Settings only, Desktop: Full nav */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* Mobile icons */}
+                <div className="flex md:hidden items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => navigate('/account-settings')} className="h-9 w-9">
+                    <Settings className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                {/* Desktop Navigation */}
+                <div className="hidden md:flex items-center gap-6">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                    onClick={() => navigate('/association/feed')}
+                  >
+                    <MessageSquare className="w-5 h-5" />
+                    <span className="text-xs">Feed</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                    onClick={() => navigate('/association/members')}
+                  >
+                    <Users className="w-5 h-5" />
+                    <span className="text-xs">Members</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex flex-col items-center gap-0.5 h-auto py-2 px-3 relative"
+                    onClick={() => navigate('/messages')}
+                  >
+                    <div className="relative">
+                      <MessageCircle className="w-5 h-5" />
+                      {unreadMessageCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="absolute -top-2 -right-2 h-4 min-w-4 px-1 text-[10px] flex items-center justify-center"
+                        >
+                          {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs">Messages</span>
+                  </Button>
+                  <NotificationsDropdown currentUserId={currentUserId} />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                    onClick={() => navigate('/calendar')}
+                  >
+                    <Calendar className="w-5 h-5" />
+                    <span className="text-xs">Calendar</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
+                    onClick={() => navigate('/association/companies')}
+                  >
+                    <Building2 className="w-5 h-5" />
+                    <span className="text-xs">Companies</span>
+                  </Button>
+                  
+                  {/* Profile Dropdown - Desktop only */}
+                  <div className="flex items-center gap-2 border-l pl-4">
+                    {profile && currentUserId && (
+                      <Avatar 
+                        className="cursor-pointer hover:ring-2 hover:ring-primary transition-all w-8 h-8" 
+                        onClick={() => navigate(`/profile/${currentUserId}`)}
+                      >
+                        <AvatarImage src={profile.avatar || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {profile.first_name?.[0]}{profile.last_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/account-settings')}>
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={handleLogout}>
+                      <LogOut className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="container mx-auto py-4 md:py-8 md:pl-20 max-w-2xl overflow-x-hidden">
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search posts or authors..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <main className="container mx-auto py-4 md:py-6 md:pl-20 max-w-3xl overflow-x-hidden">
+          <RoleNavigation />
+          
+          {/* Organization Profile Header */}
+          {associationInfo && (
+            <Card className="mb-6 overflow-hidden">
+              {/* Cover Banner */}
+              <div className="h-32 md:h-40 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 relative">
+                <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-10 bg-cover bg-center" />
+              </div>
+              
+              {/* Logo and Info */}
+              <div className="px-6 pb-6">
+                <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12 md:-mt-16">
+                  <Avatar className="w-24 h-24 md:w-32 md:h-32 border-4 border-background shadow-lg">
+                    <AvatarImage src={associationInfo.logo || undefined} />
+                    <AvatarFallback className="text-2xl md:text-3xl bg-primary text-primary-foreground">
+                      {associationInfo.name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1">
+                    <h1 className="text-2xl md:text-3xl font-bold">{associationInfo.name}</h1>
+                    <p className="text-muted-foreground">{associationInfo.industry || 'Association'}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+                      {associationInfo.city && (
+                        <span>{associationInfo.city}, {associationInfo.state}</span>
+                      )}
+                      <span>{associationInfo.company_count || 0} companies</span>
+                      <span>{associationInfo.member_count || 0} members</span>
+                    </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mt-4 md:mt-0">
+                    <Button size="sm" onClick={() => navigate('/messages')}>
+                      <Send className="w-4 h-4 mr-2" />
+                      Message
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Following
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Tab Navigation */}
+          <div className="mb-4">
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+              <TabsList className="bg-muted/50 w-full justify-start">
+                <TabsTrigger value="posts" className="flex-1 md:flex-none">Posts</TabsTrigger>
+                <TabsTrigger value="about" className="flex-1 md:flex-none">About</TabsTrigger>
+                <TabsTrigger value="members" className="flex-1 md:flex-none">Members</TabsTrigger>
+                <TabsTrigger value="companies" className="flex-1 md:flex-none">Companies</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-        </div>
 
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <Textarea
-              placeholder="What's on your mind?"
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              className="mb-4 resize-none"
-              rows={3}
-            />
-            {imagePreview && (
-              <div className="relative mb-4">
-                <img src={imagePreview} alt="Preview" className="rounded-lg max-h-64 w-full object-cover" />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={removeImage}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-            {videoPreview && (
-              <div className="relative mb-4">
-                <video src={videoPreview} controls className="rounded-lg max-h-64 w-full" />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={removeVideo}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-            <div className="flex justify-between items-center">
+          {/* Content Filters - Only show on Posts tab */}
+          {activeTab === 'posts' && (
+            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
               <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <label htmlFor="image-upload">
-                  <Button variant="outline" size="sm" type="button" asChild title="Add photo (max 10MB)">
-                    <span className="cursor-pointer">
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Photo
-                    </span>
-                  </Button>
-                </label>
-                <input
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
-                  onChange={handleVideoSelect}
-                  className="hidden"
-                  id="video-upload"
-                />
-                <label htmlFor="video-upload">
-                  <Button variant="outline" size="sm" type="button" asChild title="Add video (max 50MB, MP4/WebM/MOV)">
-                    <span className="cursor-pointer">
-                      <Video className="w-4 h-4 mr-2" />
-                      Video
-                    </span>
-                  </Button>
-                </label>
+                <Badge 
+                  variant={contentFilter === 'all' ? 'default' : 'outline'} 
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('all')}
+                >
+                  All
+                </Badge>
+                <Badge 
+                  variant={contentFilter === 'images' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('images')}
+                >
+                  Images
+                </Badge>
+                <Badge 
+                  variant={contentFilter === 'videos' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('videos')}
+                >
+                  Videos
+                </Badge>
               </div>
-              <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile) || posting}>
-                {posting ? 'Posting...' : 'Post'}
-              </Button>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Recent</SelectItem>
+                  <SelectItem value="top">Top</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {loading ? (
-          <div className="text-center py-8">Loading posts...</div>
-        ) : filteredPosts.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              {searchQuery ? 'No posts found matching your search' : 'No posts yet. Be the first to share something!'}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {filteredPosts.map((post) => (
-              <Card key={post.id}>
+          {activeTab === 'posts' && (
+            <>
+              {/* Post Creation Card */}
+              <Card className="mb-6">
                 <CardContent className="pt-6">
-                  {/* Engagement badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {post.original_post_id && post.original_author && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Repeat2 className="w-4 h-4" />
-                          <span>
-                            <span className="font-semibold">{post.profiles?.first_name} {post.profiles?.last_name}</span>
-                            {' '}reposted{' '}
-                            <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <PostEngagementBadge 
-                      likesCount={post.likes_count || 0}
-                      commentsCount={post.comments_count || 0}
-                      sharesCount={post.shares_count || 0}
-                      repostsCount={post.reposts_count || 0}
-                    />
-                  </div>
-                  <div className="flex items-start gap-4 mb-4">
-                    <Avatar
-                      className="cursor-pointer"
-                      onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
-                    >
-                      <AvatarImage src={post.original_author?.avatar || post.profiles?.avatar || undefined} />
-                      <AvatarFallback>
-                        {post.original_author ? 
-                          `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
-                          `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
-                        }
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p 
-                            className="font-semibold cursor-pointer hover:underline"
-                            onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
-                          >
-                            {post.original_author ? 
-                              `${post.original_author.first_name || 'Unknown'} ${post.original_author.last_name || 'User'}` :
-                              `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
-                            }
-                          </p>
-                          {post.members?.companies && !post.original_post_id && (
-                            <p className="text-sm text-muted-foreground">
-                              {post.members.companies.name}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-                          </p>
-                        </div>
-                        {post.user_id === currentUserId && (
-                          <div className="flex gap-2">
-                            <EditPostDialog
-                              postId={post.id}
-                              initialContent={post.content}
-                              onSave={loadPosts}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(post.id)}
-                            >
-                              <Trash2 className="w-4 h-4 text-destructive" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      <p className="mt-3 whitespace-pre-wrap break-words">{post.content}</p>
-                      {post.image_url && (
-                        <img 
-                          src={post.image_url} 
-                          alt="Post" 
-                          className="mt-3 rounded-lg max-h-96 w-full max-w-full object-cover" 
-                        />
-                      )}
-                      {post.video_url && (
-                        <video 
-                          src={post.video_url} 
-                          controls
-                          className="mt-3 rounded-lg max-h-96 w-full max-w-full" 
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 sm:gap-4 pt-4 border-t flex-wrap">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleLike(post.id, post.liked_by_user || false)}
-                      className={`px-2 sm:px-3 ${post.liked_by_user ? 'text-red-500' : ''}`}
-                    >
-                      <Heart className={`w-4 h-4 sm:mr-1 ${post.liked_by_user ? 'fill-current' : ''}`} />
-                      <span className="text-xs ml-1">{post.likes_count > 0 && post.likes_count}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleComments(post.id)}
-                      className="px-2 sm:px-3"
-                    >
-                      <MessageCircle className="w-4 h-4 sm:mr-1" />
-                      <span className="text-xs ml-1">{post.comments_count > 0 && post.comments_count}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRepost(post)}
-                      className="px-2 sm:px-3"
-                    >
-                      <Repeat2 className="w-4 h-4 sm:mr-1" />
-                      <span className="text-xs ml-1">{post.reposts_count > 0 && post.reposts_count}</span>
-                    </Button>
-                    <SharePostDropdown
-                      postId={post.id}
-                      postContent={post.content}
-                      sharesCount={post.shares_count || 0}
-                      onShareComplete={loadPosts}
-                    />
-                    <BookmarkButton postId={post.id} userId={currentUserId} />
-                  </div>
-
-                  {showComments[post.id] && (
-                    <div className="mt-4 pt-4 border-t">
-                      <CommentsSection 
-                        postId={post.id}
-                        currentUserId={currentUserId}
-                        onCommentAdded={handleCommentAdded}
-                      />
+                  <Textarea
+                    placeholder="What's on your mind?"
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                    className="mb-4 resize-none"
+                    rows={3}
+                  />
+                  {imagePreview && (
+                    <div className="relative mb-4">
+                      <img src={imagePreview} alt="Preview" className="rounded-lg max-h-64 w-full object-cover" />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
                   )}
+                  {videoPreview && (
+                    <div className="relative mb-4">
+                      <video src={videoPreview} controls className="rounded-lg max-h-64 w-full" />
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeVideo}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="image-upload"
+                        ref={fileInputRef}
+                      />
+                      <label htmlFor="image-upload">
+                        <Button variant="outline" size="sm" type="button" asChild title="Add photo (max 10MB)">
+                          <span className="cursor-pointer">
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            Photo
+                          </span>
+                        </Button>
+                      </label>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                        onChange={handleVideoSelect}
+                        className="hidden"
+                        id="video-upload"
+                        ref={videoInputRef}
+                      />
+                      <label htmlFor="video-upload">
+                        <Button variant="outline" size="sm" type="button" asChild title="Add video (max 50MB, MP4/WebM/MOV)">
+                          <span className="cursor-pointer">
+                            <Video className="w-4 h-4 mr-2" />
+                            Video
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                    <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile) || posting}>
+                      {posting ? 'Posting...' : 'Post'}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+
+              {/* Posts Feed */}
+              {loading ? (
+                <div className="text-center py-8">Loading posts...</div>
+              ) : filteredPosts.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    {searchQuery || contentFilter !== 'all' ? 'No posts found matching your filters' : 'No posts yet. Be the first to share something!'}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  {filteredPosts.map((post) => (
+                    <Card key={post.id}>
+                      <CardContent className="pt-6">
+                        {/* Engagement badge */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            {post.original_post_id && post.original_author && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Repeat2 className="w-4 h-4" />
+                                <span>
+                                  <span className="font-semibold">{post.profiles?.first_name} {post.profiles?.last_name}</span>
+                                  {' '}reposted{' '}
+                                  <span className="font-semibold">{post.original_author.first_name} {post.original_author.last_name}</span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <PostEngagementBadge 
+                            likesCount={post.likes_count || 0}
+                            commentsCount={post.comments_count || 0}
+                            sharesCount={post.shares_count || 0}
+                            repostsCount={post.reposts_count || 0}
+                          />
+                        </div>
+                        <div className="flex items-start gap-4 mb-4">
+                          <Avatar
+                            className="cursor-pointer"
+                            onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
+                          >
+                            <AvatarImage src={post.original_author?.avatar || post.profiles?.avatar || undefined} />
+                            <AvatarFallback>
+                              {post.original_author ? 
+                                `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
+                                `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
+                              }
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p 
+                                  className="font-semibold cursor-pointer hover:underline"
+                                  onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
+                                >
+                                  {post.original_author ? 
+                                    `${post.original_author.first_name || 'Unknown'} ${post.original_author.last_name || 'User'}` :
+                                    `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
+                                  }
+                                </p>
+                                {post.members?.companies && !post.original_post_id && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {post.members.companies.name}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                                </p>
+                              </div>
+                              {post.user_id === currentUserId && (
+                                <div className="flex gap-2">
+                                  <EditPostDialog
+                                    postId={post.id}
+                                    initialContent={post.content}
+                                    onSave={loadPosts}
+                                  />
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDelete(post.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            <p className="mt-3 whitespace-pre-wrap break-words">{post.content}</p>
+                            {post.image_url && (
+                              <img 
+                                src={post.image_url} 
+                                alt="Post" 
+                                className="mt-3 rounded-lg max-h-96 w-full max-w-full object-cover" 
+                              />
+                            )}
+                            {post.video_url && (
+                              <video 
+                                src={post.video_url} 
+                                controls
+                                className="mt-3 rounded-lg max-h-96 w-full max-w-full" 
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 sm:gap-4 pt-4 border-t flex-wrap">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleLike(post.id, post.liked_by_user || false)}
+                            className={`px-2 sm:px-3 ${post.liked_by_user ? 'text-red-500' : ''}`}
+                          >
+                            <Heart className={`w-4 h-4 sm:mr-1 ${post.liked_by_user ? 'fill-current' : ''}`} />
+                            <span className="text-xs ml-1">{post.likes_count > 0 && post.likes_count}</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleComments(post.id)}
+                            className="px-2 sm:px-3"
+                          >
+                            <MessageCircle className="w-4 h-4 sm:mr-1" />
+                            <span className="text-xs ml-1">{post.comments_count > 0 && post.comments_count}</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRepost(post)}
+                            className="px-2 sm:px-3"
+                          >
+                            <Repeat2 className="w-4 h-4 sm:mr-1" />
+                            <span className="text-xs ml-1">{post.reposts_count > 0 && post.reposts_count}</span>
+                          </Button>
+                          <SharePostDropdown
+                            postId={post.id}
+                            postContent={post.content}
+                            sharesCount={post.shares_count || 0}
+                            onShareComplete={loadPosts}
+                          />
+                          <BookmarkButton postId={post.id} userId={currentUserId} />
+                        </div>
+
+                        {showComments[post.id] && (
+                          <div className="mt-4 pt-4 border-t">
+                            <CommentsSection 
+                              postId={post.id}
+                              currentUserId={currentUserId}
+                              onCommentAdded={handleCommentAdded}
+                            />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'about' && (
+            <Card>
+              <CardContent className="py-6">
+                <h3 className="text-lg font-semibold mb-4">About {associationInfo?.name}</h3>
+                <p className="text-muted-foreground">
+                  {associationInfo?.description || 'No description available.'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'members' && (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <Button onClick={() => navigate('/association/members')}>
+                  View All Members
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'companies' && (
+            <Card>
+              <CardContent className="py-6 text-center">
+                <Button onClick={() => navigate('/association/companies')}>
+                  View All Companies
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </main>
+
+        {/* Floating Chat */}
+        <FloatingChat currentUserId={currentUserId} />
+
+        {/* Mobile Navigation */}
+        <MobileNavigation />
+      </div>
+    </>
   );
 }
