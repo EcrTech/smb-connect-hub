@@ -100,30 +100,8 @@ export default function CompanyFeed() {
     loadCurrentUser();
     loadProfile();
     loadCompanyInfo();
-    loadPosts();
     loadPendingConnectionsCount();
     
-    const channel = supabase
-      .channel('posts-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
-        if (payload.eventType === 'UPDATE') {
-          setPosts(prev => prev.map(post => 
-            post.id === payload.new.id 
-              ? { 
-                  ...post, 
-                  likes_count: payload.new.likes_count ?? post.likes_count,
-                  comments_count: payload.new.comments_count ?? post.comments_count,
-                  shares_count: payload.new.shares_count ?? post.shares_count,
-                  reposts_count: payload.new.reposts_count ?? post.reposts_count
-                } 
-              : post
-          ));
-        } else {
-          loadPosts();
-        }
-      })
-      .subscribe();
-
     const connectionsChannel = supabase
       .channel('connections-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
@@ -132,10 +110,41 @@ export default function CompanyFeed() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
       supabase.removeChannel(connectionsChannel);
     };
   }, []);
+
+  // Load posts when company info is available
+  useEffect(() => {
+    if (companyInfo?.id) {
+      loadPosts();
+      
+      const channel = supabase
+        .channel('posts-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            setPosts(prev => prev.map(post => 
+              post.id === payload.new.id 
+                ? { 
+                    ...post, 
+                    likes_count: payload.new.likes_count ?? post.likes_count,
+                    comments_count: payload.new.comments_count ?? post.comments_count,
+                    shares_count: payload.new.shares_count ?? post.shares_count,
+                    reposts_count: payload.new.reposts_count ?? post.reposts_count
+                  } 
+                : post
+            ));
+          } else {
+            loadPosts();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [companyInfo?.id]);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -232,10 +241,18 @@ export default function CompanyFeed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: postsData, error } = await supabase
+      // Only load posts for this specific company
+      const query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by company if we have the info
+      if (companyInfo?.id) {
+        query.eq('post_context', 'company').eq('organization_id', companyInfo.id);
+      }
+
+      const { data: postsData, error } = await query;
 
       if (error) throw error;
 
@@ -410,6 +427,8 @@ export default function CompanyFeed() {
           user_id: currentUserId, 
           image_url: imageUrl,
           video_url: videoUrl,
+          post_context: 'company',
+          organization_id: companyInfo?.id,
         }]);
 
       if (error) throw error;

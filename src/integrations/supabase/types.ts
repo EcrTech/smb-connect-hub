@@ -1916,8 +1916,10 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number | null
+          organization_id: string | null
           original_author_id: string | null
           original_post_id: string | null
+          post_context: string | null
           reposts_count: number | null
           shares_count: number | null
           updated_at: string | null
@@ -1931,8 +1933,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          organization_id?: string | null
           original_author_id?: string | null
           original_post_id?: string | null
+          post_context?: string | null
           reposts_count?: number | null
           shares_count?: number | null
           updated_at?: string | null
@@ -1946,8 +1950,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number | null
+          organization_id?: string | null
           original_author_id?: string | null
           original_post_id?: string | null
+          post_context?: string | null
           reposts_count?: number | null
           shares_count?: number | null
           updated_at?: string | null

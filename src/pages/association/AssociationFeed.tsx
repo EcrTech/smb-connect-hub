@@ -103,30 +103,8 @@ export default function AssociationFeed() {
     loadCurrentUser();
     loadProfile();
     loadAssociationInfo();
-    loadPosts();
     loadPendingConnectionsCount();
     
-    const channel = supabase
-      .channel('posts-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
-        if (payload.eventType === 'UPDATE') {
-          setPosts(prev => prev.map(post => 
-            post.id === payload.new.id 
-              ? { 
-                  ...post, 
-                  likes_count: payload.new.likes_count ?? post.likes_count,
-                  comments_count: payload.new.comments_count ?? post.comments_count,
-                  shares_count: payload.new.shares_count ?? post.shares_count,
-                  reposts_count: payload.new.reposts_count ?? post.reposts_count
-                } 
-              : post
-          ));
-        } else {
-          loadPosts();
-        }
-      })
-      .subscribe();
-
     const connectionsChannel = supabase
       .channel('connections-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
@@ -135,10 +113,41 @@ export default function AssociationFeed() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
       supabase.removeChannel(connectionsChannel);
     };
   }, []);
+
+  // Load posts when association info is available
+  useEffect(() => {
+    if (associationInfo?.id) {
+      loadPosts();
+      
+      const channel = supabase
+        .channel('posts-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            setPosts(prev => prev.map(post => 
+              post.id === payload.new.id 
+                ? { 
+                    ...post, 
+                    likes_count: payload.new.likes_count ?? post.likes_count,
+                    comments_count: payload.new.comments_count ?? post.comments_count,
+                    shares_count: payload.new.shares_count ?? post.shares_count,
+                    reposts_count: payload.new.reposts_count ?? post.reposts_count
+                  } 
+                : post
+            ));
+          } else {
+            loadPosts();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [associationInfo?.id]);
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -254,10 +263,18 @@ export default function AssociationFeed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: postsData, error } = await supabase
+      // Only load posts for this specific association
+      const query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by association if we have the info
+      if (associationInfo?.id) {
+        query.eq('post_context', 'association').eq('organization_id', associationInfo.id);
+      }
+
+      const { data: postsData, error } = await query;
 
       if (error) throw error;
 
@@ -434,6 +451,8 @@ export default function AssociationFeed() {
           user_id: currentUserId, 
           image_url: imageUrl,
           video_url: videoUrl,
+          post_context: 'association',
+          organization_id: associationInfo?.id,
         }]);
 
       if (error) throw error;
