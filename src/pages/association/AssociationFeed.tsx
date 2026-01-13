@@ -63,6 +63,7 @@ interface AssociationInfo {
   id: string;
   name: string;
   logo: string | null;
+  cover_image?: string | null;
   description: string | null;
   industry: string | null;
   city: string | null;
@@ -734,8 +735,18 @@ export default function AssociationFeed() {
           {associationInfo && (
             <Card className="mb-6 overflow-hidden">
               {/* Cover Banner */}
-              <div className="h-32 md:h-40 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 relative group">
-                <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-10 bg-cover bg-center" />
+              <div className="h-32 md:h-40 relative group overflow-hidden">
+                {associationInfo.cover_image ? (
+                  <img 
+                    src={associationInfo.cover_image} 
+                    alt="Cover" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20">
+                    <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-10 bg-cover bg-center" />
+                  </div>
+                )}
                 {/* Edit Button on Cover */}
                 <Button
                   variant="secondary"
