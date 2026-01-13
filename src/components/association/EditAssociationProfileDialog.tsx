@@ -52,16 +52,18 @@ export function EditAssociationProfileDialog({
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(association.logo || null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(association.cover_image || null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
   const socialLinks = association.social_links || {};
 
-  const handleLogoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file
     if (!file.type.startsWith('image/')) {
       toast({
         title: 'Invalid file',
@@ -88,17 +90,50 @@ export function EditAssociationProfileDialog({
     reader.readAsDataURL(file);
   };
 
-  const uploadLogo = async (file: File): Promise<string | null> => {
+  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Invalid file',
+        description: 'Please select an image file',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Cover image must be less than 10MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCoverFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const uploadImage = async (file: File, type: 'logo' | 'cover'): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${association.id}-logo-${Date.now()}.${fileExt}`;
+      const fileName = `${association.id}-${type}-${Date.now()}.${fileExt}`;
       const filePath = `associations/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
       const { data } = supabase.storage
         .from('profile-images')
@@ -106,7 +141,12 @@ export function EditAssociationProfileDialog({
 
       return data.publicUrl;
     } catch (error) {
-      console.error('Error uploading logo:', error);
+      console.error(`Error uploading ${type}:`, error);
+      toast({
+        title: 'Upload failed',
+        description: `Failed to upload ${type}. Please try again.`,
+        variant: 'destructive',
+      });
       return null;
     }
   };
@@ -143,12 +183,27 @@ export function EditAssociationProfileDialog({
     try {
       setLoading(true);
 
-      // Upload logo if changed
+      // Upload images if changed
       let logoUrl = association.logo;
+      let coverUrl = association.cover_image;
+
       if (logoFile) {
-        const uploadedUrl = await uploadLogo(logoFile);
+        const uploadedUrl = await uploadImage(logoFile, 'logo');
         if (uploadedUrl) {
           logoUrl = uploadedUrl;
+        } else {
+          setLoading(false);
+          return;
+        }
+      }
+
+      if (coverFile) {
+        const uploadedUrl = await uploadImage(coverFile, 'cover');
+        if (uploadedUrl) {
+          coverUrl = uploadedUrl;
+        } else {
+          setLoading(false);
+          return;
         }
       }
 
@@ -182,7 +237,8 @@ export function EditAssociationProfileDialog({
           keywords: keywordsArray,
           social_links: socialLinksObj,
           logo: logoUrl,
-        })
+          cover_image: coverUrl,
+        } as any)
         .eq('id', association.id);
 
       if (error) throw error;
@@ -192,6 +248,7 @@ export function EditAssociationProfileDialog({
         description: 'Profile updated successfully',
       });
       setLogoFile(null);
+      setCoverFile(null);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -220,6 +277,51 @@ export function EditAssociationProfileDialog({
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4">
+              {/* Cover Image Upload */}
+              <div className="space-y-2">
+                <Label>Cover Image</Label>
+                <p className="text-xs text-muted-foreground mb-2">Recommended: 1200 x 300 pixels (4:1 ratio)</p>
+                <div 
+                  className="relative h-32 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 rounded-lg overflow-hidden group cursor-pointer border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors"
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  {coverPreview ? (
+                    <img src={coverPreview} alt="Cover" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground">
+                        <ImageIcon className="w-8 h-8 mx-auto mb-2" />
+                        <span className="text-sm">Click to upload cover image</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverSelect}
+                  className="hidden"
+                />
+                {coverFile && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive"
+                    onClick={() => {
+                      setCoverFile(null);
+                      setCoverPreview(association.cover_image || null);
+                    }}
+                  >
+                    <X className="w-3 h-3 mr-1" /> Remove new cover
+                  </Button>
+                )}
+              </div>
+
               {/* Logo Upload */}
               <div className="flex items-center gap-4">
                 <div className="relative group">
@@ -247,7 +349,7 @@ export function EditAssociationProfileDialog({
                 </div>
                 <div className="flex-1">
                   <Label>Logo</Label>
-                  <p className="text-sm text-muted-foreground">Click on the avatar to change the logo</p>
+                  <p className="text-xs text-muted-foreground">Recommended: 200 x 200 pixels (1:1 ratio, max 5MB)</p>
                   {logoFile && (
                     <Button
                       type="button"
