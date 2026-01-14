@@ -122,9 +122,16 @@ export function EditAssociationProfileDialog({
 
   const uploadImage = async (file: File, type: 'logo' | 'cover'): Promise<string | null> => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${association.id}-${type}-${Date.now()}.${fileExt}`;
-      const filePath = `associations/${fileName}`;
+      const fileName = `${type}-${Date.now()}.${fileExt}`;
+      
+      // Use user's ID as folder to match RLS policy: auth.uid()::text = (storage.foldername(name))[1]
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('profile-images')
