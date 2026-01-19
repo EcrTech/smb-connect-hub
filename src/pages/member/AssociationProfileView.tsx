@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackButton } from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
-import { HomeButton } from "@/components/HomeButton";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
@@ -120,10 +119,9 @@ export default function AssociationProfileView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-4 md:py-8 md:!pl-20 md:!pl-24">
-        <div className="flex items-center justify-between mb-8">
+      <div className="container mx-auto py-4 md:py-8 pl-14 md:pl-20 lg:pl-24 pr-4">
+        <div className="flex items-center mb-8">
           <BackButton fallbackPath="/dashboard" variant="ghost" label="Back" />
-          <HomeButton />
         </div>
 
         <div className="max-w-4xl mx-auto">
