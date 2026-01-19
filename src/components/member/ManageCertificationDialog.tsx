@@ -6,36 +6,54 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Upload, X, FileText } from 'lucide-react';
+import { Upload, X, FileText, ExternalLink } from 'lucide-react';
 import { CERTIFICATIONS, ISSUING_ORGANIZATIONS } from '@/lib/profileOptions';
 
-interface EditCertificationsDialogProps {
+interface Certification {
+  id: string;
+  name: string;
+  issuing_organization: string;
+  issue_date: string | null;
+  expiration_date: string | null;
+  credential_id?: string | null;
+  credential_url: string | null;
+  certificate_file_url?: string | null;
+}
+
+interface ManageCertificationDialogProps {
+  certification: Certification;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSave: () => void;
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
 
-export function EditCertificationsDialog({ onSave }: EditCertificationsDialogProps) {
+export function ManageCertificationDialog({ 
+  certification, 
+  open, 
+  onOpenChange, 
+  onSave 
+}: ManageCertificationDialogProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
-    issuing_organization: '',
-    issue_date: '',
-    expiration_date: '',
-    credential_id: '',
-    credential_url: '',
+    name: certification.name,
+    issuing_organization: certification.issuing_organization,
+    issue_date: certification.issue_date || '',
+    expiration_date: certification.expiration_date || '',
+    credential_id: certification.credential_id || '',
+    credential_url: certification.credential_url || '',
+    certificate_file_url: certification.certificate_file_url || '',
   });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,6 +90,27 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
     }
   };
 
+  const removeExistingFile = async () => {
+    try {
+      // Extract file path from URL to delete from storage
+      if (formData.certificate_file_url) {
+        const urlParts = formData.certificate_file_url.split('/certificates/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('certificates').remove([filePath]);
+        }
+      }
+      
+      setFormData({ ...formData, certificate_file_url: '' });
+      toast({
+        title: 'File removed',
+        description: 'Certificate file has been removed.',
+      });
+    } catch (error) {
+      console.error('Error removing file:', error);
+    }
+  };
+
   const uploadFile = async (file: File, userId: string): Promise<string | null> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `cert-${Date.now()}.${fileExt}`;
@@ -100,45 +139,87 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      let certificateFileUrl: string | null = null;
+      let certificateFileUrl = formData.certificate_file_url;
 
-      // Upload file if selected
+      // Upload new file if selected
       if (selectedFile) {
+        // Remove old file first if exists
+        if (formData.certificate_file_url) {
+          const urlParts = formData.certificate_file_url.split('/certificates/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage.from('certificates').remove([filePath]);
+          }
+        }
+        
         certificateFileUrl = await uploadFile(selectedFile, user.id);
       }
 
-      const { error } = await supabase.from('certifications').insert({
-        user_id: user.id,
-        name: formData.name,
-        issuing_organization: formData.issuing_organization,
-        issue_date: formData.issue_date || null,
-        expiration_date: formData.expiration_date || null,
-        credential_id: formData.credential_id || null,
-        credential_url: formData.credential_url || null,
-        certificate_file_url: certificateFileUrl,
-      });
+      const { error } = await supabase
+        .from('certifications')
+        .update({
+          name: formData.name,
+          issuing_organization: formData.issuing_organization,
+          issue_date: formData.issue_date || null,
+          expiration_date: formData.expiration_date || null,
+          credential_id: formData.credential_id || null,
+          credential_url: formData.credential_url || null,
+          certificate_file_url: certificateFileUrl || null,
+        })
+        .eq('id', certification.id);
 
       if (error) throw error;
 
       toast({
         title: 'Success',
-        description: 'Certification added',
+        description: 'Certification updated',
       });
-      setOpen(false);
-      setFormData({
-        name: '',
-        issuing_organization: '',
-        issue_date: '',
-        expiration_date: '',
-        credential_id: '',
-        credential_url: '',
-      });
-      setSelectedFile(null);
+      onOpenChange(false);
       onSave();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to add certification',
+        description: 'Failed to update certification',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Remove file from storage if exists
+      if (formData.certificate_file_url) {
+        const urlParts = formData.certificate_file_url.split('/certificates/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabase.storage.from('certificates').remove([filePath]);
+        }
+      }
+
+      const { error } = await supabase
+        .from('certifications')
+        .delete()
+        .eq('id', certification.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Certification deleted',
+      });
+      onOpenChange(false);
+      onSave();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete certification',
         variant: 'destructive',
       });
     } finally {
@@ -147,17 +228,11 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Add
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Certification</DialogTitle>
-          <DialogDescription>Add a professional certification</DialogDescription>
+          <DialogTitle>Edit Certification</DialogTitle>
+          <DialogDescription>Update or delete this certification</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -198,9 +273,7 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
                 id="expiration_date"
                 type="date"
                 value={formData.expiration_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, expiration_date: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, expiration_date: e.target.value })}
               />
             </div>
           </div>
@@ -230,7 +303,33 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
           <div className="space-y-2">
             <Label>Certificate Document (optional)</Label>
             
-            {selectedFile ? (
+            {/* Show existing file */}
+            {formData.certificate_file_url && !selectedFile && (
+              <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+                <FileText className="w-5 h-5 text-primary" />
+                <a 
+                  href={formData.certificate_file_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 text-sm text-primary hover:underline truncate"
+                >
+                  View current certificate
+                  <ExternalLink className="w-3 h-3 inline ml-1" />
+                </a>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeExistingFile}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Show selected file */}
+            {selectedFile && (
               <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
                 <FileText className="w-5 h-5 text-primary" />
                 <span className="flex-1 text-sm truncate">{selectedFile.name}</span>
@@ -244,7 +343,10 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-            ) : (
+            )}
+
+            {/* File input */}
+            {!selectedFile && (
               <div className="flex items-center gap-2">
                 <Input
                   ref={fileInputRef}
@@ -252,7 +354,7 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
                   accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileSelect}
                   className="hidden"
-                  id="certificate-file-add"
+                  id="certificate-file"
                 />
                 <Button
                   type="button"
@@ -261,7 +363,7 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
                   className="w-full"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  Upload Certificate
+                  {formData.certificate_file_url ? 'Replace Certificate' : 'Upload Certificate'}
                 </Button>
               </div>
             )}
@@ -271,13 +373,23 @@ export function EditCertificationsDialog({ onSave }: EditCertificationsDialogPro
             </p>
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+          <div className="flex justify-between gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={loading}
+            >
+              Delete
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Certification'}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

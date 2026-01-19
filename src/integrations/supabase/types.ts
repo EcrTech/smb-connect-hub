@@ -315,6 +315,7 @@ export type Database = {
       }
       certifications: {
         Row: {
+          certificate_file_url: string | null
           created_at: string | null
           credential_id: string | null
           credential_url: string | null
@@ -328,6 +329,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          certificate_file_url?: string | null
           created_at?: string | null
           credential_id?: string | null
           credential_url?: string | null
@@ -341,6 +343,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          certificate_file_url?: string | null
           created_at?: string | null
           credential_id?: string | null
           credential_url?: string | null
