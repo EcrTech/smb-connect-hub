@@ -434,6 +434,20 @@ export default function AssociationFeed() {
     }
   };
 
+  const clearPostComposer = () => {
+    setNewPost('');
+    setImageFile(null);
+    setImagePreview(null);
+    setVideoFile(null);
+    setVideoPreview(null);
+    setDocumentFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
+    if (documentInputRef.current) documentInputRef.current.value = '';
+  };
+
+  const hasAnyContent = newPost.trim() || imageFile || videoFile || documentFile;
+
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -1038,9 +1052,23 @@ export default function AssociationFeed() {
                         </Button>
                       </label>
                     </div>
-                    <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting}>
-                      {posting ? 'Posting...' : 'Post'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {hasAnyContent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearPostComposer}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Clear all"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                      <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting}>
+                        {posting ? 'Posting...' : 'Post'}
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
