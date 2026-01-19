@@ -685,16 +685,10 @@ export default function AssociationFeed() {
       <div className="min-h-screen bg-background pb-20 md:pb-0 scrollbar-hide">
         {/* Header */}
         <header className="border-b bg-card sticky top-0 z-10 shadow-sm">
-          <div className="container mx-auto">
+          <div className="container mx-auto pl-14 md:pl-20 lg:pl-24">
             <div className="flex items-center justify-between h-14 gap-3">
-              {/* Left - Favicon (mobile) or Back Button (desktop) */}
+              {/* Left - Back Button (desktop only, logo handles home on all views) */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <img 
-                  src="/favicon.png" 
-                  alt="SMB Connect" 
-                  className="h-8 w-8 md:hidden cursor-pointer"
-                  onClick={() => navigate('/dashboard')}
-                />
                 <BackButton fallbackPath="/association" variant="ghost" size="icon" label="" className="hidden md:flex" />
               </div>
 

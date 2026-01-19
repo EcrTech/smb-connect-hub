@@ -12,7 +12,7 @@ interface PageHeaderProps {
 export const PageHeader = ({ title, description, children, hideSearch, actions }: PageHeaderProps) => {
   return (
     <header className="border-b bg-card">
-      <div className="container mx-auto py-4 md:pl-28">
+      <div className="container mx-auto py-4 pl-14 md:pl-20 lg:pl-24">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4 flex-1">
             <div className="flex-shrink-0">

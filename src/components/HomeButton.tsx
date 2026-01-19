@@ -33,13 +33,12 @@ export const HomeButton = () => {
         <TooltipTrigger asChild>
           <button
             onClick={() => navigate(getHomePath())}
-            className="fixed top-4 left-4 z-50"
+            className="fixed top-3 left-3 z-50 md:top-4 md:left-4"
           >
             <img 
               src={logo} 
               alt="SMB Connect" 
-              className="w-auto rounded-lg"
-              style={{ height: '2.8rem' }}
+              className="h-8 md:h-10 w-auto rounded-lg shadow-sm"
             />
           </button>
         </TooltipTrigger>
