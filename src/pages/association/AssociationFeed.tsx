@@ -472,7 +472,17 @@ export default function AssociationFeed() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.trim() && !imageFile && !videoFile) return;
+    if (!newPost.trim() && !imageFile && !videoFile && !documentFile) return;
+
+    // Ensure association info is loaded before posting
+    if (!associationInfo?.id) {
+      toast({
+        title: 'Error',
+        description: 'Please wait for association data to load before posting',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setPosting(true);
     try {
@@ -1059,7 +1069,7 @@ export default function AssociationFeed() {
                           Clear
                         </Button>
                       )}
-                      <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting}>
+                      <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting || !associationInfo?.id}>
                         {posting ? 'Posting...' : 'Post'}
                       </Button>
                     </div>
