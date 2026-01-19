@@ -25,7 +25,8 @@ export const IMAGE_DIMENSION_LIMITS = {
 export const ALLOWED_FILE_TYPES = {
   IMAGES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
   VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
-  DOCUMENTS: ['text/csv', 'application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+  DOCUMENTS: ['text/csv', 'application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  POST_DOCUMENTS: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
 } as const;
 
 interface ValidationResult {
@@ -201,6 +202,24 @@ export const validateDocumentUpload = (file: File): ValidationResult => {
   if (!typeCheck.valid) return typeCheck;
   
   // Check file size
+  const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.DOCUMENT);
+  return sizeCheck;
+};
+
+/**
+ * Complete validation for post document uploads (PDF, DOC, DOCX - 10MB limit)
+ */
+export const validatePostDocumentUpload = (file: File): ValidationResult => {
+  // Check file type
+  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.POST_DOCUMENTS);
+  if (!typeCheck.valid) {
+    return {
+      valid: false,
+      error: 'Invalid document format. Allowed formats: PDF, DOC, DOCX',
+    };
+  }
+  
+  // Check file size (10MB for post documents)
   const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.DOCUMENT);
   return sizeCheck;
 };
