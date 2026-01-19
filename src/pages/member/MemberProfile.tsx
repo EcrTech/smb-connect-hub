@@ -25,6 +25,9 @@ import {
   Camera,
   MessageSquare,
   Building2,
+  Pencil,
+  Trash2,
+  ExternalLink,
   Users
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
@@ -32,6 +35,7 @@ import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperience
 import { EditEducationDialog } from '@/components/member/EditEducationDialog';
 import { EditSkillsDialog } from '@/components/member/EditSkillsDialog';
 import { EditCertificationsDialog } from '@/components/member/EditCertificationsDialog';
+import { ManageCertificationDialog } from '@/components/member/ManageCertificationDialog';
 import { MobileNavigation } from '@/components/layout/MobileNavigation';
 
 interface ProfileData {
@@ -84,7 +88,9 @@ interface Certification {
   issuing_organization: string;
   issue_date: string | null;
   expiration_date: string | null;
+  credential_id?: string | null;
   credential_url: string | null;
+  certificate_file_url?: string | null;
 }
 
 interface Association {
@@ -551,6 +557,100 @@ export default function MemberProfile() {
     });
   };
 
+  // Certifications Section Component
+  const CertificationsSection = ({ 
+    certifications, 
+    isOwnProfile, 
+    onSave 
+  }: { 
+    certifications: Certification[]; 
+    isOwnProfile: boolean; 
+    onSave: () => void;
+  }) => {
+    const [editingCert, setEditingCert] = useState<Certification | null>(null);
+
+    if (certifications.length === 0 && !isOwnProfile) return null;
+
+    return (
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Award className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Certifications</h2>
+            </div>
+            {isOwnProfile && <EditCertificationsDialog onSave={onSave} />}
+          </div>
+          {certifications.length === 0 ? (
+            <p className="text-muted-foreground">No certifications added yet</p>
+          ) : (
+            <div className="space-y-4">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="group relative">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold">{cert.name}</h3>
+                      <p className="text-muted-foreground">{cert.issuing_organization}</p>
+                      {cert.issue_date && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Issued {formatDate(cert.issue_date)}
+                          {cert.expiration_date && ` - Expires ${formatDate(cert.expiration_date)}`}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-3 mt-2">
+                        {cert.credential_url && (
+                          <a
+                            href={cert.credential_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                          >
+                            View credential
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {cert.certificate_file_url && (
+                          <a
+                            href={cert.certificate_file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline inline-flex items-center gap-1"
+                          >
+                            View certificate
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    {isOwnProfile && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setEditingCert(cert)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+
+        {editingCert && (
+          <ManageCertificationDialog
+            certification={editingCert}
+            open={!!editingCert}
+            onOpenChange={(open) => !open && setEditingCert(null)}
+            onSave={onSave}
+          />
+        )}
+      </Card>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -896,47 +996,11 @@ export default function MemberProfile() {
         </Card>
 
         {/* Certifications */}
-        {(certifications.length > 0 || isOwnProfile) && (
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5" />
-                  <h2 className="text-xl font-semibold">Certifications</h2>
-                </div>
-                {isOwnProfile && <EditCertificationsDialog onSave={loadProfile} />}
-              </div>
-              {certifications.length === 0 ? (
-                <p className="text-muted-foreground">No certifications added yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {certifications.map((cert) => (
-                    <div key={cert.id}>
-                      <h3 className="font-semibold">{cert.name}</h3>
-                      <p className="text-muted-foreground">{cert.issuing_organization}</p>
-                      {cert.issue_date && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Issued {formatDate(cert.issue_date)}
-                          {cert.expiration_date && ` - Expires ${formatDate(cert.expiration_date)}`}
-                        </p>
-                      )}
-                      {cert.credential_url && (
-                        <a
-                          href={cert.credential_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline mt-1 inline-block"
-                        >
-                          View credential
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <CertificationsSection 
+          certifications={certifications} 
+          isOwnProfile={isOwnProfile} 
+          onSave={loadProfile}
+        />
 
         {/* Associated Associations */}
         <Card className="mb-6">
