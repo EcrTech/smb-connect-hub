@@ -10,6 +10,7 @@ export const FILE_SIZE_LIMITS = {
   DOCUMENT: 10 * 1024 * 1024,   // 10MB for documents (CSV, PDF, etc.)
   AVATAR: 2 * 1024 * 1024,      // 2MB for avatars
   COVER: 5 * 1024 * 1024,       // 5MB for cover images
+  MESSAGE_ATTACHMENT: 10 * 1024 * 1024, // 10MB for message attachments
 } as const;
 
 // Image dimension limits in pixels
@@ -34,6 +35,14 @@ export const ALLOWED_FILE_TYPES = {
   VIDEOS: ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'],
   DOCUMENTS: ['text/csv', 'application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   POST_DOCUMENTS: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  MESSAGE_IMAGES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
+  MESSAGE_DOCUMENTS: [
+    'application/pdf', 
+    'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ],
 } as const;
 
 interface ValidationResult {
@@ -274,5 +283,45 @@ export const validatePostDocumentUpload = (file: File): ValidationResult => {
   
   // Check file size (10MB for post documents)
   const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.DOCUMENT);
+  return sizeCheck;
+};
+
+/**
+ * Complete validation for message image uploads (10MB limit)
+ */
+export const validateMessageImageUpload = async (file: File): Promise<ValidationResult> => {
+  // Check file type
+  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.MESSAGE_IMAGES);
+  if (!typeCheck.valid) {
+    return {
+      valid: false,
+      error: 'Invalid image format. Allowed formats: JPG, PNG, WebP, GIF',
+    };
+  }
+  
+  // Check file size (10MB for message images)
+  const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.MESSAGE_ATTACHMENT);
+  if (!sizeCheck.valid) return sizeCheck;
+  
+  // Check dimensions (more lenient than other uploads)
+  const dimensionCheck = await validateImageDimensions(file);
+  return dimensionCheck;
+};
+
+/**
+ * Complete validation for message document uploads (PDF, DOC, DOCX, PPT, PPTX - 10MB limit)
+ */
+export const validateMessageDocumentUpload = (file: File): ValidationResult => {
+  // Check file type
+  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.MESSAGE_DOCUMENTS);
+  if (!typeCheck.valid) {
+    return {
+      valid: false,
+      error: 'Invalid document format. Allowed formats: PDF, DOC, DOCX, PPT, PPTX',
+    };
+  }
+  
+  // Check file size (10MB for message documents)
+  const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.MESSAGE_ATTACHMENT);
   return sizeCheck;
 };

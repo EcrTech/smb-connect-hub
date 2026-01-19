@@ -24,6 +24,31 @@ interface Conversation {
   otherMemberId?: string;
 }
 
+// Helper function to get last message preview with attachment indicators
+const getLastMessagePreview = (lastMsg: { content: string | null; attachments: any } | null): string => {
+  if (!lastMsg) return 'No messages yet';
+  
+  const attachments = lastMsg.attachments as any[] | null;
+  if (attachments && attachments.length > 0) {
+    const hasImages = attachments.some((a: any) => a.type === 'image');
+    const hasDocs = attachments.some((a: any) => a.type === 'document');
+    
+    if (lastMsg.content) {
+      // Has both text and attachments
+      if (hasImages && hasDocs) return `📎 ${lastMsg.content}`;
+      if (hasImages) return `📷 ${lastMsg.content}`;
+      return `📄 ${lastMsg.content}`;
+    } else {
+      // Only attachments, no text
+      if (hasImages && hasDocs) return '📎 Attachments';
+      if (hasImages) return attachments.length > 1 ? '📷 Photos' : '📷 Photo';
+      return attachments.length > 1 ? '📄 Documents' : '📄 Document';
+    }
+  }
+  
+  return lastMsg.content || 'No messages yet';
+};
+
 export function ConversationList({ selectedChatId, onSelectChat, currentUserId }: ConversationListProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -116,7 +141,7 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
           // Get last message
           const { data: lastMsg } = await supabase
             .from('messages')
-            .select('content, created_at')
+            .select('content, created_at, attachments')
             .eq('chat_id', chat.id)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -151,10 +176,11 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
 
             if (otherParticipant) {
               const otherProfile = (otherParticipant as any).members.profiles;
+              const lastMessagePreview = getLastMessagePreview(lastMsg);
               return {
                 id: chat.id,
                 name: `${otherProfile.first_name} ${otherProfile.last_name}`,
-                lastMessage: lastMsg?.content || 'No messages yet',
+                lastMessage: lastMessagePreview,
                 lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString(),
                 unreadCount: unreadCount || 0,
                 avatar: otherProfile.avatar,
@@ -163,10 +189,11 @@ export function ConversationList({ selectedChatId, onSelectChat, currentUserId }
             }
           }
 
+          const lastMessagePreview = getLastMessagePreview(lastMsg);
           return {
             id: chat.id,
             name: chat.name || 'Group Chat',
-            lastMessage: lastMsg?.content || 'No messages yet',
+            lastMessage: lastMessagePreview,
             lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString(),
             unreadCount: unreadCount || 0
           };

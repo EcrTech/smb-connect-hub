@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageInput } from './MessageInput';
+import { MessageInput, MessageAttachment } from './MessageInput';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { MoreHorizontal, Pencil, Trash2, Reply, Smile } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Reply, Smile, FileText, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 
@@ -42,6 +42,7 @@ interface Message {
   };
   isOwn: boolean;
   is_edited?: boolean;
+  attachments?: MessageAttachment[];
 }
 
 const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
@@ -190,6 +191,7 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
           created_at,
           sender_id,
           is_edited,
+          attachments,
           members!messages_sender_id_fkey(
             id,
             user_id,
@@ -206,7 +208,8 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
           created_at: msg.created_at,
           sender: msg.members,
           isOwn: msg.sender_id === memberData.id,
-          is_edited: msg.is_edited
+          is_edited: msg.is_edited,
+          attachments: msg.attachments as MessageAttachment[] | undefined
         }));
         setMessages(formattedMessages);
       }
@@ -275,7 +278,7 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
 
     toast({ 
       title: `Reacted with ${emoji}`,
-      description: `to "${message.content.substring(0, 30)}${message.content.length > 30 ? '...' : ''}"`
+      description: `to "${message.content?.substring(0, 30)}${(message.content?.length || 0) > 30 ? '...' : ''}"`
     });
   };
 
@@ -286,7 +289,7 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
 
   const startEditing = (message: Message) => {
     setEditingMessageId(message.id);
-    setEditContent(message.content);
+    setEditContent(message.content || '');
   };
 
   const cancelEditing = () => {
@@ -296,6 +299,70 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
 
   const cancelReply = () => {
     setReplyingTo(null);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getDocumentIcon = (mimeType: string) => {
+    if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) {
+      return '📊';
+    }
+    if (mimeType.includes('word') || mimeType === 'application/msword') {
+      return '📝';
+    }
+    return '📄';
+  };
+
+  const renderAttachments = (attachments: MessageAttachment[], isOwn: boolean) => {
+    return (
+      <div className="space-y-2 mt-2">
+        {attachments.map((attachment, index) => (
+          <div key={index}>
+            {attachment.type === 'image' ? (
+              <a 
+                href={attachment.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block rounded overflow-hidden hover:opacity-90 transition-opacity"
+              >
+                <img 
+                  src={attachment.url} 
+                  alt={attachment.name}
+                  className="max-w-full max-h-48 object-cover rounded"
+                />
+              </a>
+            ) : (
+              <a 
+                href={attachment.url} 
+                download={attachment.name}
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded transition-colors",
+                  isOwn 
+                    ? "bg-primary-foreground/10 hover:bg-primary-foreground/20" 
+                    : "bg-background/50 hover:bg-background/80"
+                )}
+              >
+                <span className="text-lg flex-shrink-0">{getDocumentIcon(attachment.mimeType)}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{attachment.name}</p>
+                  <p className={cn(
+                    "text-xs",
+                    isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                  )}>
+                    {formatFileSize(attachment.size)}
+                  </p>
+                </div>
+                <Download className="w-4 h-4 flex-shrink-0 opacity-70" />
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -425,7 +492,14 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
+                  <>
+                    {message.content && (
+                      <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
+                    )}
+                    {message.attachments && message.attachments.length > 0 && (
+                      renderAttachments(message.attachments, message.isOwn)
+                    )}
+                  </>
                 )}
                 
                 <div className={cn(
@@ -481,7 +555,7 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
             <Reply className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
               Replying to <strong>{replyingTo.sender.profiles.first_name}</strong>: 
-              "{replyingTo.content.substring(0, 40)}{replyingTo.content.length > 40 ? '...' : ''}"
+              "{replyingTo.content?.substring(0, 40)}{(replyingTo.content?.length || 0) > 40 ? '...' : ''}"
             </span>
           </div>
           <Button variant="ghost" size="sm" onClick={cancelReply}>
@@ -502,7 +576,7 @@ export function MessageThread({ chatId, currentUserId, compact = false, onMarkAs
           replyingTo={replyingTo ? {
             id: replyingTo.id,
             senderName: `${replyingTo.sender.profiles.first_name} ${replyingTo.sender.profiles.last_name}`,
-            content: replyingTo.content
+            content: replyingTo.content || ''
           } : undefined}
         />
       </div>

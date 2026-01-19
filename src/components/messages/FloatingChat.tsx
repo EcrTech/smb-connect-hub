@@ -16,6 +16,32 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { useUnreadMessageCount } from '@/hooks/useUnreadMessageCount';
+
+// Helper function to get last message preview with attachment indicators
+const getLastMessagePreview = (lastMsg: { content: string | null; attachments: any } | null): string => {
+  if (!lastMsg) return 'No messages yet';
+  
+  const attachments = lastMsg.attachments as any[] | null;
+  if (attachments && attachments.length > 0) {
+    const hasImages = attachments.some((a: any) => a.type === 'image');
+    const hasDocs = attachments.some((a: any) => a.type === 'document');
+    
+    if (lastMsg.content) {
+      // Has both text and attachments
+      if (hasImages && hasDocs) return `📎 ${lastMsg.content}`;
+      if (hasImages) return `📷 ${lastMsg.content}`;
+      return `📄 ${lastMsg.content}`;
+    } else {
+      // Only attachments, no text
+      if (hasImages && hasDocs) return '📎 Attachments';
+      if (hasImages) return attachments.length > 1 ? '📷 Photos' : '📷 Photo';
+      return attachments.length > 1 ? '📄 Documents' : '📄 Document';
+    }
+  }
+  
+  return lastMsg.content || 'No messages yet';
+};
+
 interface FloatingChatProps {
   currentUserId: string | null;
   initialChatId?: string | null;
@@ -93,7 +119,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
         chatsData.map(async (chat) => {
           const { data: lastMsg } = await supabase
             .from('messages')
-            .select('content, created_at')
+            .select('content, created_at, attachments')
             .eq('chat_id', chat.id)
             .order('created_at', { ascending: false })
             .limit(1)
@@ -125,7 +151,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
                   return {
                     id: chat.id,
                     name: `${otherProfile.first_name} ${otherProfile.last_name}`,
-                    lastMessage: lastMsg?.content || 'No messages yet',
+                    lastMessage: getLastMessagePreview(lastMsg),
                     lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString(),
                     avatar: otherProfile.avatar || undefined
                   };
@@ -137,7 +163,7 @@ export function FloatingChat({ currentUserId, initialChatId }: FloatingChatProps
           return {
             id: chat.id,
             name: chat.name || 'Group Chat',
-            lastMessage: lastMsg?.content || 'No messages yet',
+            lastMessage: getLastMessagePreview(lastMsg),
             lastMessageAt: lastMsg?.created_at || chat.last_message_at || new Date().toISOString()
           };
         })
