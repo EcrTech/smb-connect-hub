@@ -38,7 +38,8 @@ import {
   UserPlus,
   Repeat2,
   Bookmark,
-  Bell
+  Bell,
+  FileText
 } from 'lucide-react';
 import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +54,7 @@ interface Post {
   content: string;
   image_url: string | null;
   video_url: string | null;
+  document_url: string | null;
   likes_count: number;
   comments_count: number;
   shares_count: number;
@@ -101,12 +103,14 @@ export default function MemberFeed() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
   const [associations, setAssociations] = useState<Association[]>([]);
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
   
   // Unread message count for desktop header badge
   const { unreadCount: unreadMessageCount } = useUnreadMessageCount(currentUserId);
@@ -355,6 +359,7 @@ export default function MemberFeed() {
 
       let imageUrl = null;
       let videoUrl = null;
+      let documentUrl = null;
 
       // Upload image if present
       if (imageFile) {
@@ -392,11 +397,30 @@ export default function MemberFeed() {
         videoUrl = publicUrl;
       }
 
+      // Upload document if present
+      if (documentFile) {
+        const fileExt = documentFile.name.split('.').pop();
+        const fileName = `${user.id}/doc-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('profile-images')
+          .upload(fileName, documentFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-images')
+          .getPublicUrl(fileName);
+
+        documentUrl = publicUrl;
+      }
+
       const { error } = await supabase.from('posts').insert({
         user_id: user.id,
         content: newPostContent.trim(),
         image_url: imageUrl,
         video_url: videoUrl,
+        document_url: documentUrl,
       });
 
       if (error) throw error;
@@ -410,6 +434,7 @@ export default function MemberFeed() {
       setImageFile(null);
       setVideoPreview(null);
       setVideoFile(null);
+      setDocumentFile(null);
       loadPosts();
     } catch (error: any) {
       toast({
@@ -500,6 +525,43 @@ export default function MemberFeed() {
     if (videoInputRef.current) {
       videoInputRef.current.value = '';
     }
+  };
+
+  const handleDocumentSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { validatePostDocumentUpload } = await import('@/lib/uploadValidation');
+    const validation = validatePostDocumentUpload(file);
+    
+    if (!validation.valid) {
+      toast({
+        title: 'Validation Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDocumentFile(file);
+  };
+
+  const removeDocument = () => {
+    setDocumentFile(null);
+    if (documentInputRef.current) {
+      documentInputRef.current.value = '';
+    }
+  };
+
+  const getDocumentName = (url: string) => {
+    const parts = url.split('/');
+    const fileName = parts[parts.length - 1];
+    // Remove the timestamp prefix if present
+    const match = fileName.match(/doc-\d+\.(.+)/);
+    if (match) {
+      return `Document.${match[1]}`;
+    }
+    return fileName;
   };
 
   const toggleComments = (postId: string) => {
@@ -875,6 +937,21 @@ export default function MemberFeed() {
               </div>
             )}
 
+            {documentFile && (
+              <div className="relative mb-4 flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <FileText className="w-5 h-5 text-primary" />
+                <span className="text-sm flex-1 truncate">{documentFile.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={removeDocument}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between pt-3 border-t">
               <div className="flex items-center gap-2">
                 <input
@@ -889,6 +966,13 @@ export default function MemberFeed() {
                   type="file"
                   accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
                   onChange={handleVideoSelect}
+                  className="hidden"
+                />
+                <input
+                  ref={documentInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  onChange={handleDocumentSelect}
                   className="hidden"
                 />
                 <Button
@@ -910,6 +994,16 @@ export default function MemberFeed() {
                 >
                   <Video className="w-5 h-5 mr-2" />
                   Video
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => documentInputRef.current?.click()}
+                  className="text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  title="Add document (max 10MB, PDF/DOC/DOCX)"
+                >
+                  <FileText className="w-5 h-5 mr-2" />
+                  Document
                 </Button>
               </div>
               <Button
@@ -1050,6 +1144,18 @@ export default function MemberFeed() {
                             controls
                             className="mt-4 rounded-lg max-h-96 w-full max-w-full"
                           />
+                        )}
+
+                        {post.document_url && (
+                          <a
+                            href={post.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-4 flex items-center gap-2 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                          >
+                            <FileText className="w-5 h-5 text-primary" />
+                            <span className="text-sm font-medium">View Document</span>
+                          </a>
                         )}
 
                         <div className="flex items-center gap-1 sm:gap-4 mt-4 pt-4 border-t flex-wrap">

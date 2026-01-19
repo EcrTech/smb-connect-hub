@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send, Pencil } from 'lucide-react';
+import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send, Pencil, FileText } from 'lucide-react';
 import { EditAssociationProfileDialog } from '@/components/association/EditAssociationProfileDialog';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -31,6 +31,7 @@ interface Post {
   content: string;
   image_url: string | null;
   video_url: string | null;
+  document_url: string | null;
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -96,6 +97,8 @@ export default function AssociationFeed() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   
   const { unreadCount: unreadMessageCount } = useUnreadMessageCount(currentUserId);
 
@@ -405,6 +408,32 @@ export default function AssociationFeed() {
     setVideoPreview(null);
   };
 
+  const handleDocumentSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { validatePostDocumentUpload } = await import('@/lib/uploadValidation');
+    const validation = validatePostDocumentUpload(file);
+    
+    if (!validation.valid) {
+      toast({
+        title: 'Validation Error',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDocumentFile(file);
+  };
+
+  const removeDocument = () => {
+    setDocumentFile(null);
+    if (documentInputRef.current) {
+      documentInputRef.current.value = '';
+    }
+  };
+
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -435,6 +464,7 @@ export default function AssociationFeed() {
     try {
       let imageUrl = null;
       let videoUrl = null;
+      let documentUrl = null;
       
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
@@ -444,6 +474,10 @@ export default function AssociationFeed() {
         videoUrl = await uploadImage(videoFile);
       }
 
+      if (documentFile) {
+        documentUrl = await uploadImage(documentFile);
+      }
+
       const { error } = await supabase
         .from('posts')
         .insert([{ 
@@ -451,6 +485,7 @@ export default function AssociationFeed() {
           user_id: currentUserId, 
           image_url: imageUrl,
           video_url: videoUrl,
+          document_url: documentUrl,
           post_context: 'association',
           organization_id: associationInfo?.id,
         }]);
@@ -465,6 +500,7 @@ export default function AssociationFeed() {
         URL.revokeObjectURL(videoPreview);
       }
       setVideoPreview(null);
+      setDocumentFile(null);
       toast({
         title: 'Success',
         description: 'Post created successfully',
@@ -937,6 +973,20 @@ export default function AssociationFeed() {
                       </Button>
                     </div>
                   )}
+                  {documentFile && (
+                    <div className="relative mb-4 flex items-center gap-2 p-3 bg-muted rounded-lg">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <span className="text-sm flex-1 truncate">{documentFile.name}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={removeDocument}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <div className="flex gap-2">
                       <input
@@ -971,8 +1021,24 @@ export default function AssociationFeed() {
                           </span>
                         </Button>
                       </label>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        onChange={handleDocumentSelect}
+                        className="hidden"
+                        id="document-upload"
+                        ref={documentInputRef}
+                      />
+                      <label htmlFor="document-upload">
+                        <Button variant="outline" size="sm" type="button" asChild title="Add document (max 10MB, PDF/DOC/DOCX)">
+                          <span className="cursor-pointer">
+                            <FileText className="w-4 h-4 mr-2" />
+                            Document
+                          </span>
+                        </Button>
+                      </label>
                     </div>
-                    <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile) || posting}>
+                    <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting}>
                       {posting ? 'Posting...' : 'Post'}
                     </Button>
                   </div>
@@ -1079,6 +1145,17 @@ export default function AssociationFeed() {
                                 controls
                                 className="mt-3 rounded-lg max-h-96 w-full max-w-full" 
                               />
+                            )}
+                            {post.document_url && (
+                              <a
+                                href={post.document_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-3 flex items-center gap-2 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                              >
+                                <FileText className="w-5 h-5 text-primary" />
+                                <span className="text-sm font-medium">View Document</span>
+                              </a>
                             )}
                           </div>
                         </div>

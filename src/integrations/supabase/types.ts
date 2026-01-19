@@ -1916,6 +1916,7 @@ export type Database = {
           comments_count: number | null
           content: string
           created_at: string | null
+          document_url: string | null
           id: string
           image_url: string | null
           likes_count: number | null
@@ -1933,6 +1934,7 @@ export type Database = {
           comments_count?: number | null
           content: string
           created_at?: string | null
+          document_url?: string | null
           id?: string
           image_url?: string | null
           likes_count?: number | null
@@ -1950,6 +1952,7 @@ export type Database = {
           comments_count?: number | null
           content?: string
           created_at?: string | null
+          document_url?: string | null
           id?: string
           image_url?: string | null
           likes_count?: number | null
