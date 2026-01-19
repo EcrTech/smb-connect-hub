@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { FloatingChat } from '@/components/messages/FloatingChat';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CommentsSection } from '@/components/member/CommentsSection';
+import { EditPostDialog } from '@/components/member/EditPostDialog';
+import { SharePostDropdown } from '@/components/post/SharePostDropdown';
+import { BookmarkButton } from '@/components/post/BookmarkButton';
+import { PostEngagementBadge } from '@/components/post/PostEngagementBadge';
+import { formatDistanceToNow } from 'date-fns';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -28,7 +36,11 @@ import {
   Pencil,
   Trash2,
   ExternalLink,
-  Users
+  Users,
+  Heart,
+  MessageCircle,
+  Repeat2,
+  FileText
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
 import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperienceDialog';
@@ -102,6 +114,22 @@ interface Association {
   state: string | null;
 }
 
+interface ProfilePost {
+  id: string;
+  content: string;
+  image_url: string | null;
+  video_url: string | null;
+  document_url: string | null;
+  likes_count: number;
+  comments_count: number;
+  shares_count: number;
+  reposts_count: number;
+  created_at: string;
+  user_id: string;
+  original_post_id: string | null;
+  user_liked: boolean;
+}
+
 export default function MemberProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -121,12 +149,17 @@ export default function MemberProfile() {
   const [isReceiver, setIsReceiver] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const [connectionCount, setConnectionCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [userPosts, setUserPosts] = useState<ProfilePost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [showComments, setShowComments] = useState<Set<string>>(new Set());
 
   const isOwnProfile = currentUser === userId;
 
   useEffect(() => {
     loadCurrentUser();
     loadProfile();
+    loadUserPosts();
   }, [userId]);
 
   useEffect(() => {
@@ -134,6 +167,128 @@ export default function MemberProfile() {
       checkConnectionStatus();
     }
   }, [currentUser, userId, isOwnProfile]);
+
+  const loadUserPosts = async () => {
+    if (!userId) return;
+    
+    try {
+      setPostsLoading(true);
+      
+      // Get current user for checking likes
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Load posts by this user
+      const { data: postsData, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Check which posts the current user has liked
+      let likedPostIds: string[] = [];
+      if (user && postsData && postsData.length > 0) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postsData.map(p => p.id));
+        
+        likedPostIds = (likesData || []).map(l => l.post_id);
+      }
+
+      const postsWithLikeStatus = (postsData || []).map(post => ({
+        ...post,
+        user_liked: likedPostIds.includes(post.id)
+      }));
+
+      setUserPosts(postsWithLikeStatus);
+    } catch (error: any) {
+      console.error('Error loading posts:', error);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  const handleLikePost = async (postId: string, currentlyLiked: boolean) => {
+    if (!currentUser) return;
+    
+    try {
+      if (currentlyLiked) {
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', currentUser);
+        
+        await supabase
+          .from('posts')
+          .update({ likes_count: userPosts.find(p => p.id === postId)!.likes_count - 1 })
+          .eq('id', postId);
+      } else {
+        await supabase
+          .from('post_likes')
+          .insert({ post_id: postId, user_id: currentUser });
+        
+        await supabase
+          .from('posts')
+          .update({ likes_count: userPosts.find(p => p.id === postId)!.likes_count + 1 })
+          .eq('id', postId);
+      }
+      
+      setUserPosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { 
+              ...post, 
+              user_liked: !currentlyLiked,
+              likes_count: currentlyLiked ? post.likes_count - 1 : post.likes_count + 1
+            }
+          : post
+      ));
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update like',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+      
+      if (error) throw error;
+      
+      setUserPosts(prev => prev.filter(p => p.id !== postId));
+      toast({
+        title: 'Success',
+        description: 'Post deleted',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete post',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleComments = (postId: string) => {
+    setShowComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
 
   const loadCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -860,200 +1015,366 @@ export default function MemberProfile() {
           </div>
         </Card>
 
-        {/* About */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">About</h2>
-              {isOwnProfile && !profile.bio && (
-                <div className="relative z-10">
-                  <EditProfileDialog profile={profile} onSave={loadProfile} />
-                </div>
-              )}
-            </div>
-            {profile.bio ? (
-              <p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>
-            ) : (
-              <p className="text-muted-foreground italic">No description added yet</p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'about')} className="w-full">
+          <TabsList className="w-full justify-start bg-muted/50 mb-6">
+            <TabsTrigger value="posts" className="flex-1 md:flex-none">
+              Posts
+            </TabsTrigger>
+            <TabsTrigger value="about" className="flex-1 md:flex-none">
+              About
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Work Experience */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Experience</h2>
-              </div>
-              {isOwnProfile && <EditWorkExperienceDialog onSave={loadProfile} />}
-            </div>
-            {workExperience.length === 0 ? (
-              <p className="text-muted-foreground">No experience added yet</p>
-            ) : (
-              <div className="space-y-6">
-                {workExperience.map((exp, index) => (
-                  <div key={exp.id}>
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-semibold">{exp.title}</h3>
-                          {exp.is_current && (
-                            <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
-                              Currently Working
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-muted-foreground">{exp.company}</p>
-                        {exp.location && (
-                          <p className="text-sm text-muted-foreground">{exp.location}</p>
-                        )}
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {formatDate(exp.start_date)} - {exp.is_current ? 'Present' : formatDate(exp.end_date)}
-                        </p>
-                        {exp.description && (
-                          <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {exp.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {index < workExperience.length - 1 && <Separator className="mt-6" />}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Education */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Education</h2>
-              </div>
-              {isOwnProfile && <EditEducationDialog onSave={loadProfile} />}
-            </div>
-            {education.length === 0 ? (
-              <p className="text-muted-foreground">No education added yet</p>
-            ) : (
-              <div className="space-y-6">
-                {education.map((edu, index) => (
-                  <div key={edu.id}>
-                    <h3 className="font-semibold">{edu.school}</h3>
-                    <p className="text-muted-foreground">
-                      {edu.degree}
-                      {edu.field_of_study && ` in ${edu.field_of_study}`}
-                    </p>
-                    {(edu.start_date || edu.end_date) && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {edu.start_date ? formatDate(edu.start_date) : ''} - {edu.end_date ? formatDate(edu.end_date) : ''}
-                      </p>
-                    )}
-                    {edu.description && (
-                      <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                        {edu.description}
-                      </p>
-                    )}
-                    {index < education.length - 1 && <Separator className="mt-6" />}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Skills */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Skills</h2>
-              </div>
-              {isOwnProfile && <EditSkillsDialog onSave={loadProfile} />}
-            </div>
-            {skills.length === 0 ? (
-              <p className="text-muted-foreground">No skills added yet</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {skills.map((skill) => (
-                  <Badge key={skill.id} variant="secondary" className="text-sm py-1.5 px-3">
-                    {skill.skill_name}
-                    {skill.endorsements_count > 0 && (
-                      <span className="ml-2 text-xs text-muted-foreground">
-                        {skill.endorsements_count}
-                      </span>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Certifications */}
-        <CertificationsSection 
-          certifications={certifications} 
-          isOwnProfile={isOwnProfile} 
-          onSave={loadProfile}
-        />
-
-        {/* Associated Associations */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5" />
-              <h2 className="text-xl font-semibold">Associated Associations</h2>
-            </div>
-            {associations.length === 0 ? (
-              <p className="text-muted-foreground">No associations yet</p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {associations.map((association) => (
-                  <Card key={association.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/member/associations/${association.id}`)}>
+          {/* Posts Tab */}
+          <TabsContent value="posts" className="space-y-4">
+            {postsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <Card key={i}>
                     <CardContent className="pt-6">
-                      <div className="flex items-start gap-3">
-                        {association.logo ? (
-                          <img 
-                            src={association.logo} 
-                            alt={association.name}
-                            className="w-12 h-12 rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                            <Building2 className="w-6 h-6 text-primary" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate">{association.name}</h3>
-                          {association.description && (
-                            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                              {association.description}
-                            </p>
-                          )}
-                          {(association.city || association.state) && (
-                            <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate">
-                                {association.city}
-                                {association.city && association.state && ', '}
-                                {association.state}
-                              </span>
-                            </div>
-                          )}
+                      <div className="flex gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
+            ) : userPosts.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center py-12">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-semibold text-lg mb-2">No posts yet</h3>
+                  {isOwnProfile ? (
+                    <>
+                      <p className="text-muted-foreground mb-4">Share your thoughts and updates with your network.</p>
+                      <Button onClick={() => navigate('/member/feed')}>
+                        Create your first post
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">{profile.first_name} hasn't posted yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              userPosts.map((post) => (
+                <Card key={post.id}>
+                  <CardContent className="pt-6">
+                    {/* Post Header */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <Avatar className="w-10 h-10 cursor-pointer">
+                        <AvatarImage src={profile.avatar || undefined} />
+                        <AvatarFallback>{profile.first_name[0]}{profile.last_name[0]}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="font-semibold">{profile.first_name} {profile.last_name}</span>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                            </p>
+                          </div>
+                          {isOwnProfile && (
+                            <div className="flex items-center gap-1">
+                              <EditPostDialog
+                                postId={post.id}
+                                initialContent={post.content}
+                                onSave={loadUserPosts}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => handleDeletePost(post.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Post Content */}
+                    <p className="whitespace-pre-wrap mb-4">{post.content}</p>
+
+                    {/* Post Media */}
+                    {post.image_url && (
+                      <img
+                        src={post.image_url}
+                        alt="Post"
+                        className="rounded-lg max-h-96 w-full object-cover mb-4"
+                      />
+                    )}
+                    {post.video_url && (
+                      <video
+                        src={post.video_url}
+                        controls
+                        className="rounded-lg max-h-96 w-full object-cover mb-4"
+                      />
+                    )}
+                    {post.document_url && (
+                      <a
+                        href={post.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 bg-muted rounded-lg mb-4 hover:bg-muted/80"
+                      >
+                        <FileText className="h-5 w-5" />
+                        <span className="text-sm">View Document</span>
+                      </a>
+                    )}
+
+                    {/* Engagement Badge */}
+                    <PostEngagementBadge
+                      likesCount={post.likes_count}
+                      commentsCount={post.comments_count}
+                      sharesCount={post.shares_count || 0}
+                      repostsCount={post.reposts_count || 0}
+                    />
+
+                    <Separator className="my-4" />
+
+                    {/* Post Actions */}
+                    <div className="flex items-center justify-between">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={post.user_liked ? 'text-red-500' : ''}
+                        onClick={() => handleLikePost(post.id, post.user_liked)}
+                      >
+                        <Heart className={`h-4 w-4 mr-2 ${post.user_liked ? 'fill-current' : ''}`} />
+                        Like
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleComments(post.id)}
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Comment
+                      </Button>
+                      <SharePostDropdown postId={post.id} postContent={post.content} />
+                      <BookmarkButton postId={post.id} userId={currentUser} />
+                    </div>
+
+                    {/* Comments Section */}
+                    {showComments.has(post.id) && (
+                      <div className="mt-4">
+                        <CommentsSection postId={post.id} currentUserId={currentUser} onCommentAdded={loadUserPosts} />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))
             )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          {/* About Tab */}
+          <TabsContent value="about" className="space-y-6">
+            {/* About */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">About</h2>
+                  {isOwnProfile && !profile.bio && (
+                    <div className="relative z-10">
+                      <EditProfileDialog profile={profile} onSave={loadProfile} />
+                    </div>
+                  )}
+                </div>
+                {profile.bio ? (
+                  <p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p>
+                ) : (
+                  <p className="text-muted-foreground italic">No description added yet</p>
+                )}
+              </CardContent>
+            </Card>
+
+
+            {/* Work Experience */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-5 h-5" />
+                    <h2 className="text-xl font-semibold">Experience</h2>
+                  </div>
+                  {isOwnProfile && <EditWorkExperienceDialog onSave={loadProfile} />}
+                </div>
+                {workExperience.length === 0 ? (
+                  <p className="text-muted-foreground">No experience added yet</p>
+                ) : (
+                  <div className="space-y-6">
+                    {workExperience.map((exp, index) => (
+                      <div key={exp.id}>
+                        <div className="flex gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold">{exp.title}</h3>
+                              {exp.is_current && (
+                                <Badge className="bg-green-500 hover:bg-green-600 text-white text-xs">
+                                  Currently Working
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-muted-foreground">{exp.company}</p>
+                            {exp.location && (
+                              <p className="text-sm text-muted-foreground">{exp.location}</p>
+                            )}
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {formatDate(exp.start_date)} - {exp.is_current ? 'Present' : formatDate(exp.end_date)}
+                            </p>
+                            {exp.description && (
+                              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                                {exp.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {index < workExperience.length - 1 && <Separator className="mt-6" />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Education */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="w-5 h-5" />
+                    <h2 className="text-xl font-semibold">Education</h2>
+                  </div>
+                  {isOwnProfile && <EditEducationDialog onSave={loadProfile} />}
+                </div>
+                {education.length === 0 ? (
+                  <p className="text-muted-foreground">No education added yet</p>
+                ) : (
+                  <div className="space-y-6">
+                    {education.map((edu, index) => (
+                      <div key={edu.id}>
+                        <h3 className="font-semibold">{edu.school}</h3>
+                        <p className="text-muted-foreground">
+                          {edu.degree}
+                          {edu.field_of_study && ` in ${edu.field_of_study}`}
+                        </p>
+                        {(edu.start_date || edu.end_date) && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {edu.start_date ? formatDate(edu.start_date) : ''} - {edu.end_date ? formatDate(edu.end_date) : ''}
+                          </p>
+                        )}
+                        {edu.description && (
+                          <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {edu.description}
+                          </p>
+                        )}
+                        {index < education.length - 1 && <Separator className="mt-6" />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Skills */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    <h2 className="text-xl font-semibold">Skills</h2>
+                  </div>
+                  {isOwnProfile && <EditSkillsDialog onSave={loadProfile} />}
+                </div>
+                {skills.length === 0 ? (
+                  <p className="text-muted-foreground">No skills added yet</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((skill) => (
+                      <Badge key={skill.id} variant="secondary" className="text-sm py-1.5 px-3">
+                        {skill.skill_name}
+                        {skill.endorsements_count > 0 && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {skill.endorsements_count}
+                          </span>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Certifications */}
+            <CertificationsSection 
+              certifications={certifications} 
+              isOwnProfile={isOwnProfile} 
+              onSave={loadProfile}
+            />
+
+            {/* Associated Associations */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Building2 className="w-5 h-5" />
+                  <h2 className="text-xl font-semibold">Associated Associations</h2>
+                </div>
+                {associations.length === 0 ? (
+                  <p className="text-muted-foreground">No associations yet</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {associations.map((association) => (
+                      <Card key={association.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/member/associations/${association.id}`)}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start gap-3">
+                            {association.logo ? (
+                              <img 
+                                src={association.logo} 
+                                alt={association.name}
+                                className="w-12 h-12 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Building2 className="w-6 h-6 text-primary" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold truncate">{association.name}</h3>
+                              {association.description && (
+                                <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                  {association.description}
+                                </p>
+                              )}
+                              {(association.city || association.state) && (
+                                <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
+                                  <MapPin className="w-3 h-3" />
+                                  <span className="truncate">
+                                    {association.city}
+                                    {association.city && association.state && ', '}
+                                    {association.state}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Floating Chat Widget */}
