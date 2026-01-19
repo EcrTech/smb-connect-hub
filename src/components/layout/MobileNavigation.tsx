@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, MessageCircle, UserPlus, Bell } from "lucide-react";
+import { Home, Users, MessageCircle, UserPlus, Bell, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUnreadMessageCount } from "@/hooks/useUnreadMessageCount";
 import { usePendingConnectionCount } from "@/hooks/usePendingConnectionCount";
@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   { icon: Home, label: "Feed", path: "/feed" },
   { icon: Users, label: "Members", path: "/members" },
   { icon: MessageCircle, label: "Messages", path: "/messages" },
-  { icon: UserPlus, label: "Connect", path: "/connections" },
+  { icon: Bookmark, label: "Saved", path: "/saved-posts" },
   { icon: Bell, label: "Alerts", path: "/notifications" },
 ];
 

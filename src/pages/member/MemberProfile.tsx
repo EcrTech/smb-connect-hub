@@ -40,7 +40,8 @@ import {
   Heart,
   MessageCircle,
   Repeat2,
-  FileText
+  FileText,
+  Bookmark
 } from 'lucide-react';
 import { EditProfileDialog } from '@/components/member/EditProfileDialog';
 import { EditWorkExperienceDialog } from '@/components/member/EditWorkExperienceDialog';
@@ -130,6 +131,14 @@ interface ProfilePost {
   user_liked: boolean;
 }
 
+interface SavedPostWithAuthor extends ProfilePost {
+  author: {
+    first_name: string;
+    last_name: string;
+    avatar: string | null;
+  } | null;
+}
+
 export default function MemberProfile() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -149,10 +158,12 @@ export default function MemberProfile() {
   const [isReceiver, setIsReceiver] = useState(false);
   const [chatId, setChatId] = useState<string | null>(null);
   const [connectionCount, setConnectionCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'about'>('posts');
   const [userPosts, setUserPosts] = useState<ProfilePost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [showComments, setShowComments] = useState<Set<string>>(new Set());
+  const [savedPosts, setSavedPosts] = useState<SavedPostWithAuthor[]>([]);
+  const [savedPostsLoading, setSavedPostsLoading] = useState(false);
 
   const isOwnProfile = currentUser === userId;
 
@@ -161,6 +172,86 @@ export default function MemberProfile() {
     loadProfile();
     loadUserPosts();
   }, [userId]);
+
+  // Load saved posts when switching to Saved tab (only for own profile)
+  useEffect(() => {
+    if (activeTab === 'saved' && isOwnProfile && savedPosts.length === 0 && !savedPostsLoading) {
+      loadSavedPosts();
+    }
+  }, [activeTab, isOwnProfile]);
+
+  const loadSavedPosts = async () => {
+    if (!currentUser) return;
+    
+    try {
+      setSavedPostsLoading(true);
+      
+      // Get bookmarked post IDs
+      const { data: bookmarks, error: bookmarkError } = await supabase
+        .from('post_bookmarks')
+        .select('post_id')
+        .eq('user_id', currentUser)
+        .order('created_at', { ascending: false });
+
+      if (bookmarkError) throw bookmarkError;
+      
+      if (!bookmarks || bookmarks.length === 0) {
+        setSavedPosts([]);
+        return;
+      }
+
+      const postIds = bookmarks.map(b => b.post_id);
+      
+      // Get the actual posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .in('id', postIds);
+
+      if (postsError) throw postsError;
+
+      // Get unique author IDs
+      const authorIds = [...new Set((postsData || []).map(p => p.user_id))];
+      
+      // Fetch author profiles
+      const { data: authorsData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, avatar')
+        .in('id', authorIds);
+
+      const authorsMap = new Map(
+        (authorsData || []).map(a => [a.id, { first_name: a.first_name, last_name: a.last_name, avatar: a.avatar }])
+      );
+
+      // Check which posts the current user has liked
+      let likedPostIds: string[] = [];
+      if (postsData && postsData.length > 0) {
+        const { data: likesData } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', currentUser)
+          .in('post_id', postsData.map(p => p.id));
+        
+        likedPostIds = (likesData || []).map(l => l.post_id);
+      }
+
+      // Order by bookmark order (most recent first)
+      const orderedPosts: SavedPostWithAuthor[] = postIds
+        .map(id => postsData?.find(p => p.id === id))
+        .filter(Boolean)
+        .map(post => ({
+          ...post!,
+          user_liked: likedPostIds.includes(post!.id),
+          author: authorsMap.get(post!.user_id) || null
+        }));
+
+      setSavedPosts(orderedPosts);
+    } catch (error: any) {
+      console.error('Error loading saved posts:', error);
+    } finally {
+      setSavedPostsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (currentUser && userId && !isOwnProfile) {
@@ -1016,11 +1107,16 @@ export default function MemberProfile() {
         </Card>
 
         {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'about')} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'posts' | 'saved' | 'about')} className="w-full">
           <TabsList className="w-full justify-start bg-muted/50 mb-6">
             <TabsTrigger value="posts" className="flex-1 md:flex-none">
               Posts
             </TabsTrigger>
+            {isOwnProfile && (
+              <TabsTrigger value="saved" className="flex-1 md:flex-none">
+                Saved
+              </TabsTrigger>
+            )}
             <TabsTrigger value="about" className="flex-1 md:flex-none">
               About
             </TabsTrigger>
@@ -1175,6 +1271,152 @@ export default function MemberProfile() {
               ))
             )}
           </TabsContent>
+
+          {/* Saved Posts Tab - Only visible for own profile */}
+          {isOwnProfile && (
+            <TabsContent value="saved" className="space-y-4">
+              {savedPostsLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <Card key={i}>
+                      <CardContent className="pt-6">
+                        <div className="flex gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-32" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : savedPosts.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6 text-center py-12">
+                    <Bookmark className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="font-semibold text-lg mb-2">No saved posts yet</h3>
+                    <p className="text-muted-foreground mb-4">Bookmark posts from your feed to save them here for later.</p>
+                    <Button onClick={() => navigate('/member/feed')}>
+                      Browse Feed
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                savedPosts.map((post) => {
+                  const author = post.author;
+                  const authorName = author ? `${author.first_name} ${author.last_name}` : 'Unknown User';
+                  const authorInitials = author ? `${author.first_name[0]}${author.last_name[0]}` : 'U';
+                  
+                  return (
+                    <Card key={post.id}>
+                      <CardContent className="pt-6">
+                        {/* Post Header */}
+                        <div className="flex items-start gap-3 mb-4">
+                          <Avatar 
+                            className="w-10 h-10 cursor-pointer"
+                            onClick={() => navigate(`/member/profile/${post.user_id}`)}
+                          >
+                            <AvatarImage src={author?.avatar || undefined} />
+                            <AvatarFallback>{authorInitials}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <span 
+                                  className="font-semibold cursor-pointer hover:underline"
+                                  onClick={() => navigate(`/member/profile/${post.user_id}`)}
+                                >
+                                  {authorName}
+                                </span>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Post Content */}
+                        <p className="whitespace-pre-wrap mb-4">{post.content}</p>
+
+                        {/* Post Media */}
+                        {post.image_url && (
+                          <img
+                            src={post.image_url}
+                            alt="Post"
+                            className="rounded-lg max-h-96 w-full object-cover mb-4"
+                          />
+                        )}
+                        {post.video_url && (
+                          <video
+                            src={post.video_url}
+                            controls
+                            className="rounded-lg max-h-96 w-full object-cover mb-4"
+                          />
+                        )}
+                        {post.document_url && (
+                          <a
+                            href={post.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-3 bg-muted rounded-lg mb-4 hover:bg-muted/80"
+                          >
+                            <FileText className="h-5 w-5" />
+                            <span className="text-sm">View Document</span>
+                          </a>
+                        )}
+
+                        {/* Engagement Badge */}
+                        <PostEngagementBadge
+                          likesCount={post.likes_count}
+                          commentsCount={post.comments_count}
+                          sharesCount={post.shares_count || 0}
+                          repostsCount={post.reposts_count || 0}
+                        />
+
+                        <Separator className="my-4" />
+
+                        {/* Post Actions */}
+                        <div className="flex items-center justify-between">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={post.user_liked ? 'text-red-500' : ''}
+                            onClick={() => handleLikePost(post.id, post.user_liked)}
+                          >
+                            <Heart className={`h-4 w-4 mr-2 ${post.user_liked ? 'fill-current' : ''}`} />
+                            Like
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleComments(post.id)}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Comment
+                          </Button>
+                          <SharePostDropdown postId={post.id} postContent={post.content} />
+                          <BookmarkButton 
+                            postId={post.id} 
+                            userId={currentUser}
+                          />
+                        </div>
+
+                        {/* Comments Section */}
+                        {showComments.has(post.id) && (
+                          <div className="mt-4">
+                            <CommentsSection postId={post.id} currentUserId={currentUser} onCommentAdded={loadSavedPosts} />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </TabsContent>
+          )}
 
           {/* About Tab */}
           <TabsContent value="about" className="space-y-6">
