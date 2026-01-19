@@ -553,6 +553,20 @@ export default function MemberFeed() {
     }
   };
 
+  const clearPostComposer = () => {
+    setNewPostContent('');
+    setImageFile(null);
+    setImagePreview(null);
+    setVideoFile(null);
+    setVideoPreview(null);
+    setDocumentFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (videoInputRef.current) videoInputRef.current.value = '';
+    if (documentInputRef.current) documentInputRef.current.value = '';
+  };
+
+  const hasAnyContent = newPostContent.trim() || imageFile || videoFile || documentFile;
+
   const getDocumentName = (url: string) => {
     const parts = url.split('/');
     const fileName = parts[parts.length - 1];
@@ -1006,14 +1020,28 @@ export default function MemberFeed() {
                   Document
                 </Button>
               </div>
-              <Button
-                onClick={handleCreatePost}
-                disabled={!newPostContent.trim() || posting}
-                size="sm"
-                className="bg-primary hover:bg-primary/90"
-              >
-                {posting ? 'Posting...' : 'Post'}
-              </Button>
+              <div className="flex items-center gap-2">
+                {hasAnyContent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearPostComposer}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Clear all"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Clear
+                  </Button>
+                )}
+                <Button
+                  onClick={handleCreatePost}
+                  disabled={!newPostContent.trim() || posting}
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {posting ? 'Posting...' : 'Post'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
