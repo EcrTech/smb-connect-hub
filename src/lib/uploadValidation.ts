@@ -5,7 +5,7 @@
 // File size limits in bytes
 export const FILE_SIZE_LIMITS = {
   IMAGE: 5 * 1024 * 1024,       // 5MB for general images
-  POST_IMAGE: 10 * 1024 * 1024, // 10MB for post images
+  POST_IMAGE: 5 * 1024 * 1024,  // 5MB for post images (JPG/PNG only)
   VIDEO: 50 * 1024 * 1024,      // 50MB for videos
   DOCUMENT: 10 * 1024 * 1024,   // 10MB for documents (CSV, PDF, etc.)
   AVATAR: 2 * 1024 * 1024,      // 2MB for avatars
@@ -19,6 +19,13 @@ export const IMAGE_DIMENSION_LIMITS = {
   AVATAR_MAX: 1000,    // Square dimension for avatars
   COVER_MAX_WIDTH: 2000,
   COVER_MAX_HEIGHT: 1000,
+} as const;
+
+// Specific post image dimensions for social media optimization
+export const POST_IMAGE_DIMENSIONS = {
+  SQUARE: { width: 1080, height: 1080 },      // 1:1 - Feed posts, carousel slides
+  PORTRAIT: { width: 1080, height: 1350 },    // 4:5 - Portrait feed posts
+  LANDSCAPE: { width: 1200, height: 627 },    // 1.91:1 - Link previews
 } as const;
 
 // Allowed file types
@@ -159,19 +166,65 @@ export const validateImageUpload = async (file: File): Promise<ValidationResult>
 };
 
 /**
- * Complete validation for post image uploads (10MB limit)
+ * Validate post image dimensions against allowed formats
+ */
+export const validatePostImageDimensions = (file: File): Promise<ValidationResult> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      
+      // Check if dimensions match any allowed format (with 10px tolerance)
+      const tolerance = 10;
+      const isSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE.width) <= tolerance && 
+                       Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE.height) <= tolerance;
+      const isPortrait = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT.width) <= tolerance && 
+                         Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT.height) <= tolerance;
+      const isLandscape = Math.abs(width - POST_IMAGE_DIMENSIONS.LANDSCAPE.width) <= tolerance && 
+                          Math.abs(height - POST_IMAGE_DIMENSIONS.LANDSCAPE.height) <= tolerance;
+      
+      if (isSquare || isPortrait || isLandscape) {
+        resolve({ valid: true });
+      } else {
+        resolve({
+          valid: false,
+          error: `Image dimensions (${width}x${height}) don't match allowed formats: 1080x1080 (square), 1080x1350 (portrait 4:5), or 1200x627 (landscape). Please resize your image.`,
+        });
+      }
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ valid: false, error: 'Failed to load image' });
+    };
+    
+    img.src = url;
+  });
+};
+
+/**
+ * Complete validation for post image uploads (5MB limit, specific dimensions)
  */
 export const validatePostImageUpload = async (file: File): Promise<ValidationResult> => {
-  // Check file type
-  const typeCheck = validateFileType(file, ALLOWED_FILE_TYPES.IMAGES);
-  if (!typeCheck.valid) return typeCheck;
+  // Only allow JPG and PNG for posts (best display quality)
+  const allowedPostTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+  const typeCheck = validateFileType(file, allowedPostTypes);
+  if (!typeCheck.valid) {
+    return {
+      valid: false,
+      error: 'Invalid image format. Allowed formats: JPG, PNG',
+    };
+  }
   
-  // Check file size (10MB for posts)
+  // Check file size (5MB for posts)
   const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.POST_IMAGE);
   if (!sizeCheck.valid) return sizeCheck;
   
-  // Check dimensions
-  const dimensionCheck = await validateImageDimensions(file);
+  // Check dimensions match allowed formats
+  const dimensionCheck = await validatePostImageDimensions(file);
   return dimensionCheck;
 };
 
