@@ -41,6 +41,8 @@ interface Post {
   reposts_count: number;
   original_post_id: string | null;
   original_author_id: string | null;
+  post_context: string | null;
+  organization_id: string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -1115,13 +1117,25 @@ export default function AssociationFeed() {
                         <div className="flex items-start gap-4 mb-4">
                           <Avatar
                             className="cursor-pointer"
-                            onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
+                            onClick={() => {
+                              if (post.post_context !== 'association') {
+                                navigate(`/profile/${post.original_author_id || post.user_id}`);
+                              }
+                            }}
                           >
-                            <AvatarImage src={post.original_author?.avatar || post.profiles?.avatar || undefined} />
+                            <AvatarImage 
+                              src={post.post_context === 'association' 
+                                ? associationInfo?.logo || undefined 
+                                : (post.original_author?.avatar || post.profiles?.avatar || undefined)
+                              } 
+                            />
                             <AvatarFallback>
-                              {post.original_author ? 
-                                `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
-                                `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
+                              {post.post_context === 'association'
+                                ? associationInfo?.name?.[0] || 'A'
+                                : (post.original_author 
+                                    ? `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}`
+                                    : `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
+                                  )
                               }
                             </AvatarFallback>
                           </Avatar>
@@ -1129,15 +1143,22 @@ export default function AssociationFeed() {
                             <div className="flex items-center justify-between">
                               <div>
                                 <p 
-                                  className="font-semibold cursor-pointer hover:underline"
-                                  onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
+                                  className={`font-semibold ${post.post_context !== 'association' ? 'cursor-pointer hover:underline' : ''}`}
+                                  onClick={() => {
+                                    if (post.post_context !== 'association') {
+                                      navigate(`/profile/${post.original_author_id || post.user_id}`);
+                                    }
+                                  }}
                                 >
-                                  {post.original_author ? 
-                                    `${post.original_author.first_name || 'Unknown'} ${post.original_author.last_name || 'User'}` :
-                                    `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
+                                  {post.post_context === 'association'
+                                    ? associationInfo?.name || 'Association'
+                                    : (post.original_author 
+                                        ? `${post.original_author.first_name || 'Unknown'} ${post.original_author.last_name || 'User'}`
+                                        : `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
+                                      )
                                   }
                                 </p>
-                                {post.members?.companies && !post.original_post_id && (
+                                {post.post_context !== 'association' && post.members?.companies && !post.original_post_id && (
                                   <p className="text-sm text-muted-foreground">
                                     {post.members.companies.name}
                                   </p>
