@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { LinkifiedText } from '@/lib/linkify';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -1148,7 +1149,7 @@ export default function MemberFeed() {
                           </div>
                         </div>
 
-                        <p className="mt-4 whitespace-pre-wrap break-words">{post.content}</p>
+                        <LinkifiedText text={post.content} className="mt-4" />
 
                         {post.image_url && (
                           <img
