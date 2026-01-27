@@ -70,6 +70,9 @@ import CompanyFeed from "./pages/company/CompanyFeed";
 import AssociationFeed from "./pages/association/AssociationFeed";
 import NotFound from "./pages/NotFound";
 import AccountSettings from "./pages/AccountSettings";
+import EventLandingPages from "./pages/admin/EventLandingPages";
+import CreateLandingPage from "./pages/admin/CreateLandingPage";
+import EventLandingPageView from "./pages/public/EventLandingPageView";
 
 const queryClient = new QueryClient();
 
@@ -294,6 +297,30 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <MemberInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/event-landing-pages" 
+            element={
+              <ProtectedRoute>
+                <EventLandingPages />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/event-landing-pages/new" 
+            element={
+              <ProtectedRoute>
+                <CreateLandingPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/event-landing-pages/:id/edit" 
+            element={
+              <ProtectedRoute>
+                <CreateLandingPage />
               </ProtectedRoute>
             } 
           />
@@ -593,6 +620,9 @@ const AppContent = () => {
               </ProtectedRoute>
             } 
           />
+          {/* Public event landing pages - NO AUTH REQUIRED */}
+          <Route path="/event/:slug" element={<EventLandingPageView />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
