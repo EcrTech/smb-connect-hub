@@ -1285,6 +1285,110 @@ export type Database = {
         }
         Relationships: []
       }
+      event_landing_pages: {
+        Row: {
+          association_id: string
+          created_at: string
+          created_by: string
+          event_id: string | null
+          html_content: string
+          id: string
+          is_active: boolean
+          registration_enabled: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          association_id: string
+          created_at?: string
+          created_by: string
+          event_id?: string | null
+          html_content: string
+          id?: string
+          is_active?: boolean
+          registration_enabled?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          association_id?: string
+          created_at?: string
+          created_by?: string
+          event_id?: string | null
+          html_content?: string
+          id?: string
+          is_active?: boolean
+          registration_enabled?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_landing_pages_association_id_fkey"
+            columns: ["association_id"]
+            isOneToOne: false
+            referencedRelation: "associations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_landing_pages_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registrations: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          landing_page_id: string
+          last_name: string
+          phone: string | null
+          registration_data: Json | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          landing_page_id: string
+          last_name: string
+          phone?: string | null
+          registration_data?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          landing_page_id?: string
+          last_name?: string
+          phone?: string | null
+          registration_data?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "event_landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_requisitions: {
         Row: {
           admin_notes: string | null

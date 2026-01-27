@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.fetch-link-preview]
 verify_jwt = false
+
+[functions.get-landing-page]
+verify_jwt = false
+
+[functions.process-event-registration]
+verify_jwt = false
