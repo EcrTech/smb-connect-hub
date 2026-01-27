@@ -622,6 +622,7 @@ const AppContent = () => {
           />
           {/* Public event landing pages - NO AUTH REQUIRED */}
           <Route path="/event/:slug" element={<EventLandingPageView />} />
+          <Route path="/event/:slug/:subPage" element={<EventLandingPageView />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -15,6 +15,7 @@ serve(async (req: Request) => {
   try {
     const url = new URL(req.url);
     const slug = url.searchParams.get('slug');
+    const pageSlug = url.searchParams.get('page') || '';
 
     if (!slug) {
       return new Response(
@@ -57,14 +58,59 @@ serve(async (req: Request) => {
       );
     }
 
+    // Fetch all pages for this landing page
+    const { data: pages, error: pagesError } = await supabase
+      .from('event_landing_page_pages')
+      .select('id, title, slug, html_content, sort_order, is_default')
+      .eq('landing_page_id', landingPage.id)
+      .order('sort_order');
+
+    if (pagesError) {
+      console.error('Error fetching pages:', pagesError);
+    }
+
+    // Determine which page content to return
+    let htmlContent = landingPage.html_content; // Fallback to main html_content
+    
+    if (pages && pages.length > 0) {
+      // Find the requested page or default page
+      let targetPage;
+      
+      if (pageSlug) {
+        // Looking for a specific sub-page
+        targetPage = pages.find(p => p.slug === pageSlug);
+      } else {
+        // Looking for the default (home) page
+        targetPage = pages.find(p => p.is_default) || pages[0];
+      }
+
+      if (targetPage) {
+        htmlContent = targetPage.html_content;
+      } else if (pageSlug) {
+        // Requested a specific page that doesn't exist
+        return new Response(
+          JSON.stringify({ error: 'Page not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Return page info for navigation
+    const pageInfo = pages?.map(p => ({
+      slug: p.slug,
+      title: p.title,
+      is_default: p.is_default
+    })) || [];
+
     return new Response(
       JSON.stringify({
         id: landingPage.id,
         title: landingPage.title,
         slug: landingPage.slug,
-        html_content: landingPage.html_content,
+        html_content: htmlContent,
         css_content: landingPage.css_content,
         registration_enabled: landingPage.registration_enabled,
+        pages: pageInfo,
         association: landingPage.associations
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

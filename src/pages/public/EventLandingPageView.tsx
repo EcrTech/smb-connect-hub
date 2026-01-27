@@ -5,6 +5,12 @@ import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import DOMPurify from 'dompurify';
 
+interface PageInfo {
+  slug: string;
+  title: string;
+  is_default: boolean;
+}
+
 interface LandingPageData {
   id: string;
   title: string;
@@ -12,6 +18,7 @@ interface LandingPageData {
   html_content: string;
   css_content?: string | null;
   registration_enabled: boolean;
+  pages: PageInfo[];
   association: {
     name: string;
     logo: string | null;
@@ -19,7 +26,7 @@ interface LandingPageData {
 }
 
 const EventLandingPageView = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug, subPage } = useParams<{ slug: string; subPage?: string }>();
   const [landingPage, setLandingPage] = useState<LandingPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,14 +43,9 @@ const EventLandingPageView = () => {
       }
 
       try {
-        const { data, error: funcError } = await supabase.functions.invoke('get-landing-page', {
-          body: null,
-          headers: {},
-        });
-
-        // Use query parameter approach instead
+        const pageParam = subPage ? `&page=${encodeURIComponent(subPage)}` : '';
         const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-landing-page?slug=${encodeURIComponent(slug)}`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-landing-page?slug=${encodeURIComponent(slug)}${pageParam}`,
           {
             method: 'GET',
             headers: {
@@ -73,7 +75,7 @@ const EventLandingPageView = () => {
     };
 
     fetchLandingPage();
-  }, [slug]);
+  }, [slug, subPage]);
 
   // Handle form submissions from the iframe
   useEffect(() => {
@@ -134,7 +136,7 @@ const EventLandingPageView = () => {
   }, [landingPage]);
 
   // Inject CSS and the form interception script into the HTML
-  const getEnhancedHtml = (html: string, cssContent?: string | null): string => {
+  const getEnhancedHtml = (html: string, cssContent?: string | null, pages?: PageInfo[]): string => {
     let sanitizedHtml = DOMPurify.sanitize(html, {
       ADD_TAGS: ['style', 'script', 'link'],
       ADD_ATTR: ['target', 'onclick', 'onsubmit'],
@@ -153,16 +155,43 @@ const EventLandingPageView = () => {
       }
     }
 
+    // Create navigation script for internal page links
+    const pagesJson = JSON.stringify(pages || []);
+    const baseSlug = slug || '';
+    
     const formInterceptScript = `
       <script>
         (function() {
+          var pages = ${pagesJson};
+          var baseSlug = "${baseSlug}";
+          
+          // Handle internal navigation links
+          document.addEventListener('click', function(e) {
+            var link = e.target.closest('a');
+            if (!link) return;
+            
+            var href = link.getAttribute('href');
+            if (!href) return;
+            
+            // Check if it's an internal page link (starts with # followed by page slug)
+            if (href.startsWith('#page:')) {
+              e.preventDefault();
+              var pageSlug = href.replace('#page:', '');
+              var targetPage = pages.find(function(p) { return p.slug === pageSlug || (pageSlug === 'home' && p.is_default); });
+              if (targetPage) {
+                var newPath = targetPage.is_default ? '/event/' + baseSlug : '/event/' + baseSlug + '/' + targetPage.slug;
+                window.parent.location.href = newPath;
+              }
+            }
+          });
+
           // Intercept all form submissions
           document.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const form = e.target;
-            const formData = new FormData(form);
-            const data = {};
+            var form = e.target;
+            var formData = new FormData(form);
+            var data = {};
             
             formData.forEach(function(value, key) {
               data[key] = value;
@@ -179,7 +208,7 @@ const EventLandingPageView = () => {
           window.addEventListener('message', function(e) {
             if (e.data?.type === 'registration-success') {
               // Show success message in the form area
-              const forms = document.querySelectorAll('form');
+              var forms = document.querySelectorAll('form');
               forms.forEach(function(form) {
                 form.innerHTML = '<div style="padding: 20px; text-align: center; color: #16a34a; font-size: 18px;">' +
                   '<svg style="width: 48px; height: 48px; margin: 0 auto 10px;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>' +
@@ -268,7 +297,7 @@ const EventLandingPageView = () => {
       {/* Render the landing page HTML in an iframe for isolation */}
       <iframe
         ref={iframeRef}
-        srcDoc={getEnhancedHtml(landingPage.html_content, landingPage.css_content)}
+        srcDoc={getEnhancedHtml(landingPage.html_content, landingPage.css_content, landingPage.pages)}
         className="w-full min-h-screen border-0"
         sandbox="allow-scripts allow-forms allow-same-origin"
         title={landingPage.title}
