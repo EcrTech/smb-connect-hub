@@ -205,9 +205,9 @@ serve(async (req: Request) => {
 
     // Send welcome email with credentials (only for new users)
     if (isNewUser && password) {
-      const senderApiKey = Deno.env.get('SENDER_API_KEY');
+      const resendApiKey = Deno.env.get('RESEND_API_KEY');
       
-      if (senderApiKey) {
+      if (resendApiKey) {
         const assocData = landingPage.associations as { name: string } | { name: string }[] | null;
         const associationName = Array.isArray(assocData) ? assocData[0]?.name : assocData?.name || 'SMB Connect';
 
@@ -258,31 +258,25 @@ serve(async (req: Request) => {
             </html>
           `;
 
-          const senderResponse = await fetch('https://api.sender.net/v2/email', {
+          // Use Resend API
+          const resendResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${senderApiKey}`,
+              'Authorization': `Bearer ${resendApiKey}`,
               'Content-Type': 'application/json',
-              'Accept': 'application/json',
             },
             body: JSON.stringify({
-              from: {
-                email: 'noreply@smbconnect.in',
-                name: 'SMB Connect',
-              },
-              to: [{
-                email: email,
-                name: `${first_name} ${last_name}`,
-              }],
+              from: 'SMB Connect <noreply@smbconnect.in>',
+              to: [email],
               subject: `Welcome to SMB Connect - Your Event Registration is Complete!`,
               html: emailHtml,
               text: `Hello ${first_name}, Thank you for registering for ${landingPage.title}! Your login credentials: Email: ${email}, Password: ${password}. Login at https://smb-connect-hub.lovable.app/auth/login`,
             }),
           });
 
-          if (!senderResponse.ok) {
-            const errorText = await senderResponse.text();
-            console.error('Sender API error:', errorText);
+          if (!resendResponse.ok) {
+            const errorText = await resendResponse.text();
+            console.error('Resend API error:', errorText);
           } else {
             console.log('Welcome email sent successfully to:', email);
           }
@@ -291,7 +285,7 @@ serve(async (req: Request) => {
           // Continue anyway, registration is still successful
         }
       } else {
-        console.warn('SENDER_API_KEY not configured, skipping welcome email');
+        console.warn('RESEND_API_KEY not configured, skipping welcome email');
       }
     }
 
