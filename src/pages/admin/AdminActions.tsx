@@ -294,6 +294,10 @@ export default function AdminActions() {
                 <Calendar className="w-4 h-4 mr-2" />
                 Event Calendar
               </Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/admin/event-landing-pages')}>
+                <FileText className="w-4 h-4 mr-2" />
+                Event Landing Pages
+              </Button>
               <Button variant="outline" className="w-full" onClick={() => navigate('/feed')}>
                 <Rss className="w-4 h-4 mr-2" />
                 Member Feed
