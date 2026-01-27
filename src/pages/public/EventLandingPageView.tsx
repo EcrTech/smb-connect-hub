@@ -10,6 +10,7 @@ interface LandingPageData {
   title: string;
   slug: string;
   html_content: string;
+  css_content?: string | null;
   registration_enabled: boolean;
   association: {
     name: string;
@@ -132,13 +133,25 @@ const EventLandingPageView = () => {
     return () => window.removeEventListener('message', handleMessage);
   }, [landingPage]);
 
-  // Inject the form interception script into the HTML
-  const getEnhancedHtml = (html: string): string => {
-    const sanitizedHtml = DOMPurify.sanitize(html, {
+  // Inject CSS and the form interception script into the HTML
+  const getEnhancedHtml = (html: string, cssContent?: string | null): string => {
+    let sanitizedHtml = DOMPurify.sanitize(html, {
       ADD_TAGS: ['style', 'script', 'link'],
       ADD_ATTR: ['target', 'onclick', 'onsubmit'],
       WHOLE_DOCUMENT: true,
     });
+
+    // Inject CSS if present
+    if (cssContent) {
+      const styleTag = `<style>${cssContent}</style>`;
+      if (sanitizedHtml.includes('</head>')) {
+        sanitizedHtml = sanitizedHtml.replace('</head>', styleTag + '</head>');
+      } else if (sanitizedHtml.includes('<body>')) {
+        sanitizedHtml = sanitizedHtml.replace('<body>', '<head>' + styleTag + '</head><body>');
+      } else {
+        sanitizedHtml = styleTag + sanitizedHtml;
+      }
+    }
 
     const formInterceptScript = `
       <script>
@@ -255,7 +268,7 @@ const EventLandingPageView = () => {
       {/* Render the landing page HTML in an iframe for isolation */}
       <iframe
         ref={iframeRef}
-        srcDoc={getEnhancedHtml(landingPage.html_content)}
+        srcDoc={getEnhancedHtml(landingPage.html_content, landingPage.css_content)}
         className="w-full min-h-screen border-0"
         sandbox="allow-scripts allow-forms allow-same-origin"
         title={landingPage.title}

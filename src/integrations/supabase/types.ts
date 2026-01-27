@@ -1290,6 +1290,7 @@ export type Database = {
           association_id: string
           created_at: string
           created_by: string
+          css_content: string | null
           event_id: string | null
           html_content: string
           id: string
@@ -1303,6 +1304,7 @@ export type Database = {
           association_id: string
           created_at?: string
           created_by: string
+          css_content?: string | null
           event_id?: string | null
           html_content: string
           id?: string
@@ -1316,6 +1318,7 @@ export type Database = {
           association_id?: string
           created_at?: string
           created_by?: string
+          css_content?: string | null
           event_id?: string | null
           html_content?: string
           id?: string

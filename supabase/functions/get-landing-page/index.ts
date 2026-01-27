@@ -36,6 +36,7 @@ serve(async (req: Request) => {
         title,
         slug,
         html_content,
+        css_content,
         is_active,
         registration_enabled,
         association_id,
@@ -62,6 +63,7 @@ serve(async (req: Request) => {
         title: landingPage.title,
         slug: landingPage.slug,
         html_content: landingPage.html_content,
+        css_content: landingPage.css_content,
         registration_enabled: landingPage.registration_enabled,
         association: landingPage.associations
       }),

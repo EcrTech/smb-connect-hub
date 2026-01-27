@@ -26,6 +26,7 @@ const CreateLandingPage = () => {
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
+  const [cssContent, setCssContent] = useState('');
   const [associationId, setAssociationId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
@@ -68,6 +69,7 @@ const CreateLandingPage = () => {
       setTitle(existingPage.title);
       setSlug(existingPage.slug);
       setHtmlContent(existingPage.html_content);
+      setCssContent(existingPage.css_content || '');
       setAssociationId(existingPage.association_id);
       setIsActive(existingPage.is_active);
       setRegistrationEnabled(existingPage.registration_enabled);
@@ -99,10 +101,16 @@ const CreateLandingPage = () => {
         throw new Error('HTML content exceeds 5MB limit');
       }
 
+      // Validate CSS size (2MB limit)
+      if (cssContent.length > 2 * 1024 * 1024) {
+        throw new Error('CSS content exceeds 2MB limit');
+      }
+
       const pageData = {
         title,
         slug,
         html_content: htmlContent,
+        css_content: cssContent || null,
         association_id: associationId,
         is_active: isActive,
         registration_enabled: registrationEnabled,
@@ -138,7 +146,7 @@ const CreateLandingPage = () => {
     },
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleHtmlFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -164,6 +172,32 @@ const CreateLandingPage = () => {
     reader.readAsText(file);
   };
 
+  const handleCssFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.css')) {
+      toast.error('Please upload a CSS file');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('File size exceeds 2MB limit');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setCssContent(content);
+      toast.success('CSS file loaded');
+    };
+    reader.onerror = () => {
+      toast.error('Failed to read file');
+    };
+    reader.readAsText(file);
+  };
+
   const copyUrl = () => {
     const url = `${window.location.origin}/event/${slug}`;
     navigator.clipboard.writeText(url);
@@ -171,11 +205,25 @@ const CreateLandingPage = () => {
   };
 
   const getSanitizedPreviewHtml = () => {
-    return DOMPurify.sanitize(htmlContent, {
+    let html = DOMPurify.sanitize(htmlContent, {
       ADD_TAGS: ['style', 'link'],
       ADD_ATTR: ['target'],
       WHOLE_DOCUMENT: true,
     });
+
+    // Inject CSS if present
+    if (cssContent) {
+      const styleTag = `<style>${cssContent}</style>`;
+      if (html.includes('</head>')) {
+        html = html.replace('</head>', styleTag + '</head>');
+      } else if (html.includes('<body>')) {
+        html = html.replace('<body>', '<head>' + styleTag + '</head><body>');
+      } else {
+        html = styleTag + html;
+      }
+    }
+
+    return html;
   };
 
   if (isEditing && isLoadingPage) {
@@ -295,7 +343,8 @@ const CreateLandingPage = () => {
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="edit">Edit</TabsTrigger>
+                <TabsTrigger value="edit">HTML</TabsTrigger>
+                <TabsTrigger value="css">CSS</TabsTrigger>
                 <TabsTrigger value="preview" disabled={!htmlContent}>
                   <Eye className="h-4 w-4 mr-1" />
                   Preview
@@ -316,7 +365,7 @@ const CreateLandingPage = () => {
                     type="file"
                     accept=".html,.htm"
                     className="hidden"
-                    onChange={handleFileUpload}
+                    onChange={handleHtmlFileUpload}
                   />
                   <span className="text-sm text-muted-foreground">or paste HTML below</span>
                 </div>
@@ -354,6 +403,54 @@ const CreateLandingPage = () => {
                     <li><code className="bg-background px-1 rounded">last_name</code> or <code className="bg-background px-1 rounded">lastName</code> - Required</li>
                     <li><code className="bg-background px-1 rounded">phone</code>, <code className="bg-background px-1 rounded">mobile</code>, or <code className="bg-background px-1 rounded">telephone</code> - Optional</li>
                   </ul>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="css" className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <Label
+                    htmlFor="css-upload"
+                    className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload CSS File
+                  </Label>
+                  <input
+                    id="css-upload"
+                    type="file"
+                    accept=".css"
+                    className="hidden"
+                    onChange={handleCssFileUpload}
+                  />
+                  <span className="text-sm text-muted-foreground">or paste CSS below (optional)</span>
+                </div>
+
+                <Textarea
+                  placeholder="/* Your custom styles */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.header {
+  background: #1a1a1a;
+  color: white;
+  padding: 20px;
+}
+
+.form-input {
+  border-radius: 8px;
+  padding: 10px;
+}"
+                  className="font-mono text-sm min-h-[400px]"
+                  value={cssContent}
+                  onChange={(e) => setCssContent(e.target.value)}
+                />
+
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>CSS will be injected into the HTML when the page is rendered</span>
+                  <span>{(cssContent.length / 1024).toFixed(1)} KB / 2048 KB</span>
                 </div>
               </TabsContent>
 
