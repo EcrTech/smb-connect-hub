@@ -12,9 +12,18 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Eye, Save, Loader2, Copy, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Upload, Eye, Save, Loader2, Copy, ExternalLink, Plus, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
+
+interface PageData {
+  id: string;
+  title: string;
+  slug: string;
+  htmlContent: string;
+  sortOrder: number;
+  isDefault: boolean;
+}
 
 const CreateLandingPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,13 +34,18 @@ const CreateLandingPage = () => {
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
-  const [htmlContent, setHtmlContent] = useState('');
   const [cssContent, setCssContent] = useState('');
   const [associationId, setAssociationId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [activeTab, setActiveTab] = useState('edit');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  
+  // Multi-page state
+  const [pages, setPages] = useState<PageData[]>([
+    { id: 'temp-1', title: 'Home', slug: '', htmlContent: '', sortOrder: 0, isDefault: true }
+  ]);
+  const [activePageIndex, setActivePageIndex] = useState(0);
 
   // Fetch associations for dropdown
   const { data: associations } = useQuery({
@@ -63,12 +77,27 @@ const CreateLandingPage = () => {
     enabled: isEditing,
   });
 
+  // Fetch existing pages for this landing page
+  const { data: existingPages, isLoading: isLoadingPages } = useQuery({
+    queryKey: ['landing-page-pages', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('event_landing_page_pages')
+        .select('*')
+        .eq('landing_page_id', id)
+        .order('sort_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: isEditing,
+  });
+
   // Populate form when editing
   useEffect(() => {
     if (existingPage) {
       setTitle(existingPage.title);
       setSlug(existingPage.slug);
-      setHtmlContent(existingPage.html_content);
       setCssContent(existingPage.css_content || '');
       setAssociationId(existingPage.association_id);
       setIsActive(existingPage.is_active);
@@ -76,6 +105,20 @@ const CreateLandingPage = () => {
       setSlugManuallyEdited(true);
     }
   }, [existingPage]);
+
+  // Populate pages when editing
+  useEffect(() => {
+    if (existingPages && existingPages.length > 0) {
+      setPages(existingPages.map(p => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        htmlContent: p.html_content,
+        sortOrder: p.sort_order,
+        isDefault: p.is_default
+      })));
+    }
+  }, [existingPages]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -90,15 +133,59 @@ const CreateLandingPage = () => {
     }
   }, [title, slugManuallyEdited]);
 
+  const activePage = pages[activePageIndex];
+  const hasAnyContent = pages.some(p => p.htmlContent.trim().length > 0);
+
+  const updatePageField = (index: number, field: keyof PageData, value: string | boolean | number) => {
+    setPages(prev => prev.map((p, i) => 
+      i === index ? { ...p, [field]: value } : p
+    ));
+  };
+
+  const addPage = () => {
+    const newPage: PageData = {
+      id: `temp-${Date.now()}`,
+      title: `Page ${pages.length + 1}`,
+      slug: `page-${pages.length + 1}`,
+      htmlContent: '',
+      sortOrder: pages.length,
+      isDefault: false
+    };
+    setPages([...pages, newPage]);
+    setActivePageIndex(pages.length);
+  };
+
+  const removePage = (index: number) => {
+    if (pages[index].isDefault) {
+      toast.error('Cannot remove the default page');
+      return;
+    }
+    if (pages.length <= 1) {
+      toast.error('Must have at least one page');
+      return;
+    }
+    setPages(prev => prev.filter((_, i) => i !== index));
+    if (activePageIndex >= index && activePageIndex > 0) {
+      setActivePageIndex(activePageIndex - 1);
+    }
+  };
+
+  const setAsDefault = (index: number) => {
+    setPages(prev => prev.map((p, i) => ({
+      ...p,
+      isDefault: i === index,
+      slug: i === index ? '' : (p.slug || p.title.toLowerCase().replace(/[^a-z0-9]/g, '-'))
+    })));
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!title || !slug || !htmlContent || !associationId) {
+      if (!title || !slug || !associationId) {
         throw new Error('Please fill in all required fields');
       }
 
-      // Validate HTML size (5MB limit)
-      if (htmlContent.length > 5 * 1024 * 1024) {
-        throw new Error('HTML content exceeds 5MB limit');
+      if (!hasAnyContent) {
+        throw new Error('At least one page must have HTML content');
       }
 
       // Validate CSS size (2MB limit)
@@ -106,10 +193,23 @@ const CreateLandingPage = () => {
         throw new Error('CSS content exceeds 2MB limit');
       }
 
-      const pageData = {
+      // Validate each page's HTML size (5MB limit)
+      for (const page of pages) {
+        if (page.htmlContent.length > 5 * 1024 * 1024) {
+          throw new Error(`HTML content for "${page.title}" exceeds 5MB limit`);
+        }
+      }
+
+      // Ensure we have a default page
+      const hasDefault = pages.some(p => p.isDefault);
+      if (!hasDefault) {
+        throw new Error('One page must be set as the default');
+      }
+
+      const landingPageData = {
         title,
         slug,
-        html_content: htmlContent,
+        html_content: pages.find(p => p.isDefault)?.htmlContent || '', // Keep for backward compatibility
         css_content: cssContent || null,
         association_id: associationId,
         is_active: isActive,
@@ -118,23 +218,52 @@ const CreateLandingPage = () => {
         updated_at: new Date().toISOString(),
       };
 
+      let landingPageId = id;
+
       if (isEditing && id) {
         const { error } = await supabase
           .from('event_landing_pages')
-          .update(pageData)
+          .update(landingPageData)
           .eq('id', id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('event_landing_pages')
-          .insert(pageData);
+          .insert(landingPageData)
+          .select('id')
+          .single();
         if (error) {
           if (error.code === '23505') {
             throw new Error('A landing page with this URL slug already exists');
           }
           throw error;
         }
+        landingPageId = data.id;
       }
+
+      // Handle pages - delete existing and insert new
+      if (isEditing && id) {
+        await supabase
+          .from('event_landing_page_pages')
+          .delete()
+          .eq('landing_page_id', id);
+      }
+
+      // Insert all pages
+      const pagesData = pages.map((page, index) => ({
+        landing_page_id: landingPageId,
+        title: page.title,
+        slug: page.isDefault ? '' : page.slug,
+        html_content: page.htmlContent,
+        sort_order: index,
+        is_default: page.isDefault
+      }));
+
+      const { error: pagesError } = await supabase
+        .from('event_landing_page_pages')
+        .insert(pagesData);
+      
+      if (pagesError) throw pagesError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-landing-pages'] });
@@ -163,7 +292,7 @@ const CreateLandingPage = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
-      setHtmlContent(content);
+      updatePageField(activePageIndex, 'htmlContent', content);
       toast.success('HTML file loaded');
     };
     reader.onerror = () => {
@@ -198,14 +327,15 @@ const CreateLandingPage = () => {
     reader.readAsText(file);
   };
 
-  const copyUrl = () => {
-    const url = `${window.location.origin}/event/${slug}`;
+  const copyUrl = (pageSlug?: string) => {
+    const subPath = pageSlug ? `/${pageSlug}` : '';
+    const url = `${window.location.origin}/event/${slug}${subPath}`;
     navigator.clipboard.writeText(url);
     toast.success('URL copied to clipboard');
   };
 
   const getSanitizedPreviewHtml = () => {
-    let html = DOMPurify.sanitize(htmlContent, {
+    let html = DOMPurify.sanitize(activePage?.htmlContent || '', {
       ADD_TAGS: ['style', 'link'],
       ADD_ATTR: ['target'],
       WHOLE_DOCUMENT: true,
@@ -226,7 +356,7 @@ const CreateLandingPage = () => {
     return html;
   };
 
-  if (isEditing && isLoadingPage) {
+  if (isEditing && (isLoadingPage || isLoadingPages)) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -235,7 +365,7 @@ const CreateLandingPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-4xl">
+    <div className="container mx-auto p-4 md:p-6 max-w-5xl">
       <Button
         variant="ghost"
         className="mb-4"
@@ -247,7 +377,7 @@ const CreateLandingPage = () => {
 
       <PageHeader
         title={isEditing ? 'Edit Landing Page' : 'Create Landing Page'}
-        description="Upload custom HTML for your event landing page with automatic user registration"
+        description="Create multi-page event landing pages with automatic user registration"
       />
 
       <div className="space-y-6 mt-6">
@@ -281,7 +411,7 @@ const CreateLandingPage = () => {
                     }}
                   />
                   {slug && (
-                    <Button variant="outline" size="icon" onClick={copyUrl}>
+                    <Button variant="outline" size="icon" onClick={() => copyUrl()}>
                       <Copy className="h-4 w-4" />
                     </Button>
                   )}
@@ -331,21 +461,107 @@ const CreateLandingPage = () => {
           </CardContent>
         </Card>
 
-        {/* HTML Content */}
+        {/* Pages Management */}
         <Card>
           <CardHeader>
-            <CardTitle>HTML Content</CardTitle>
-            <CardDescription>
-              Upload an HTML file or paste HTML content directly. Forms in the HTML will automatically
-              trigger user registration when submitted.
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Pages</CardTitle>
+                <CardDescription>
+                  Manage multiple pages for your landing page. Each page shares the same CSS.
+                </CardDescription>
+              </div>
+              <Button onClick={addPage} size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Page
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Page tabs */}
+            <div className="flex flex-wrap gap-2 mb-4 border-b pb-4">
+              {pages.map((page, index) => (
+                <div
+                  key={page.id}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md cursor-pointer border transition-colors ${
+                    activePageIndex === index 
+                      ? 'bg-primary text-primary-foreground border-primary' 
+                      : 'bg-muted hover:bg-accent border-border'
+                  }`}
+                  onClick={() => setActivePageIndex(index)}
+                >
+                  <GripVertical className="h-3 w-3 opacity-50" />
+                  <span className="text-sm font-medium">
+                    {page.title}
+                    {page.isDefault && <span className="ml-1 text-xs opacity-70">(Home)</span>}
+                  </span>
+                  {!page.isDefault && pages.length > 1 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removePage(index);
+                      }}
+                      className="ml-1 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Active page settings */}
+            {activePage && (
+              <div className="space-y-4 mb-4 p-4 bg-muted/50 rounded-lg">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Page Title</Label>
+                    <Input
+                      value={activePage.title}
+                      onChange={(e) => updatePageField(activePageIndex, 'title', e.target.value)}
+                      placeholder="Page Title"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Page Slug {activePage.isDefault && '(Default page has no slug)'}</Label>
+                    <Input
+                      value={activePage.slug}
+                      onChange={(e) => updatePageField(activePageIndex, 'slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                      placeholder={activePage.isDefault ? '(home page)' : 'page-slug'}
+                      disabled={activePage.isDefault}
+                    />
+                    {!activePage.isDefault && slug && activePage.slug && (
+                      <p className="text-xs text-muted-foreground">
+                        URL: {window.location.origin}/event/{slug}/{activePage.slug}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={activePage.isDefault}
+                      onCheckedChange={() => setAsDefault(activePageIndex)}
+                      disabled={activePage.isDefault}
+                    />
+                    <Label className="text-sm">Set as default (home) page</Label>
+                  </div>
+                  {!activePage.isDefault && activePage.slug && (
+                    <Button variant="outline" size="sm" onClick={() => copyUrl(activePage.slug)}>
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy URL
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* HTML/CSS/Preview Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="edit">HTML</TabsTrigger>
-                <TabsTrigger value="css">CSS</TabsTrigger>
-                <TabsTrigger value="preview" disabled={!htmlContent}>
+                <TabsTrigger value="css">CSS (Shared)</TabsTrigger>
+                <TabsTrigger value="preview" disabled={!activePage?.htmlContent}>
                   <Eye className="h-4 w-4 mr-1" />
                   Preview
                 </TabsTrigger>
@@ -367,7 +583,7 @@ const CreateLandingPage = () => {
                     className="hidden"
                     onChange={handleHtmlFileUpload}
                   />
-                  <span className="text-sm text-muted-foreground">or paste HTML below</span>
+                  <span className="text-sm text-muted-foreground">or paste HTML below for "{activePage?.title}"</span>
                 </div>
 
                 <Textarea
@@ -388,8 +604,8 @@ const CreateLandingPage = () => {
 </body>
 </html>"
                   className="font-mono text-sm min-h-[400px]"
-                  value={htmlContent}
-                  onChange={(e) => setHtmlContent(e.target.value)}
+                  value={activePage?.htmlContent || ''}
+                  onChange={(e) => updatePageField(activePageIndex, 'htmlContent', e.target.value)}
                 />
 
                 <div className="bg-muted p-4 rounded-lg text-sm">
@@ -422,7 +638,7 @@ const CreateLandingPage = () => {
                     className="hidden"
                     onChange={handleCssFileUpload}
                   />
-                  <span className="text-sm text-muted-foreground">or paste CSS below (optional)</span>
+                  <span className="text-sm text-muted-foreground">CSS applies to all pages</span>
                 </div>
 
                 <Textarea
@@ -449,20 +665,25 @@ body {
                 />
 
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>CSS will be injected into the HTML when the page is rendered</span>
+                  <span>CSS will be injected into all pages when rendered</span>
                   <span>{(cssContent.length / 1024).toFixed(1)} KB / 2048 KB</span>
                 </div>
               </TabsContent>
 
               <TabsContent value="preview">
-                {htmlContent && (
+                {activePage?.htmlContent && (
                   <div className="border rounded-lg overflow-hidden">
                     <div className="bg-muted px-4 py-2 flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Preview (forms are disabled)</span>
+                      <span className="text-sm text-muted-foreground">
+                        Preview: {activePage.title} (forms are disabled)
+                      </span>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(`/event/${slug}`, '_blank')}
+                        onClick={() => {
+                          const subPath = activePage.isDefault ? '' : `/${activePage.slug}`;
+                          window.open(`/event/${slug}${subPath}`, '_blank');
+                        }}
                         disabled={!isActive || !slug}
                       >
                         <ExternalLink className="h-4 w-4 mr-1" />
@@ -492,7 +713,7 @@ body {
           </Button>
           <Button
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || !title || !slug || !htmlContent || !associationId}
+            disabled={saveMutation.isPending || !title || !slug || !hasAnyContent || !associationId}
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

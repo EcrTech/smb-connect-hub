@@ -1285,6 +1285,50 @@ export type Database = {
         }
         Relationships: []
       }
+      event_landing_page_pages: {
+        Row: {
+          created_at: string
+          html_content: string
+          id: string
+          is_default: boolean
+          landing_page_id: string
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          html_content: string
+          id?: string
+          is_default?: boolean
+          landing_page_id: string
+          slug?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          html_content?: string
+          id?: string
+          is_default?: boolean
+          landing_page_id?: string
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_landing_page_pages_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "event_landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_landing_pages: {
         Row: {
           association_id: string
