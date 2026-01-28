@@ -78,7 +78,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const location = useLocation();
-  const hideHomeButton = ['/', '/auth/login', '/auth/register'].includes(location.pathname);
+  const hideHomeButton = ['/', '/auth/login', '/auth/register'].includes(location.pathname) || location.pathname.startsWith('/event/');
 
   return (
     <>
