@@ -37,6 +37,7 @@ interface RegistrationRequest {
   last_name: string;
   phone?: string;
   registration_data?: Record<string, unknown>;
+  coupon_code?: string;
 }
 
 serve(async (req: Request) => {
@@ -54,7 +55,7 @@ serve(async (req: Request) => {
 
   try {
     const body: RegistrationRequest = await req.json();
-    const { landing_page_id, email, first_name, last_name, phone, registration_data } = body;
+    const { landing_page_id, email, first_name, last_name, phone, registration_data, coupon_code } = body;
 
     // Validate required fields
     if (!landing_page_id || !email || !first_name || !last_name) {
@@ -124,6 +125,86 @@ serve(async (req: Request) => {
       );
     }
 
+    // Validate and process coupon if provided
+    let couponId: string | null = null;
+    let discountAmount = 0;
+    let discountType: string | null = null;
+    let discountValue = 0;
+
+    if (coupon_code) {
+      const normalizedCode = coupon_code.toUpperCase().trim();
+      
+      // Fetch and validate coupon
+      const { data: coupon, error: couponError } = await supabase
+        .from('event_coupons')
+        .select('*')
+        .eq('code', normalizedCode)
+        .single();
+
+      if (couponError || !coupon) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid coupon code' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if coupon is active
+      if (!coupon.is_active) {
+        return new Response(
+          JSON.stringify({ error: 'This coupon is no longer active' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check validity dates
+      const now = new Date();
+      const validFrom = new Date(coupon.valid_from);
+      const validUntil = new Date(coupon.valid_until);
+
+      if (now < validFrom || now > validUntil) {
+        return new Response(
+          JSON.stringify({ error: 'This coupon is not currently valid' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check landing page applicability
+      if (coupon.landing_page_id && coupon.landing_page_id !== landing_page_id) {
+        return new Response(
+          JSON.stringify({ error: 'This coupon is not valid for this event' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check total usage limit
+      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+        return new Response(
+          JSON.stringify({ error: 'This coupon has reached its usage limit' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check per-user usage
+      const normalizedEmail = email.toLowerCase().trim();
+      const { count: userUsageCount } = await supabase
+        .from('event_coupon_usages')
+        .select('*', { count: 'exact', head: true })
+        .eq('coupon_id', coupon.id)
+        .eq('email', normalizedEmail);
+
+      if (userUsageCount !== null && userUsageCount >= coupon.max_uses_per_user) {
+        return new Response(
+          JSON.stringify({ error: 'You have already used this coupon the maximum number of times' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Coupon is valid!
+      couponId = coupon.id;
+      discountType = coupon.discount_type;
+      discountValue = parseFloat(coupon.discount_value);
+    }
+
     // Check if user already exists in auth
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
@@ -190,7 +271,9 @@ serve(async (req: Request) => {
         phone,
         user_id: userId,
         registration_data: registration_data || {},
-        status: 'completed'
+        status: 'completed',
+        coupon_id: couponId,
+        discount_amount: discountValue
       })
       .select()
       .single();
@@ -201,6 +284,23 @@ serve(async (req: Request) => {
         JSON.stringify({ error: 'Failed to create registration record' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Record coupon usage if a coupon was applied
+    if (couponId) {
+      const { error: usageError } = await supabase
+        .from('event_coupon_usages')
+        .insert({
+          coupon_id: couponId,
+          registration_id: registration.id,
+          email: email.toLowerCase(),
+          discount_applied: discountValue
+        });
+
+      if (usageError) {
+        console.error('Error recording coupon usage:', usageError);
+        // Don't fail the registration, just log the error
+      }
     }
 
     // Send welcome email with credentials (only for new users)

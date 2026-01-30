@@ -1285,6 +1285,110 @@ export type Database = {
         }
         Relationships: []
       }
+      event_coupon_usages: {
+        Row: {
+          coupon_id: string
+          discount_applied: number
+          email: string
+          id: string
+          registration_id: string
+          used_at: string
+        }
+        Insert: {
+          coupon_id: string
+          discount_applied: number
+          email: string
+          id?: string
+          registration_id: string
+          used_at?: string
+        }
+        Update: {
+          coupon_id?: string
+          discount_applied?: number
+          email?: string
+          id?: string
+          registration_id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_coupon_usages_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "event_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_coupon_usages_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          current_uses: number
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          landing_page_id: string | null
+          max_uses: number | null
+          max_uses_per_user: number
+          name: string
+          updated_at: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          current_uses?: number
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          landing_page_id?: string | null
+          max_uses?: number | null
+          max_uses_per_user?: number
+          name: string
+          updated_at?: string
+          valid_from?: string
+          valid_until: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          current_uses?: number
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          landing_page_id?: string | null
+          max_uses?: number | null
+          max_uses_per_user?: number
+          name?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_coupons_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "event_landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_landing_page_pages: {
         Row: {
           created_at: string
@@ -1391,42 +1495,61 @@ export type Database = {
       }
       event_registrations: {
         Row: {
+          coupon_id: string | null
           created_at: string
+          discount_amount: number | null
           email: string
+          final_amount: number | null
           first_name: string
           id: string
           landing_page_id: string
           last_name: string
+          original_amount: number | null
           phone: string | null
           registration_data: Json | null
           status: string
           user_id: string | null
         }
         Insert: {
+          coupon_id?: string | null
           created_at?: string
+          discount_amount?: number | null
           email: string
+          final_amount?: number | null
           first_name: string
           id?: string
           landing_page_id: string
           last_name: string
+          original_amount?: number | null
           phone?: string | null
           registration_data?: Json | null
           status?: string
           user_id?: string | null
         }
         Update: {
+          coupon_id?: string | null
           created_at?: string
+          discount_amount?: number | null
           email?: string
+          final_amount?: number | null
           first_name?: string
           id?: string
           landing_page_id?: string
           last_name?: string
+          original_amount?: number | null
           phone?: string | null
           registration_data?: Json | null
           status?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_registrations_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "event_coupons"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_registrations_landing_page_id_fkey"
             columns: ["landing_page_id"]
