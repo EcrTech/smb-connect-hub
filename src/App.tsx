@@ -73,6 +73,7 @@ import AccountSettings from "./pages/AccountSettings";
 import EventLandingPages from "./pages/admin/EventLandingPages";
 import CreateLandingPage from "./pages/admin/CreateLandingPage";
 import EventLandingPageView from "./pages/public/EventLandingPageView";
+import CouponManagement from "./pages/admin/CouponManagement";
 
 const queryClient = new QueryClient();
 
@@ -321,6 +322,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <CreateLandingPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/coupons" 
+            element={
+              <ProtectedRoute>
+                <CouponManagement />
               </ProtectedRoute>
             } 
           />
