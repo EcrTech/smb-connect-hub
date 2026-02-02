@@ -42,6 +42,11 @@ const CreateLandingPage = () => {
   const [activeTab, setActiveTab] = useState('edit');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   
+  // Event details for email template
+  const [eventDate, setEventDate] = useState<string>('');
+  const [eventTime, setEventTime] = useState<string>('');
+  const [eventVenue, setEventVenue] = useState<string>('');
+  
   // Multi-page state
   const [pages, setPages] = useState<PageData[]>([
     { id: 'temp-1', title: 'Home', slug: '', htmlContent: '', sortOrder: 0, isDefault: true }
@@ -105,6 +110,10 @@ const CreateLandingPage = () => {
       setRegistrationEnabled(existingPage.registration_enabled);
       setRegistrationFee(existingPage.registration_fee?.toString() || '');
       setSlugManuallyEdited(true);
+      // Event details
+      setEventDate((existingPage as any).event_date || '');
+      setEventTime((existingPage as any).event_time || '');
+      setEventVenue((existingPage as any).event_venue || '');
     }
   }, [existingPage]);
 
@@ -217,6 +226,9 @@ const CreateLandingPage = () => {
         is_active: isActive,
         registration_enabled: registrationEnabled,
         registration_fee: registrationFee ? parseFloat(registrationFee) : null,
+        event_date: eventDate || null,
+        event_time: eventTime || null,
+        event_venue: eventVenue || null,
         created_by: userId,
         updated_at: new Date().toISOString(),
       };
@@ -463,21 +475,62 @@ const CreateLandingPage = () => {
             </div>
 
             {registrationEnabled && (
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="registration-fee">Registration Fee (₹)</Label>
-                <Input
-                  id="registration-fee"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0 for free events"
-                  value={registrationFee}
-                  onChange={(e) => setRegistrationFee(e.target.value)}
-                  className="max-w-[200px]"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Leave empty or enter 0 for free events. Coupon codes can be applied if a fee is set.
-                </p>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="registration-fee">Registration Fee (₹)</Label>
+                  <Input
+                    id="registration-fee"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0 for free events"
+                    value={registrationFee}
+                    onChange={(e) => setRegistrationFee(e.target.value)}
+                    className="max-w-[200px]"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty or enter 0 for free events. Coupon codes can be applied if a fee is set.
+                  </p>
+                </div>
+
+                {/* Event Details for Email Template */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3">Event Details (for confirmation email)</h4>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="event-date">Event Date</Label>
+                      <Input
+                        id="event-date"
+                        type="date"
+                        value={eventDate}
+                        onChange={(e) => setEventDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="event-time">Event Time</Label>
+                      <Input
+                        id="event-time"
+                        type="text"
+                        placeholder="e.g., 10:00 AM – 2:30 PM"
+                        value={eventTime}
+                        onChange={(e) => setEventTime(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="event-venue">Event Venue</Label>
+                      <Input
+                        id="event-venue"
+                        type="text"
+                        placeholder="e.g., Bangalore"
+                        value={eventVenue}
+                        onChange={(e) => setEventVenue(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    These details will be included in the registration confirmation email sent to attendees.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>

@@ -1439,7 +1439,10 @@ export type Database = {
           created_at: string
           created_by: string
           css_content: string | null
+          event_date: string | null
           event_id: string | null
+          event_time: string | null
+          event_venue: string | null
           html_content: string
           id: string
           is_active: boolean
@@ -1454,7 +1457,10 @@ export type Database = {
           created_at?: string
           created_by: string
           css_content?: string | null
+          event_date?: string | null
           event_id?: string | null
+          event_time?: string | null
+          event_venue?: string | null
           html_content: string
           id?: string
           is_active?: boolean
@@ -1469,7 +1475,10 @@ export type Database = {
           created_at?: string
           created_by?: string
           css_content?: string | null
+          event_date?: string | null
           event_id?: string | null
+          event_time?: string | null
+          event_venue?: string | null
           html_content?: string
           id?: string
           is_active?: boolean
