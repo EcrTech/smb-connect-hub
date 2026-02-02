@@ -84,12 +84,29 @@ const EventLandingPageView = () => {
       if (event.data?.type === 'event-registration') {
         const formData = event.data.data;
         
-        if (!landingPage) return;
+        console.log('[SMB Registration] Received from iframe:', formData);
+        
+        if (!landingPage) {
+          console.error('[SMB Registration] No landing page data available');
+          return;
+        }
 
         setRegistrationStatus('submitting');
         setRegistrationMessage('');
 
         try {
+          const requestBody = {
+            landing_page_id: landingPage.id,
+            email: formData.email,
+            first_name: formData.first_name || '',
+            last_name: formData.last_name || '',
+            phone: formData.phone || null,
+            registration_data: formData,
+            coupon_code: formData.coupon_code || null
+          };
+          
+          console.log('[SMB Registration] Sending to edge function:', requestBody);
+          
           const response = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-event-registration`,
             {
@@ -97,23 +114,18 @@ const EventLandingPageView = () => {
               headers: {
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                landing_page_id: landingPage.id,
-                email: formData.email,
-                first_name: formData.first_name || formData.firstName || formData.name?.split(' ')[0] || '',
-                last_name: formData.last_name || formData.lastName || formData.name?.split(' ').slice(1).join(' ') || '',
-                phone: formData.phone || formData.mobile || formData.telephone || null,
-                registration_data: formData,
-                coupon_code: formData.coupon_code || null
-              }),
+              body: JSON.stringify(requestBody),
             }
           );
 
           const result = await response.json();
+          
+          console.log('[SMB Registration] Response:', response.status, result);
 
           if (!response.ok) {
             setRegistrationStatus('error');
-            setRegistrationMessage(result.error || 'Registration failed');
+            setRegistrationMessage(result.error || result.message || 'Registration failed. Please try again.');
+            console.error('[SMB Registration] Error:', result);
             return;
           }
 
@@ -126,9 +138,9 @@ const EventLandingPageView = () => {
             '*'
           );
         } catch (err) {
-          console.error('Registration error:', err);
+          console.error('[SMB Registration] Exception:', err);
           setRegistrationStatus('error');
-          setRegistrationMessage('An error occurred during registration');
+          setRegistrationMessage('An error occurred during registration. Please try again.');
         }
       }
     };
@@ -450,10 +462,48 @@ const EventLandingPageView = () => {
               data[key] = value;
             });
             
+            console.log('[SMB Registration] Raw form data:', JSON.stringify(data));
+            
+            // Normalize field names - try multiple common variations
+            var email = data.email || data.Email || data.EMAIL || data.user_email || data.userEmail || data['e-mail'] || '';
+            var firstName = data.first_name || data.firstName || data.FirstName || data.fname || data.given_name || '';
+            var lastName = data.last_name || data.lastName || data.LastName || data.lname || data.surname || data.family_name || '';
+            var phone = data.phone || data.Phone || data.mobile || data.Mobile || data.telephone || data.cell || '';
+            
+            // Handle combined "name" field
+            if (!firstName && !lastName && data.name) {
+              var nameParts = data.name.trim().split(/\\s+/);
+              firstName = nameParts[0] || '';
+              lastName = nameParts.slice(1).join(' ') || '';
+            }
+            
+            // Validation
+            if (!email) {
+              console.error('[SMB Registration] No email found in form data');
+              alert('Please enter your email address');
+              return;
+            }
+            
+            if (!firstName) {
+              console.error('[SMB Registration] No first name found in form data');
+              alert('Please enter your first name');
+              return;
+            }
+            
+            // Prepare normalized data
+            var normalizedData = Object.assign({}, data, {
+              email: email,
+              first_name: firstName,
+              last_name: lastName,
+              phone: phone || null
+            });
+            
+            console.log('[SMB Registration] Normalized data:', JSON.stringify(normalizedData));
+            
             // Send to parent window
             window.parent.postMessage({
               type: 'event-registration',
-              data: data
+              data: normalizedData
             }, '*');
           });
 
