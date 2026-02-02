@@ -250,6 +250,8 @@ const EventRegistrations = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Coupon</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Registered</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -263,6 +265,29 @@ const EventRegistrations = () => {
                     </TableCell>
                     <TableCell>{reg.email}</TableCell>
                     <TableCell>{reg.phone || '-'}</TableCell>
+                    <TableCell>
+                      {reg.event_coupons?.code ? (
+                        <Badge variant="outline" className="text-xs">
+                          {reg.event_coupons.code}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {reg.final_amount !== null ? (
+                        <div className="text-sm">
+                          <span className="font-medium">₹{reg.final_amount.toLocaleString()}</span>
+                          {reg.discount_amount && reg.discount_amount > 0 && (
+                            <span className="text-green-600 text-xs ml-1">
+                              (-₹{reg.discount_amount.toLocaleString()})
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>{getStatusBadge(reg.status)}</TableCell>
                     <TableCell>
                       {format(new Date(reg.created_at), 'MMM d, yyyy')}
