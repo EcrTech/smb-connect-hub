@@ -1,205 +1,124 @@
 
-## End-User Coupon Code Implementation Plan
 
-This plan implements a complete coupon system for event registration forms, allowing visitors to apply discount codes and see real-time price calculations before submitting.
+## Fix Coupon Registration Issues - Implementation Plan
 
----
-
-### What Will Be Built
-
-| Feature | Description |
-|---------|-------------|
-| **Registration Fee Field** | New column in landing pages to set the base registration price |
-| **Coupon Input Field** | Text field for users to enter coupon codes |
-| **Apply Button** | Real-time coupon validation with instant feedback |
-| **Price Display** | Shows original price, discount, and final amount |
-| **Form Integration** | Passes coupon data to registration edge function |
+This plan addresses the issues preventing successful coupon-based registrations on the event landing pages.
 
 ---
 
-### User Experience Flow
+### Problems Identified
 
-```text
-Step 1: User sees event landing page with registration form
-        ┌─────────────────────────────────────────┐
-        │ Registration Form                       │
-        │                                         │
-        │ Name: [______________]                  │
-        │ Email: [______________]                 │
-        │ Phone: [______________]                 │
-        │                                         │
-        │ Registration Fee: ₹1,000                │
-        │                                         │
-        │ Have a coupon? [__________] [Apply]     │
-        │                                         │
-        │ [Register Now - ₹1,000]                 │
-        └─────────────────────────────────────────┘
-
-Step 2: User enters coupon code and clicks Apply
-        ┌─────────────────────────────────────────┐
-        │ ...                                     │
-        │ Have a coupon? [EARLY20___] [Apply]     │
-        │                                         │
-        │ ✓ Coupon applied! 20% off               │
-        │                                         │
-        │ Original: ₹1,000                        │
-        │ Discount: -₹200                         │
-        │ ─────────────                           │
-        │ Total: ₹800                             │
-        │                                         │
-        │ [Register Now - ₹800]                   │
-        └─────────────────────────────────────────┘
-
-Step 3: Form submits with coupon code included
-```
+| Issue | Description | Impact |
+|-------|-------------|--------|
+| **Missing Registration Fee** | The Bharat DtoC landing page has `registration_fee = null` | Coupon UI section is not injected into forms |
+| **Field Name Detection** | Form field name matching may not capture all variations | Required fields may be missed during form submission |
+| **No User Feedback on Errors** | Errors from the edge function may not be visible to users | Users think registration succeeded when it failed |
 
 ---
 
-### Files to Create/Modify
+### What Will Be Fixed
+
+| Fix | Description |
+|-----|-------------|
+| **Set Registration Fee** | Update Bharat DtoC landing page to have a registration fee |
+| **Improve Field Mapping** | Add more common field name variations for first_name, last_name, email |
+| **Better Error Handling** | Ensure all error responses from edge function are shown to users |
+| **Debug Logging** | Add console logging to help debug form submission issues |
+
+---
+
+### Files to Modify
 
 | File | Action | Purpose |
 |------|--------|---------|
-| Database Migration | **Create** | Add `registration_fee` column to `event_landing_pages` |
-| `supabase/functions/get-landing-page/index.ts` | **Modify** | Include registration_fee in response |
-| `supabase/functions/process-event-registration/index.ts` | **Modify** | Calculate amounts based on registration fee |
-| `src/pages/public/EventLandingPageView.tsx` | **Modify** | Add coupon UI and price display injection |
-| `src/pages/admin/EventLandingPages.tsx` | **Modify** | Add registration fee input when creating/editing pages |
-| `src/pages/admin/CreateLandingPage.tsx` | **Modify** | Add registration fee field to the form |
+| `src/pages/public/EventLandingPageView.tsx` | **Modify** | Improve field name detection and add debug logging |
+| Database | **Update** | Set registration_fee for Bharat DtoC page |
 
 ---
 
 ### Technical Details
 
-**1. Database Migration**
-Add a new column to store the registration fee for each landing page:
-- Column: `registration_fee` (numeric, nullable, default null)
-- Nullable because some events may be free
-
-**2. Get Landing Page Edge Function**
-Update the response to include:
-- `registration_fee`: The base price for registration
-
-**3. Process Registration Edge Function**
-Update to:
-- Fetch `registration_fee` from the landing page
-- Calculate `original_amount` from registration fee
-- Apply coupon discount to get `discount_amount`
-- Calculate `final_amount = original_amount - discount_amount`
-- Store all three values in the registration record
-
-**4. EventLandingPageView.tsx Changes**
-The injected form script will:
-- Dynamically inject coupon UI elements after the last form field
-- Add an "Apply" button that calls the `validate-coupon` edge function
-- Display validation results (success/error messages)
-- Show price breakdown when a valid coupon is applied
-- Update the submit button text with the final amount
-- Include `coupon_code` in the form data sent to parent window
-
-**5. Admin Landing Page Form**
-Add a new input field:
-- Label: "Registration Fee (INR)"
-- Type: Number input
-- Placeholder: "Enter 0 for free events"
-- Help text: "Leave empty for free registrations"
-
----
-
-### Coupon Validation Flow
-
-```text
-User clicks "Apply"
-      │
-      ▼
-POST /validate-coupon
-{
-  code: "EARLY20",
-  landing_page_id: "uuid",
-  email: "user@email.com"
-}
-      │
-      ▼
-┌─────────────────────┐
-│ Validation Checks:  │
-│ • Code exists       │
-│ • Coupon is active  │
-│ • Within dates      │
-│ • Applies to page   │
-│ • Usage limit OK    │
-│ • Per-user limit OK │
-└─────────────────────┘
-      │
-      ▼
-Response:
-{
-  valid: true,
-  coupon_id: "uuid",
-  discount_type: "percentage",
-  discount_value: 20,
-  message: "Coupon applied! 20% off"
-}
-      │
-      ▼
-Calculate & Display:
-• Original: ₹1000
-• Discount: ₹200 (20% of 1000)
-• Final: ₹800
+**1. Database Update**
+Set a registration fee for the Bharat DtoC landing page:
+```sql
+UPDATE event_landing_pages 
+SET registration_fee = 1000 
+WHERE slug = 'bharat-dtoc-2026';
 ```
 
----
+**2. Improved Field Name Detection**
+Currently the code looks for:
+- `email`, `first_name`, `last_name`, `phone`
 
-### Injected Coupon UI Design
+Will add detection for common variations:
+- Email: `email`, `Email`, `EMAIL`, `user_email`, `userEmail`, `e-mail`
+- First Name: `first_name`, `firstName`, `FirstName`, `fname`, `given_name`
+- Last Name: `last_name`, `lastName`, `LastName`, `lname`, `surname`, `family_name`
+- Phone: `phone`, `Phone`, `mobile`, `Mobile`, `telephone`, `cell`
 
-The script will inject a styled coupon section that matches common form styling:
-
-```text
-<!-- Injected after form fields, before submit button -->
-<div id="coupon-section" style="...">
-  <div style="margin-bottom: 15px;">
-    <label>Registration Fee</label>
-    <div style="font-size: 24px; font-weight: bold;">₹1,000</div>
-  </div>
+**3. Enhanced Form Submission Handler**
+```javascript
+// In the iframe script
+document.addEventListener('submit', function(e) {
+  e.preventDefault();
   
-  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-    <input type="text" id="coupon-input" placeholder="Enter coupon code" />
-    <button type="button" id="apply-coupon">Apply</button>
-  </div>
+  var form = e.target;
+  var formData = new FormData(form);
+  var data = {};
   
-  <div id="coupon-message"></div>
+  // Collect all form data
+  formData.forEach(function(value, key) {
+    data[key] = value;
+  });
   
-  <div id="price-breakdown" style="display: none;">
-    <div>Original: <span id="original-price">₹1,000</span></div>
-    <div style="color: green;">Discount: <span id="discount-amount">-₹200</span></div>
-    <hr/>
-    <div><strong>Total: <span id="final-price">₹800</span></strong></div>
-  </div>
-</div>
+  console.log('[SMB Registration] Form data:', data);
+  
+  // Try multiple field name variations
+  var email = data.email || data.Email || data.EMAIL || data.user_email;
+  var firstName = data.first_name || data.firstName || data.name?.split(' ')[0];
+  var lastName = data.last_name || data.lastName || data.name?.split(' ').slice(1).join(' ');
+  
+  if (!email) {
+    console.error('[SMB Registration] No email found in form');
+    alert('Please enter your email address');
+    return;
+  }
+  
+  // Send to parent with normalized field names
+  window.parent.postMessage({
+    type: 'event-registration',
+    data: {
+      ...data,
+      email: email,
+      first_name: firstName,
+      last_name: lastName
+    }
+  }, '*');
+});
 ```
 
----
-
-### Data Flow Summary
-
-| Step | Component | Data |
-|------|-----------|------|
-| 1 | Page Load | Fetch landing page with `registration_fee` |
-| 2 | Script Injection | Inject coupon UI if `registration_fee > 0` |
-| 3 | Apply Click | Call `validate-coupon` with code, page_id, email |
-| 4 | Validation Response | Receive discount type/value or error |
-| 5 | Price Calculation | Calculate and display breakdown in UI |
-| 6 | Form Submit | Include `coupon_code` in registration data |
-| 7 | Process Registration | Validate coupon again, calculate amounts, store |
+**4. Better Error Handling in Parent**
+Ensure error messages from the edge function are displayed prominently:
+- Show specific error messages (duplicate email, invalid coupon, etc.)
+- Log detailed errors to console for debugging
+- Display user-friendly messages in the overlay
 
 ---
 
-### Edge Cases Handled
+### Immediate Action Needed
 
-| Case | Behavior |
-|------|----------|
-| Free event (no fee) | Coupon section not shown |
-| Invalid coupon | Show error message, keep original price |
-| Expired coupon | Show "This coupon has expired" |
-| Usage limit reached | Show "This coupon has reached its usage limit" |
-| 100% discount | Show final amount as ₹0 |
-| Discount > price | Final amount capped at ₹0 (free) |
-| Email not entered | Prompt user to enter email first |
+Before implementing code changes, you should:
+
+1. **Set the registration fee** for Bharat DtoC in the admin panel (or I can update it via database)
+2. **Use a new email** for testing (existing emails are blocked as duplicates)
+3. **Check the browser console** for any JavaScript errors when submitting the form
+
+---
+
+### Summary of Changes
+
+1. Set `registration_fee` on the landing page to enable coupon UI
+2. Improve field name detection in the form submission script
+3. Add console logging to help debug issues
+4. Ensure all edge function errors are properly shown to users
+
