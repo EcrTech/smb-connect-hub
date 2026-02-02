@@ -30,6 +30,21 @@ function generatePassword(length: number = 12): string {
   return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
+// Format date as "20 February 2026"
+function formatEventDate(dateString: string | null): string {
+  if (!dateString) return 'Details to be announced';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric' 
+    });
+  } catch {
+    return 'Details to be announced';
+  }
+}
+
 interface RegistrationRequest {
   landing_page_id: string;
   email: string;
@@ -88,6 +103,9 @@ serve(async (req: Request) => {
         registration_enabled,
         registration_fee,
         association_id,
+        event_date,
+        event_time,
+        event_venue,
         associations (
           name
         )
@@ -323,8 +341,12 @@ serve(async (req: Request) => {
       const resendApiKey = Deno.env.get('RESEND_API_KEY');
       
       if (resendApiKey) {
-        const assocData = landingPage.associations as { name: string } | { name: string }[] | null;
-        const associationName = Array.isArray(assocData) ? assocData[0]?.name : assocData?.name || 'SMB Connect';
+        // Format event details
+        const eventTitle = landingPage.title;
+        const eventDate = formatEventDate(landingPage.event_date);
+        const eventTime = landingPage.event_time || 'Details to be announced';
+        const eventVenue = landingPage.event_venue || 'Details to be announced';
+        const portalUrl = 'https://smb-connect-hub.lovable.app/auth/login';
 
         try {
           const emailHtml = `
@@ -334,44 +356,163 @@ serve(async (req: Request) => {
               <meta charset="utf-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
             </head>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-                <h1 style="color: white; margin: 0;">Welcome to SMB Connect!</h1>
+            <body style="font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 650px; margin: 0 auto; padding: 0; background-color: #f5f5f5;">
+              <!-- Header Banner -->
+              <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 50%, #3d7ab5 100%); padding: 40px 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: 0.5px;">
+                  Welcome to ${eventTitle}!
+                </h1>
+                <p style="color: #e0e0e0; margin: 10px 0 0 0; font-size: 14px;">
+                  Your registration is confirmed
+                </p>
               </div>
               
-              <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #eee; border-top: none;">
-                <p style="font-size: 16px;">Hello <strong>${first_name}</strong>,</p>
+              <!-- Main Content -->
+              <div style="background: #ffffff; padding: 35px 30px;">
+                <p style="font-size: 16px; margin: 0 0 20px 0;">
+                  Dear <strong>${first_name}</strong>,
+                </p>
                 
-                <p>Thank you for registering for <strong>${landingPage.title}</strong> hosted by <strong>${associationName}</strong>!</p>
+                <p style="font-size: 15px; margin: 0 0 15px 0; color: #444;">
+                  Thank you for registering for <strong>${eventTitle}</strong>! We're excited to have you join the vibrant ecosystem of D2C founders, brand leaders, investors, and industry enablers.
+                </p>
                 
-                <p>Your SMB Connect account has been created. Use these credentials to log in:</p>
+                <p style="font-size: 15px; margin: 0 0 25px 0; color: #444;">
+                  This registration also gives you exclusive access to the <strong>SMBConnect Portal</strong> — your gateway to meaningful business connections.
+                </p>
                 
-                <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; margin: 20px 0;">
-                  <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-                  <p style="margin: 5px 0;"><strong>Password:</strong> <code style="background: #f0f0f0; padding: 2px 8px; border-radius: 4px;">${password}</code></p>
+                <!-- Event Details Section -->
+                <div style="margin: 30px 0;">
+                  <h2 style="font-size: 16px; color: #1e3a5f; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1e3a5f; display: inline-block;">
+                    📌 EVENT DETAILS
+                  </h2>
+                  <table style="width: 100%; border-collapse: collapse; background: #f8fafc; border-radius: 8px; overflow: hidden;">
+                    <tr>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b; width: 120px;">Event</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${eventTitle}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b;">Date</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${eventDate}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: #64748b;">Time</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">${eventTime}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 16px; font-weight: 600; color: #64748b;">Venue</td>
+                      <td style="padding: 12px 16px; color: #1e293b;">${eventVenue}</td>
+                    </tr>
+                  </table>
+                  <p style="font-size: 13px; color: #64748b; margin: 10px 0 0 0; font-style: italic;">
+                    Keep this email handy — your registration details will help with event access.
+                  </p>
                 </div>
                 
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="https://smb-connect-hub.lovable.app/auth/login" 
-                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                    Login to SMB Connect
+                <!-- Portal Access Section -->
+                <div style="margin: 30px 0;">
+                  <h2 style="font-size: 16px; color: #1e3a5f; margin: 0 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #1e3a5f; display: inline-block;">
+                    🌐 YOUR SMBCONNECT PORTAL ACCESS
+                  </h2>
+                  <table style="width: 100%; border-collapse: collapse; background: #f0f9ff; border-radius: 8px; overflow: hidden; border: 1px solid #bae6fd;">
+                    <tr>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #bae6fd; font-weight: 600; color: #0369a1; width: 150px;">Portal URL</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #bae6fd;">
+                        <a href="${portalUrl}" style="color: #0284c7; text-decoration: none; font-weight: 500;">${portalUrl}</a>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #bae6fd; font-weight: 600; color: #0369a1;">Username</td>
+                      <td style="padding: 12px 16px; border-bottom: 1px solid #bae6fd; color: #1e293b; font-family: monospace;">${email}</td>
+                    </tr>
+                    <tr>
+                      <td style="padding: 12px 16px; font-weight: 600; color: #0369a1;">Temporary Password</td>
+                      <td style="padding: 12px 16px; color: #1e293b;">
+                        <code style="background: #ffffff; padding: 4px 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 14px; border: 1px solid #e2e8f0;">${password}</code>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="font-size: 13px; color: #dc2626; margin: 10px 0 0 0; font-weight: 500;">
+                    ⚠️ For security, please update your password after your first login.
+                  </p>
+                </div>
+                
+                <!-- Features Section -->
+                <div style="margin: 30px 0; background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
+                  <h3 style="font-size: 15px; color: #854d0e; margin: 0 0 12px 0;">
+                    WHAT YOU CAN DO ON SMBCONNECT:
+                  </h3>
+                  <ul style="margin: 0; padding: 0 0 0 5px; list-style: none;">
+                    <li style="padding: 6px 0; color: #713f12; font-size: 14px;">
+                      ✓ Connect with founders, investors, and business leaders
+                    </li>
+                    <li style="padding: 6px 0; color: #713f12; font-size: 14px;">
+                      ✓ Stay updated on events, awards, and exhibitions
+                    </li>
+                    <li style="padding: 6px 0; color: #713f12; font-size: 14px;">
+                      ✓ Access exclusive reports and industry insights
+                    </li>
+                  </ul>
+                </div>
+                
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 35px 0 25px 0;">
+                  <a href="${portalUrl}" 
+                     style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 14px rgba(30, 58, 95, 0.25);">
+                    Login to SMBConnect Portal
                   </a>
                 </div>
                 
-                <p style="color: #666; font-size: 14px;">
-                  <strong>Security Tip:</strong> For your security, we recommend changing your password after your first login.
+                <!-- Closing -->
+                <p style="font-size: 15px; margin: 25px 0 0 0; color: #444;">
+                  We're excited to have you on board and look forward to seeing you at <strong>${eventTitle}</strong>.
                 </p>
                 
-                <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                
-                <p style="color: #888; font-size: 12px; text-align: center;">
-                  See you at the event!<br>
-                  - The SMB Connect Team
+                <p style="font-size: 15px; margin: 25px 0 0 0; color: #333;">
+                  Warm regards,<br>
+                  <strong style="color: #1e3a5f;">SMBConnect</strong>
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="background: #f8fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #64748b; font-size: 12px; margin: 0;">
+                  © ${new Date().getFullYear()} SMBConnect. All rights reserved.
                 </p>
               </div>
             </body>
             </html>
           `;
+
+          // Plain text version
+          const emailText = `Dear ${first_name},
+
+Thank you for registering for ${eventTitle}! We're excited to have you join the vibrant ecosystem of D2C founders, brand leaders, investors, and industry enablers.
+
+This registration also gives you exclusive access to the SMBConnect Portal — your gateway to meaningful business connections.
+
+📌 EVENT DETAILS
+- Event: ${eventTitle}
+- Date: ${eventDate}
+- Time: ${eventTime}
+- Venue: ${eventVenue}
+
+🌐 YOUR SMBCONNECT PORTAL ACCESS
+- Portal URL: ${portalUrl}
+- Username: ${email}
+- Temporary Password: ${password}
+
+For security, please update your password after your first login.
+
+WHAT YOU CAN DO ON SMBCONNECT:
+✓ Connect with founders, investors, and business leaders
+✓ Stay updated on events, awards, and exhibitions
+✓ Access exclusive reports and industry insights
+
+We're excited to have you on board and look forward to seeing you at ${eventTitle}.
+
+Warm regards,
+SMBConnect`;
 
           // Use Resend API
           const resendResponse = await fetch('https://api.resend.com/emails', {
@@ -383,9 +524,9 @@ serve(async (req: Request) => {
             body: JSON.stringify({
               from: 'SMB Connect <noreply@smbconnect.in>',
               to: [email],
-              subject: `Welcome to SMB Connect - Your Event Registration is Complete!`,
+              subject: `Welcome to ${eventTitle} & Your SMBConnect Portal Access`,
               html: emailHtml,
-              text: `Hello ${first_name}, Thank you for registering for ${landingPage.title}! Your login credentials: Email: ${email}, Password: ${password}. Login at https://smb-connect-hub.lovable.app/auth/login`,
+              text: emailText,
             }),
           });
 
