@@ -38,6 +38,7 @@ const CreateLandingPage = () => {
   const [associationId, setAssociationId] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [registrationFee, setRegistrationFee] = useState<string>('');
   const [activeTab, setActiveTab] = useState('edit');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   
@@ -102,6 +103,7 @@ const CreateLandingPage = () => {
       setAssociationId(existingPage.association_id);
       setIsActive(existingPage.is_active);
       setRegistrationEnabled(existingPage.registration_enabled);
+      setRegistrationFee(existingPage.registration_fee?.toString() || '');
       setSlugManuallyEdited(true);
     }
   }, [existingPage]);
@@ -214,6 +216,7 @@ const CreateLandingPage = () => {
         association_id: associationId,
         is_active: isActive,
         registration_enabled: registrationEnabled,
+        registration_fee: registrationFee ? parseFloat(registrationFee) : null,
         created_by: userId,
         updated_at: new Date().toISOString(),
       };
@@ -458,6 +461,25 @@ const CreateLandingPage = () => {
                 <Label htmlFor="registration-enabled">Enable user registration</Label>
               </div>
             </div>
+
+            {registrationEnabled && (
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="registration-fee">Registration Fee (₹)</Label>
+                <Input
+                  id="registration-fee"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0 for free events"
+                  value={registrationFee}
+                  onChange={(e) => setRegistrationFee(e.target.value)}
+                  className="max-w-[200px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty or enter 0 for free events. Coupon codes can be applied if a fee is set.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

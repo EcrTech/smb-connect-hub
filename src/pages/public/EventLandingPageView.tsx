@@ -18,6 +18,7 @@ interface LandingPageData {
   html_content: string;
   css_content?: string | null;
   registration_enabled: boolean;
+  registration_fee?: number | null;
   pages: PageInfo[];
   association: {
     name: string;
@@ -102,7 +103,8 @@ const EventLandingPageView = () => {
                 first_name: formData.first_name || formData.firstName || formData.name?.split(' ')[0] || '',
                 last_name: formData.last_name || formData.lastName || formData.name?.split(' ').slice(1).join(' ') || '',
                 phone: formData.phone || formData.mobile || formData.telephone || null,
-                registration_data: formData
+                registration_data: formData,
+                coupon_code: formData.coupon_code || null
               }),
             }
           );
@@ -136,7 +138,7 @@ const EventLandingPageView = () => {
   }, [landingPage]);
 
   // Inject CSS and the form interception script into the HTML
-  const getEnhancedHtml = (html: string, cssContent?: string | null, pages?: PageInfo[]): string => {
+  const getEnhancedHtml = (html: string, cssContent?: string | null, pages?: PageInfo[], registrationFee?: number | null, pageId?: string): string => {
     let sanitizedHtml = DOMPurify.sanitize(html, {
       ADD_TAGS: ['style', 'script', 'link'],
       ADD_ATTR: ['target', 'onclick', 'onsubmit'],
@@ -158,12 +160,125 @@ const EventLandingPageView = () => {
     // Create navigation script for internal page links
     const pagesJson = JSON.stringify(pages || []);
     const baseSlug = slug || '';
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const fee = registrationFee || 0;
+    const landingPageId = pageId || '';
     
     const formInterceptScript = `
+      <style>
+        /* Coupon section styles */
+        #smb-coupon-section {
+          background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+          margin: 20px 0;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #smb-coupon-section .fee-display {
+          margin-bottom: 16px;
+        }
+        #smb-coupon-section .fee-label {
+          font-size: 13px;
+          color: #64748b;
+          margin-bottom: 4px;
+        }
+        #smb-coupon-section .fee-amount {
+          font-size: 28px;
+          font-weight: 700;
+          color: #0f172a;
+        }
+        #smb-coupon-section .coupon-input-row {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 12px;
+        }
+        #smb-coupon-section .coupon-input {
+          flex: 1;
+          padding: 10px 14px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 14px;
+          text-transform: uppercase;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        #smb-coupon-section .coupon-input:focus {
+          border-color: #6366f1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        #smb-coupon-section .apply-btn {
+          padding: 10px 20px;
+          background: #6366f1;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        #smb-coupon-section .apply-btn:hover {
+          background: #4f46e5;
+        }
+        #smb-coupon-section .apply-btn:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+        }
+        #smb-coupon-section .coupon-message {
+          font-size: 13px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          margin-bottom: 12px;
+        }
+        #smb-coupon-section .coupon-message.success {
+          background: #dcfce7;
+          color: #166534;
+          border: 1px solid #86efac;
+        }
+        #smb-coupon-section .coupon-message.error {
+          background: #fee2e2;
+          color: #991b1b;
+          border: 1px solid #fca5a5;
+        }
+        #smb-coupon-section .price-breakdown {
+          background: white;
+          border-radius: 8px;
+          padding: 12px 16px;
+          border: 1px solid #e2e8f0;
+        }
+        #smb-coupon-section .price-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 6px 0;
+          font-size: 14px;
+        }
+        #smb-coupon-section .price-row.discount {
+          color: #16a34a;
+        }
+        #smb-coupon-section .price-row.total {
+          border-top: 2px solid #e2e8f0;
+          margin-top: 8px;
+          padding-top: 12px;
+          font-weight: 700;
+          font-size: 16px;
+        }
+        #smb-coupon-section .price-row.total.free {
+          color: #16a34a;
+        }
+      </style>
       <script>
         (function() {
           var pages = ${pagesJson};
           var baseSlug = "${baseSlug}";
+          var supabaseUrl = "${supabaseUrl}";
+          var registrationFee = ${fee};
+          var landingPageId = "${landingPageId}";
+          
+          var appliedCoupon = null;
+          var currentDiscount = 0;
+          var currentDiscountType = null;
+          var currentDiscountValue = 0;
           
           // Handle internal navigation links
           document.addEventListener('click', function(e) {
@@ -184,6 +299,144 @@ const EventLandingPageView = () => {
               }
             }
           });
+
+          // Inject coupon section into forms if registration fee exists
+          function injectCouponSection() {
+            if (registrationFee <= 0) return;
+            
+            var forms = document.querySelectorAll('form');
+            forms.forEach(function(form) {
+              // Check if already injected
+              if (form.querySelector('#smb-coupon-section')) return;
+              
+              var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+              if (!submitBtn) return;
+              
+              var couponSection = document.createElement('div');
+              couponSection.id = 'smb-coupon-section';
+              couponSection.innerHTML = 
+                '<div class="fee-display">' +
+                  '<div class="fee-label">Registration Fee</div>' +
+                  '<div class="fee-amount" id="smb-display-fee">₹' + registrationFee.toLocaleString('en-IN') + '</div>' +
+                '</div>' +
+                '<div class="coupon-input-row">' +
+                  '<input type="text" class="coupon-input" id="smb-coupon-input" placeholder="Enter coupon code" />' +
+                  '<button type="button" class="apply-btn" id="smb-apply-coupon">Apply</button>' +
+                '</div>' +
+                '<div id="smb-coupon-message" style="display:none;"></div>' +
+                '<div id="smb-price-breakdown" style="display:none;"></div>';
+              
+              submitBtn.parentNode.insertBefore(couponSection, submitBtn);
+              
+              // Add hidden input for coupon code
+              var hiddenInput = document.createElement('input');
+              hiddenInput.type = 'hidden';
+              hiddenInput.name = 'coupon_code';
+              hiddenInput.id = 'smb-coupon-code-hidden';
+              form.appendChild(hiddenInput);
+              
+              // Bind apply button
+              document.getElementById('smb-apply-coupon').addEventListener('click', validateCoupon);
+              document.getElementById('smb-coupon-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  validateCoupon();
+                }
+              });
+            });
+          }
+          
+          function validateCoupon() {
+            var input = document.getElementById('smb-coupon-input');
+            var messageEl = document.getElementById('smb-coupon-message');
+            var breakdownEl = document.getElementById('smb-price-breakdown');
+            var applyBtn = document.getElementById('smb-apply-coupon');
+            var hiddenInput = document.getElementById('smb-coupon-code-hidden');
+            
+            var code = input.value.trim();
+            if (!code) {
+              showMessage('Please enter a coupon code', 'error');
+              return;
+            }
+            
+            // Get email from form
+            var emailInput = document.querySelector('input[name="email"], input[type="email"]');
+            var email = emailInput ? emailInput.value.trim() : '';
+            if (!email) {
+              showMessage('Please enter your email first', 'error');
+              return;
+            }
+            
+            applyBtn.disabled = true;
+            applyBtn.textContent = 'Validating...';
+            
+            fetch(supabaseUrl + '/functions/v1/validate-coupon', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                code: code,
+                landing_page_id: landingPageId,
+                email: email
+              })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              applyBtn.disabled = false;
+              applyBtn.textContent = 'Apply';
+              
+              if (data.valid) {
+                appliedCoupon = code;
+                currentDiscountType = data.discount_type;
+                currentDiscountValue = data.discount_value;
+                
+                // Calculate discount
+                if (data.discount_type === 'percentage') {
+                  currentDiscount = Math.round((registrationFee * data.discount_value) / 100);
+                } else {
+                  currentDiscount = data.discount_value;
+                }
+                currentDiscount = Math.min(currentDiscount, registrationFee);
+                
+                var finalAmount = registrationFee - currentDiscount;
+                
+                showMessage(data.message, 'success');
+                hiddenInput.value = code;
+                input.disabled = true;
+                applyBtn.style.display = 'none';
+                
+                // Show price breakdown
+                var breakdownHtml = 
+                  '<div class="price-breakdown">' +
+                    '<div class="price-row"><span>Original Price</span><span>₹' + registrationFee.toLocaleString('en-IN') + '</span></div>' +
+                    '<div class="price-row discount"><span>Discount (' + (data.discount_type === 'percentage' ? data.discount_value + '%' : '₹' + data.discount_value) + ')</span><span>-₹' + currentDiscount.toLocaleString('en-IN') + '</span></div>' +
+                    '<div class="price-row total' + (finalAmount === 0 ? ' free' : '') + '"><span>Total</span><span>' + (finalAmount === 0 ? 'FREE' : '₹' + finalAmount.toLocaleString('en-IN')) + '</span></div>' +
+                  '</div>';
+                breakdownEl.innerHTML = breakdownHtml;
+                breakdownEl.style.display = 'block';
+                
+                // Update displayed fee
+                document.getElementById('smb-display-fee').innerHTML = 
+                  '<span style="text-decoration: line-through; color: #94a3b8; font-size: 18px;">₹' + registrationFee.toLocaleString('en-IN') + '</span> ' +
+                  '<span style="color: #16a34a;">₹' + finalAmount.toLocaleString('en-IN') + '</span>';
+              } else {
+                showMessage(data.message || 'Invalid coupon code', 'error');
+                hiddenInput.value = '';
+              }
+            })
+            .catch(function(err) {
+              console.error('Coupon validation error:', err);
+              applyBtn.disabled = false;
+              applyBtn.textContent = 'Apply';
+              showMessage('Failed to validate coupon. Please try again.', 'error');
+            });
+          }
+          
+          function showMessage(msg, type) {
+            var messageEl = document.getElementById('smb-coupon-message');
+            messageEl.textContent = msg;
+            messageEl.className = 'coupon-message ' + type;
+            messageEl.style.display = 'block';
+          }
 
           // Intercept all form submissions
           document.addEventListener('submit', function(e) {
@@ -218,6 +471,13 @@ const EventLandingPageView = () => {
               });
             }
           });
+          
+          // Inject coupon section when DOM is ready
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', injectCouponSection);
+          } else {
+            injectCouponSection();
+          }
         })();
       </script>
     `;
@@ -297,7 +557,7 @@ const EventLandingPageView = () => {
       {/* Render the landing page HTML in an iframe for isolation */}
       <iframe
         ref={iframeRef}
-        srcDoc={getEnhancedHtml(landingPage.html_content, landingPage.css_content, landingPage.pages)}
+        srcDoc={getEnhancedHtml(landingPage.html_content, landingPage.css_content, landingPage.pages, landingPage.registration_fee, landingPage.id)}
         className="w-full min-h-screen border-0"
         sandbox="allow-scripts allow-forms allow-same-origin"
         title={landingPage.title}

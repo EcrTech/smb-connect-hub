@@ -86,6 +86,7 @@ serve(async (req: Request) => {
         id,
         title,
         registration_enabled,
+        registration_fee,
         association_id,
         associations (
           name
@@ -125,12 +126,14 @@ serve(async (req: Request) => {
       );
     }
 
-    // Validate and process coupon if provided
-    let couponId: string | null = null;
+    // Get registration fee and calculate amounts
+    const registrationFee = parseFloat(landingPage.registration_fee) || 0;
+    let originalAmount = registrationFee;
     let discountAmount = 0;
-    let discountType: string | null = null;
-    let discountValue = 0;
+    let finalAmount = registrationFee;
+    let couponId: string | null = null;
 
+    // Validate and process coupon if provided
     if (coupon_code) {
       const normalizedCode = coupon_code.toUpperCase().trim();
       
@@ -199,10 +202,20 @@ serve(async (req: Request) => {
         );
       }
 
-      // Coupon is valid!
+      // Coupon is valid! Calculate discount
       couponId = coupon.id;
-      discountType = coupon.discount_type;
-      discountValue = parseFloat(coupon.discount_value);
+      const discountValue = parseFloat(coupon.discount_value);
+      
+      if (coupon.discount_type === 'percentage') {
+        discountAmount = Math.round((originalAmount * discountValue) / 100);
+      } else {
+        // Fixed discount
+        discountAmount = discountValue;
+      }
+      
+      // Ensure discount doesn't exceed original amount
+      discountAmount = Math.min(discountAmount, originalAmount);
+      finalAmount = originalAmount - discountAmount;
     }
 
     // Check if user already exists in auth
@@ -273,7 +286,9 @@ serve(async (req: Request) => {
         registration_data: registration_data || {},
         status: 'completed',
         coupon_id: couponId,
-        discount_amount: discountValue
+        original_amount: originalAmount,
+        discount_amount: discountAmount,
+        final_amount: finalAmount
       })
       .select()
       .single();
@@ -294,7 +309,7 @@ serve(async (req: Request) => {
           coupon_id: couponId,
           registration_id: registration.id,
           email: email.toLowerCase(),
-          discount_applied: discountValue
+          discount_applied: discountAmount
         });
 
       if (usageError) {
