@@ -248,8 +248,16 @@ serve(async (req: Request) => {
       // User already exists, just link them
       userId = existingUser.id;
     } else {
-      // Create new user with auto-generated password
-      password = generatePassword(14);
+      // Validate phone number - required for new user registration
+      if (!phone || phone.trim().length < 6) {
+        return new Response(
+          JSON.stringify({ error: 'Phone number is required for registration' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Use mobile number as password
+      password = phone.trim();
       
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email.toLowerCase(),
