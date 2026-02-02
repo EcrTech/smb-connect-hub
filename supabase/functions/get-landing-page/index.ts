@@ -40,6 +40,7 @@ serve(async (req: Request) => {
         css_content,
         is_active,
         registration_enabled,
+        registration_fee,
         association_id,
         associations (
           name,
@@ -110,6 +111,7 @@ serve(async (req: Request) => {
         html_content: htmlContent,
         css_content: landingPage.css_content,
         registration_enabled: landingPage.registration_enabled,
+        registration_fee: landingPage.registration_fee,
         pages: pageInfo,
         association: landingPage.associations
       }),

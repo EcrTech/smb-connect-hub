@@ -1444,6 +1444,7 @@ export type Database = {
           id: string
           is_active: boolean
           registration_enabled: boolean
+          registration_fee: number | null
           slug: string
           title: string
           updated_at: string
@@ -1458,6 +1459,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           registration_enabled?: boolean
+          registration_fee?: number | null
           slug: string
           title: string
           updated_at?: string
@@ -1472,6 +1474,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           registration_enabled?: boolean
+          registration_fee?: number | null
           slug?: string
           title?: string
           updated_at?: string
