@@ -16,7 +16,8 @@ import {
   Trash2, 
   Users,
   Eye,
-  Loader2
+  Loader2,
+  ClipboardList
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -217,6 +218,14 @@ const EventLandingPages = () => {
                   <Button variant="outline" size="sm" onClick={() => window.open(`/event/${page.slug}`, '_blank')}>
                     <ExternalLink className="h-4 w-4 mr-1" />
                     Open
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate(`/admin/event-landing-pages/${page.id}/registrations`)}
+                  >
+                    <ClipboardList className="h-4 w-4 mr-1" />
+                    Registrations
                   </Button>
                   <Button 
                     variant="outline" 

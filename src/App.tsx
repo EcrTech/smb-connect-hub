@@ -74,6 +74,7 @@ import EventLandingPages from "./pages/admin/EventLandingPages";
 import CreateLandingPage from "./pages/admin/CreateLandingPage";
 import EventLandingPageView from "./pages/public/EventLandingPageView";
 import CouponManagement from "./pages/admin/CouponManagement";
+import EventRegistrations from "./pages/admin/EventRegistrations";
 
 const queryClient = new QueryClient();
 
@@ -322,6 +323,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <CreateLandingPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/event-landing-pages/:id/registrations" 
+            element={
+              <ProtectedRoute>
+                <EventRegistrations />
               </ProtectedRoute>
             } 
           />
