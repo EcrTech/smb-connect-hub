@@ -522,11 +522,81 @@ const EventLandingPageView = () => {
             }
           });
           
-          // Inject coupon section when DOM is ready
-          if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', injectCouponSection);
-          } else {
+          // Hook into custom "Pay & Register" buttons commonly used in landing pages
+          function hookPayButton() {
+            var payBtn = document.getElementById('modal-pay-btn');
+            if (payBtn && !payBtn.__smbHooked) {
+              payBtn.__smbHooked = true;
+              console.log('[SMB Registration] Found modal-pay-btn, hooking into click handler');
+              
+              payBtn.addEventListener('click', function(e) {
+                // Collect data from modal form fields
+                var data = {
+                  email: (document.getElementById('modal-email') || {}).value || '',
+                  first_name: (document.getElementById('modal-firstname') || {}).value || '',
+                  last_name: (document.getElementById('modal-lastname') || {}).value || '',
+                  phone: (document.getElementById('modal-mobile') || {}).value || '',
+                  designation: (document.getElementById('modal-designation') || {}).value || '',
+                  organization: (document.getElementById('modal-organization') || {}).value || '',
+                  city: (document.getElementById('modal-city') || {}).value || '',
+                  category: (document.getElementById('modal-category') || {}).value || '',
+                  amount: (document.getElementById('modal-amount') || {}).value || '',
+                  coupon_code: (document.getElementById('modal-coupon') || {}).value || '',
+                  message: (document.getElementById('modal-message') || {}).value || ''
+                };
+                
+                // Collect sales channels if visible
+                var salesChannels = [];
+                document.querySelectorAll('input[name="sales_channels"]:checked').forEach(function(cb) {
+                  salesChannels.push(cb.value);
+                });
+                if (salesChannels.length > 0) {
+                  data.sales_channels = salesChannels.join(', ');
+                }
+                var otherInput = document.getElementById('channel-others-input');
+                if (otherInput && otherInput.value) {
+                  data.sales_channels_other = otherInput.value;
+                }
+                
+                console.log('[SMB Registration] Modal pay button clicked, data:', JSON.stringify(data));
+                
+                // Validate required fields
+                if (!data.email) {
+                  console.error('[SMB Registration] No email in modal form');
+                  return; // Let the original handler show error
+                }
+                if (!data.first_name) {
+                  console.error('[SMB Registration] No first name in modal form');
+                  return;
+                }
+                
+                // Send to parent window for processing
+                window.parent.postMessage({
+                  type: 'event-registration',
+                  data: data
+                }, '*');
+                
+                console.log('[SMB Registration] Sent registration data to parent');
+              }, true); // Use capture phase to run before other handlers
+            }
+          }
+          
+          // Inject coupon section and hook pay button when DOM is ready
+          function initAll() {
             injectCouponSection();
+            hookPayButton();
+            
+            // Also observe for dynamically added modal buttons
+            var observer = new MutationObserver(function(mutations) {
+              hookPayButton();
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+          }
+          
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAll);
+          } else {
+            initAll();
           }
         })();
       </script>
