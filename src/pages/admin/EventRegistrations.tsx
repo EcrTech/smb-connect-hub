@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,8 +6,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -23,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, Download, Search, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Search, Eye, Loader2, BarChart3, Users, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Json } from '@/integrations/supabase/types';
 
@@ -59,6 +67,10 @@ const EventRegistrations = () => {
   const { userId } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [utmSourceFilter, setUtmSourceFilter] = useState<string>('all');
+  const [utmMediumFilter, setUtmMediumFilter] = useState<string>('all');
+  const [utmCampaignFilter, setUtmCampaignFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('registrations');
 
   const { data: landingPage, isLoading: isLoadingPage } = useQuery({
     queryKey: ['landing-page', id],
@@ -108,15 +120,83 @@ const EventRegistrations = () => {
     enabled: !!id && !!userId,
   });
 
+  // Get unique UTM values for filters
+  const utmOptions = useMemo(() => {
+    const sources = new Set<string>();
+    const mediums = new Set<string>();
+    const campaigns = new Set<string>();
+    
+    registrations?.forEach(reg => {
+      if (reg.utm_source) sources.add(reg.utm_source);
+      if (reg.utm_medium) mediums.add(reg.utm_medium);
+      if (reg.utm_campaign) campaigns.add(reg.utm_campaign);
+    });
+    
+    return {
+      sources: Array.from(sources).sort(),
+      mediums: Array.from(mediums).sort(),
+      campaigns: Array.from(campaigns).sort(),
+    };
+  }, [registrations]);
+
+  // Calculate UTM analytics
+  const utmAnalytics = useMemo(() => {
+    if (!registrations) return null;
+    
+    const bySource: Record<string, { count: number; revenue: number }> = {};
+    const byMedium: Record<string, { count: number; revenue: number }> = {};
+    const byCampaign: Record<string, { count: number; revenue: number }> = {};
+    let totalRevenue = 0;
+    
+    registrations.forEach(reg => {
+      const revenue = reg.final_amount || 0;
+      totalRevenue += revenue;
+      
+      const source = reg.utm_source || 'Direct / Unknown';
+      const medium = reg.utm_medium || 'None';
+      const campaign = reg.utm_campaign || 'None';
+      
+      if (!bySource[source]) bySource[source] = { count: 0, revenue: 0 };
+      bySource[source].count++;
+      bySource[source].revenue += revenue;
+      
+      if (!byMedium[medium]) byMedium[medium] = { count: 0, revenue: 0 };
+      byMedium[medium].count++;
+      byMedium[medium].revenue += revenue;
+      
+      if (!byCampaign[campaign]) byCampaign[campaign] = { count: 0, revenue: 0 };
+      byCampaign[campaign].count++;
+      byCampaign[campaign].revenue += revenue;
+    });
+    
+    return {
+      bySource: Object.entries(bySource).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.count - a.count),
+      byMedium: Object.entries(byMedium).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.count - a.count),
+      byCampaign: Object.entries(byCampaign).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.count - a.count),
+      totalRevenue,
+      totalRegistrations: registrations.length,
+    };
+  }, [registrations]);
+
   const filteredRegistrations = registrations?.filter((reg) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      reg.first_name.toLowerCase().includes(query) ||
-      reg.last_name.toLowerCase().includes(query) ||
-      reg.email.toLowerCase().includes(query) ||
-      (reg.phone && reg.phone.toLowerCase().includes(query))
-    );
+    // Text search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = (
+        reg.first_name.toLowerCase().includes(query) ||
+        reg.last_name.toLowerCase().includes(query) ||
+        reg.email.toLowerCase().includes(query) ||
+        (reg.phone && reg.phone.toLowerCase().includes(query))
+      );
+      if (!matchesSearch) return false;
+    }
+    
+    // UTM filters
+    if (utmSourceFilter !== 'all' && reg.utm_source !== utmSourceFilter) return false;
+    if (utmMediumFilter !== 'all' && reg.utm_medium !== utmMediumFilter) return false;
+    if (utmCampaignFilter !== 'all' && reg.utm_campaign !== utmCampaignFilter) return false;
+    
+    return true;
   });
 
   const flattenRegistrationData = (reg: Registration): Record<string, string> => {
@@ -219,38 +299,121 @@ const EventRegistrations = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      {/* Summary Cards */}
+      {utmAnalytics && (
+        <div className="grid gap-4 md:grid-cols-3 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Registrations</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{utmAnalytics.totalRegistrations}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{utmAnalytics.totalRevenue.toLocaleString()}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">UTM Sources</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{utmAnalytics.bySource.length}</div>
+            </CardContent>
+          </Card>
         </div>
-        <Button
-          onClick={exportToCSV}
-          disabled={!registrations || registrations.length === 0}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export CSV
-        </Button>
-      </div>
+      )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : !filteredRegistrations || filteredRegistrations.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">
-              {searchQuery ? 'No registrations match your search' : 'No registrations yet'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="registrations">Registrations</TabsTrigger>
+          <TabsTrigger value="analytics">📊 UTM Analytics</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="registrations" className="space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or phone..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {utmOptions.sources.length > 0 && (
+                <Select value={utmSourceFilter} onValueChange={setUtmSourceFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Sources</SelectItem>
+                    {utmOptions.sources.map(source => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {utmOptions.mediums.length > 0 && (
+                <Select value={utmMediumFilter} onValueChange={setUtmMediumFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Medium" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Mediums</SelectItem>
+                    {utmOptions.mediums.map(medium => (
+                      <SelectItem key={medium} value={medium}>{medium}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {utmOptions.campaigns.length > 0 && (
+                <Select value={utmCampaignFilter} onValueChange={setUtmCampaignFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Campaign" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Campaigns</SelectItem>
+                    {utmOptions.campaigns.map(campaign => (
+                      <SelectItem key={campaign} value={campaign}>{campaign}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button
+                onClick={exportToCSV}
+                disabled={!registrations || registrations.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !filteredRegistrations || filteredRegistrations.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  {searchQuery || utmSourceFilter !== 'all' || utmMediumFilter !== 'all' || utmCampaignFilter !== 'all' 
+                    ? 'No registrations match your filters' 
+                    : 'No registrations yet'}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -327,7 +490,108 @@ const EventRegistrations = () => {
             </Table>
           </CardContent>
         </Card>
-      )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          {utmAnalytics && (
+            <>
+              {/* By Source */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Registrations by Source</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Source</TableHead>
+                        <TableHead className="text-right">Registrations</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">% of Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {utmAnalytics.bySource.map(item => (
+                        <TableRow key={item.name}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="text-right">{item.count}</TableCell>
+                          <TableCell className="text-right">₹{item.revenue.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            {((item.count / utmAnalytics.totalRegistrations) * 100).toFixed(1)}%
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* By Medium */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Registrations by Medium</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Medium</TableHead>
+                        <TableHead className="text-right">Registrations</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">% of Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {utmAnalytics.byMedium.map(item => (
+                        <TableRow key={item.name}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="text-right">{item.count}</TableCell>
+                          <TableCell className="text-right">₹{item.revenue.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            {((item.count / utmAnalytics.totalRegistrations) * 100).toFixed(1)}%
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* By Campaign */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Registrations by Campaign</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Campaign</TableHead>
+                        <TableHead className="text-right">Registrations</TableHead>
+                        <TableHead className="text-right">Revenue</TableHead>
+                        <TableHead className="text-right">% of Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {utmAnalytics.byCampaign.map(item => (
+                        <TableRow key={item.name}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="text-right">{item.count}</TableCell>
+                          <TableCell className="text-right">₹{item.revenue.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            {((item.count / utmAnalytics.totalRegistrations) * 100).toFixed(1)}%
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={!!selectedRegistration} onOpenChange={() => setSelectedRegistration(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">

@@ -47,6 +47,11 @@ const CreateLandingPage = () => {
   const [eventTime, setEventTime] = useState<string>('');
   const [eventVenue, setEventVenue] = useState<string>('');
   
+  // Default UTM parameters
+  const [defaultUtmSource, setDefaultUtmSource] = useState<string>('');
+  const [defaultUtmMedium, setDefaultUtmMedium] = useState<string>('');
+  const [defaultUtmCampaign, setDefaultUtmCampaign] = useState<string>('');
+  
   // Multi-page state
   const [pages, setPages] = useState<PageData[]>([
     { id: 'temp-1', title: 'Home', slug: '', htmlContent: '', sortOrder: 0, isDefault: true }
@@ -114,6 +119,10 @@ const CreateLandingPage = () => {
       setEventDate((existingPage as any).event_date || '');
       setEventTime((existingPage as any).event_time || '');
       setEventVenue((existingPage as any).event_venue || '');
+      // UTM defaults
+      setDefaultUtmSource((existingPage as any).default_utm_source || '');
+      setDefaultUtmMedium((existingPage as any).default_utm_medium || '');
+      setDefaultUtmCampaign((existingPage as any).default_utm_campaign || '');
     }
   }, [existingPage]);
 
@@ -229,9 +238,15 @@ const CreateLandingPage = () => {
         event_date: eventDate || null,
         event_time: eventTime || null,
         event_venue: eventVenue || null,
+        default_utm_source: defaultUtmSource || null,
+        default_utm_medium: defaultUtmMedium || null,
+        default_utm_campaign: defaultUtmCampaign || null,
         created_by: userId,
         updated_at: new Date().toISOString(),
       };
+
+      // Get the linked event_id from existing page (if editing) to sync venue/location
+      const eventId = isEditing ? (existingPage as any)?.event_id : null;
 
       let landingPageId = id;
 
@@ -241,6 +256,17 @@ const CreateLandingPage = () => {
           .update(landingPageData)
           .eq('id', id);
         if (error) throw error;
+
+        // Sync venue/location to linked events calendar if event_id exists
+        if (eventId && eventVenue) {
+          await supabase
+            .from('events')
+            .update({ 
+              location: eventVenue,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', eventId);
+        }
       } else {
         const { data, error } = await supabase
           .from('event_landing_pages')
@@ -517,7 +543,7 @@ const CreateLandingPage = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="event-venue">Event Venue</Label>
+                      <Label htmlFor="event-venue">Event Venue / Location</Label>
                       <Input
                         id="event-venue"
                         type="text"
@@ -528,7 +554,47 @@ const CreateLandingPage = () => {
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    These details will be included in the registration confirmation email sent to attendees.
+                    These details will be included in the registration confirmation email. Location updates sync to the events calendar.
+                  </p>
+                </div>
+
+                {/* Default UTM Parameters */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-medium mb-3">📊 Default UTM Parameters (for tracking)</h4>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="utm-source">Default UTM Source</Label>
+                      <Input
+                        id="utm-source"
+                        type="text"
+                        placeholder="e.g., website, email, social"
+                        value={defaultUtmSource}
+                        onChange={(e) => setDefaultUtmSource(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="utm-medium">Default UTM Medium</Label>
+                      <Input
+                        id="utm-medium"
+                        type="text"
+                        placeholder="e.g., organic, cpc, referral"
+                        value={defaultUtmMedium}
+                        onChange={(e) => setDefaultUtmMedium(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="utm-campaign">Default UTM Campaign</Label>
+                      <Input
+                        id="utm-campaign"
+                        type="text"
+                        placeholder="e.g., summit-2025, launch"
+                        value={defaultUtmCampaign}
+                        onChange={(e) => setDefaultUtmCampaign(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Default values used when registrations don't have UTM parameters. URL parameters (utm_source, utm_medium, utm_campaign) will override these.
                   </p>
                 </div>
               </div>

@@ -1439,6 +1439,9 @@ export type Database = {
           created_at: string
           created_by: string
           css_content: string | null
+          default_utm_campaign: string | null
+          default_utm_medium: string | null
+          default_utm_source: string | null
           event_date: string | null
           event_id: string | null
           event_time: string | null
@@ -1457,6 +1460,9 @@ export type Database = {
           created_at?: string
           created_by: string
           css_content?: string | null
+          default_utm_campaign?: string | null
+          default_utm_medium?: string | null
+          default_utm_source?: string | null
           event_date?: string | null
           event_id?: string | null
           event_time?: string | null
@@ -1475,6 +1481,9 @@ export type Database = {
           created_at?: string
           created_by?: string
           css_content?: string | null
+          default_utm_campaign?: string | null
+          default_utm_medium?: string | null
+          default_utm_source?: string | null
           event_date?: string | null
           event_id?: string | null
           event_time?: string | null
