@@ -1,75 +1,141 @@
 
 
-## Use Mobile Number as Password
+## Add UTM Source Tracking to Event Registrations Report
 
-This plan updates the event registration process to use the registrant's mobile number as their password instead of generating a random password.
-
----
-
-### Current Behavior
-
-- Password is auto-generated using `generatePassword(14)` function
-- Creates a random 14-character password with letters, numbers, and symbols
-- The phone number is stored in user metadata but not used for authentication
+This plan adds UTM tracking columns to the database and displays the registration source in the admin report.
 
 ---
 
-### Proposed Change
+### Current State
 
-| Aspect | Current | New |
-|--------|---------|-----|
-| Password Source | Random 14-char string | User's mobile number |
-| Example | `aB3!xKp9@mNq2R` | `9876543210` |
-| Validation | None for phone | Ensure phone is provided |
+- UTM parameters are passed via URL (e.g., `?utm_source=telecalling&utm_medium=phone`)
+- The `event_registrations` table does NOT have UTM columns
+- UTM data is not being captured or stored
 
 ---
 
-### Implementation
+### Implementation Steps
 
-**File to Modify:** `supabase/functions/process-event-registration/index.ts`
+**Step 1: Database Migration**
 
-**Changes:**
+Add three UTM tracking columns to the `event_registrations` table:
 
-1. **Add phone validation** - Make phone number mandatory for new user registration
-2. **Replace password generation** - Use phone number directly instead of `generatePassword()`
-3. **Remove unused function** - Clean up the `generatePassword()` function (optional)
-
----
-
-### Code Changes
-
-**Before (line 252):**
-```typescript
-password = generatePassword(14);
+```sql
+ALTER TABLE event_registrations
+ADD COLUMN utm_source TEXT,
+ADD COLUMN utm_medium TEXT,
+ADD COLUMN utm_campaign TEXT;
 ```
 
-**After:**
-```typescript
-// Use mobile number as password
-if (!phone || phone.trim().length < 6) {
-  return new Response(
-    JSON.stringify({ error: 'Phone number is required for registration' }),
-    { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+---
+
+**Step 2: Update Frontend to Capture UTM Parameters**
+
+Modify `src/pages/public/EventLandingPageView.tsx` to:
+1. Extract UTM parameters from the URL when page loads
+2. Include UTM parameters in the registration request
+
+```text
+// Capture UTM params from URL
+const urlParams = new URLSearchParams(window.location.search);
+const utmSource = urlParams.get('utm_source');
+const utmMedium = urlParams.get('utm_medium');
+const utmCampaign = urlParams.get('utm_campaign');
+
+// Add to registration request
+const requestBody = {
+  ...existingFields,
+  utm_source: utmSource,
+  utm_medium: utmMedium,
+  utm_campaign: utmCampaign
+};
+```
+
+---
+
+**Step 3: Update Edge Function**
+
+Modify `supabase/functions/process-event-registration/index.ts` to:
+1. Accept UTM parameters in the request body
+2. Store UTM parameters in the database
+
+```text
+interface RegistrationRequest {
+  // ...existing fields
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
-password = phone.trim();
+
+// Insert with UTM data
+const { data: registration } = await supabase
+  .from('event_registrations')
+  .insert({
+    // ...existing fields
+    utm_source: body.utm_source || null,
+    utm_medium: body.utm_medium || null,
+    utm_campaign: body.utm_campaign || null
+  });
 ```
 
 ---
 
-### Considerations
+**Step 4: Update Registration Report**
 
-| Consideration | How We Handle It |
-|---------------|------------------|
-| Phone format | Use the phone number as provided (with or without country code) |
-| Security | The email template already prompts users to change password after first login |
-| Validation | Require minimum 6 characters to ensure valid phone number |
+Modify `src/pages/admin/EventRegistrations.tsx` to:
+1. Add `utm_source` to the query
+2. Add a "Source" column to the table
+3. Include UTM data in the CSV export
+
+---
+
+### Updated Table Display
+
+| Name | Email | Phone | Source | Coupon | Amount | Status | Registered |
+|------|-------|-------|--------|--------|--------|--------|------------|
+| John Doe | john@example.com | 9876543210 | **telecalling** | DTOC100 | ₹500 | Completed | Feb 3, 2026 |
+| Jane Smith | jane@example.com | 8765432109 | **smita** | - | ₹600 | Completed | Feb 2, 2026 |
+
+The source column will show values like:
+- `telecalling` (from phone calls)
+- `social` (from social media)
+- `paid` (from ads)
+- `smita` / `rajeev` (personal referrals)
+- `internal` (internal team)
+- `-` (no UTM tracking)
 
 ---
 
 ### Files to Modify
 
-| File | Change |
-|------|--------|
-| `supabase/functions/process-event-registration/index.ts` | Replace password generation with phone number |
+| File | Changes |
+|------|---------|
+| Database | Add `utm_source`, `utm_medium`, `utm_campaign` columns |
+| `src/pages/public/EventLandingPageView.tsx` | Capture UTM params from URL and pass to registration |
+| `supabase/functions/process-event-registration/index.ts` | Accept and store UTM parameters |
+| `src/pages/admin/EventRegistrations.tsx` | Display Source column and include in CSV export |
+
+---
+
+### Registration Details Dialog Enhancement
+
+The details popup will also show UTM tracking info:
+
+```text
+📊 TRACKING INFO
+┌────────────┬─────────────────┐
+│ Source     │ telecalling     │
+│ Medium     │ phone           │
+│ Campaign   │ bharat-dtoc-2026│
+└────────────┴─────────────────┘
+```
+
+---
+
+### CSV Export
+
+The exported CSV will include new columns:
+- `UTM Source`
+- `UTM Medium`
+- `UTM Campaign`
 
