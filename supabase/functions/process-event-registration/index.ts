@@ -109,6 +109,9 @@ serve(async (req: Request) => {
         event_date,
         event_time,
         event_venue,
+        default_utm_source,
+        default_utm_medium,
+        default_utm_campaign,
         associations (
           name
         )
@@ -302,6 +305,11 @@ serve(async (req: Request) => {
       }
     }
 
+    // Use URL UTM params if provided, otherwise fall back to landing page defaults
+    const finalUtmSource = utm_source || landingPage.default_utm_source || null;
+    const finalUtmMedium = utm_medium || landingPage.default_utm_medium || null;
+    const finalUtmCampaign = utm_campaign || landingPage.default_utm_campaign || null;
+
     // Create the registration record
     const { data: registration, error: regError } = await supabase
       .from('event_registrations')
@@ -318,9 +326,9 @@ serve(async (req: Request) => {
         original_amount: originalAmount,
         discount_amount: discountAmount,
         final_amount: finalAmount,
-        utm_source: utm_source || null,
-        utm_medium: utm_medium || null,
-        utm_campaign: utm_campaign || null
+        utm_source: finalUtmSource,
+        utm_medium: finalUtmMedium,
+        utm_campaign: finalUtmCampaign
       })
       .select()
       .single();
