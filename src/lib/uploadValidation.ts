@@ -22,14 +22,9 @@ export const IMAGE_DIMENSION_LIMITS = {
   COVER_MAX_HEIGHT: 1000,
 } as const;
 
-// Specific post image dimensions for social media optimization
-export const POST_IMAGE_DIMENSIONS = {
-  SQUARE_SMALL: { width: 800, height: 800 },       // 1:1 - Small square
-  SQUARE: { width: 1080, height: 1080 },           // 1:1 - Feed posts, carousel slides
-  PORTRAIT_4_5: { width: 1080, height: 1350 },     // 4:5 - Portrait feed posts
-  PORTRAIT_SQUARE: { width: 1200, height: 1200 },  // 1:1 - Portrait (larger)
-  LANDSCAPE: { width: 1200, height: 627 },         // 1.91:1 - Link previews
-} as const;
+// Allowed post image heights for social media optimization
+// Width is flexible - only height needs to match one of these values
+export const POST_IMAGE_ALLOWED_HEIGHTS = [627, 800, 1080, 1200, 1350] as const;
 
 // Allowed file types
 export const ALLOWED_FILE_TYPES = {
@@ -186,27 +181,20 @@ export const validatePostImageDimensions = (file: File): Promise<ValidationResul
     
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const { width, height } = img;
+      const { height } = img;
       
-      // Check if dimensions match any allowed format (with 10px tolerance)
+      // Check if height matches any allowed format (with 10px tolerance)
       const tolerance = 10;
-      const isSquareSmall = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE_SMALL.width) <= tolerance && 
-                            Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE_SMALL.height) <= tolerance;
-      const isSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE.width) <= tolerance && 
-                       Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE.height) <= tolerance;
-      const isPortrait4_5 = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT_4_5.width) <= tolerance && 
-                            Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT_4_5.height) <= tolerance;
-      const isPortraitSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT_SQUARE.width) <= tolerance && 
-                               Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT_SQUARE.height) <= tolerance;
-      const isLandscape = Math.abs(width - POST_IMAGE_DIMENSIONS.LANDSCAPE.width) <= tolerance && 
-                          Math.abs(height - POST_IMAGE_DIMENSIONS.LANDSCAPE.height) <= tolerance;
+      const isValidHeight = POST_IMAGE_ALLOWED_HEIGHTS.some(
+        allowedHeight => Math.abs(height - allowedHeight) <= tolerance
+      );
       
-      if (isSquareSmall || isSquare || isPortrait4_5 || isPortraitSquare || isLandscape) {
+      if (isValidHeight) {
         resolve({ valid: true });
       } else {
         resolve({
           valid: false,
-          error: `Image dimensions (${width}x${height}) don't match allowed formats: 800x800 (small square), 1080x1080 (square), 1080x1350 (portrait 4:5), 1200x1200 (portrait), or 1200x627 (landscape). Please resize your image.`,
+          error: `Image height (${height}px) doesn't match allowed heights: 627, 800, 1080, 1200, or 1350 pixels. Width is flexible. Please resize your image.`,
         });
       }
     };
