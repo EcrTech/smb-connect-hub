@@ -5,9 +5,9 @@
 // File size limits in bytes
 export const FILE_SIZE_LIMITS = {
   IMAGE: 5 * 1024 * 1024,       // 5MB for general images
-  POST_IMAGE: 5 * 1024 * 1024,  // 5MB for post images (JPG/PNG only)
+  POST_IMAGE: 8 * 1024 * 1024,  // 8MB for post images (JPG/PNG only)
   VIDEO: 50 * 1024 * 1024,      // 50MB for videos
-  DOCUMENT: 10 * 1024 * 1024,   // 10MB for documents (CSV, PDF, etc.)
+  DOCUMENT: 100 * 1024 * 1024,  // 100MB for documents/carousels
   AVATAR: 2 * 1024 * 1024,      // 2MB for avatars
   COVER: 5 * 1024 * 1024,       // 5MB for cover images
   MESSAGE_ATTACHMENT: 10 * 1024 * 1024, // 10MB for message attachments
@@ -24,9 +24,10 @@ export const IMAGE_DIMENSION_LIMITS = {
 
 // Specific post image dimensions for social media optimization
 export const POST_IMAGE_DIMENSIONS = {
-  SQUARE: { width: 1080, height: 1080 },      // 1:1 - Feed posts, carousel slides
-  PORTRAIT: { width: 1080, height: 1350 },    // 4:5 - Portrait feed posts
-  LANDSCAPE: { width: 1200, height: 627 },    // 1.91:1 - Link previews
+  SQUARE: { width: 1080, height: 1080 },           // 1:1 - Feed posts, carousel slides
+  PORTRAIT_4_5: { width: 1080, height: 1350 },     // 4:5 - Portrait feed posts
+  PORTRAIT_SQUARE: { width: 1200, height: 1200 },  // 1:1 - Portrait (larger)
+  LANDSCAPE: { width: 1200, height: 627 },         // 1.91:1 - Link previews
 } as const;
 
 // Allowed file types
@@ -190,17 +191,19 @@ export const validatePostImageDimensions = (file: File): Promise<ValidationResul
       const tolerance = 10;
       const isSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE.width) <= tolerance && 
                        Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE.height) <= tolerance;
-      const isPortrait = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT.width) <= tolerance && 
-                         Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT.height) <= tolerance;
+      const isPortrait4_5 = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT_4_5.width) <= tolerance && 
+                            Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT_4_5.height) <= tolerance;
+      const isPortraitSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT_SQUARE.width) <= tolerance && 
+                               Math.abs(height - POST_IMAGE_DIMENSIONS.PORTRAIT_SQUARE.height) <= tolerance;
       const isLandscape = Math.abs(width - POST_IMAGE_DIMENSIONS.LANDSCAPE.width) <= tolerance && 
                           Math.abs(height - POST_IMAGE_DIMENSIONS.LANDSCAPE.height) <= tolerance;
       
-      if (isSquare || isPortrait || isLandscape) {
+      if (isSquare || isPortrait4_5 || isPortraitSquare || isLandscape) {
         resolve({ valid: true });
       } else {
         resolve({
           valid: false,
-          error: `Image dimensions (${width}x${height}) don't match allowed formats: 1080x1080 (square), 1080x1350 (portrait 4:5), or 1200x627 (landscape). Please resize your image.`,
+          error: `Image dimensions (${width}x${height}) don't match allowed formats: 1080x1080 (square), 1080x1350 (portrait 4:5), 1200x1200 (portrait), or 1200x627 (landscape). Please resize your image.`,
         });
       }
     };
@@ -215,7 +218,7 @@ export const validatePostImageDimensions = (file: File): Promise<ValidationResul
 };
 
 /**
- * Complete validation for post image uploads (5MB limit, specific dimensions)
+ * Complete validation for post image uploads (8MB limit, specific dimensions)
  */
 export const validatePostImageUpload = async (file: File): Promise<ValidationResult> => {
   // Only allow JPG and PNG for posts (best display quality)
@@ -228,7 +231,7 @@ export const validatePostImageUpload = async (file: File): Promise<ValidationRes
     };
   }
   
-  // Check file size (5MB for posts)
+  // Check file size (8MB for posts)
   const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.POST_IMAGE);
   if (!sizeCheck.valid) return sizeCheck;
   
@@ -269,7 +272,7 @@ export const validateDocumentUpload = (file: File): ValidationResult => {
 };
 
 /**
- * Complete validation for post document uploads (PDF, DOC, DOCX - 10MB limit)
+ * Complete validation for post document uploads (PDF, DOC, DOCX - 100MB limit)
  */
 export const validatePostDocumentUpload = (file: File): ValidationResult => {
   // Check file type
@@ -281,7 +284,7 @@ export const validatePostDocumentUpload = (file: File): ValidationResult => {
     };
   }
   
-  // Check file size (10MB for post documents)
+  // Check file size (100MB for post documents/carousels)
   const sizeCheck = validateFileSize(file, FILE_SIZE_LIMITS.DOCUMENT);
   return sizeCheck;
 };
