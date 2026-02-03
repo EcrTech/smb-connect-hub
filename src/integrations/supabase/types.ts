@@ -1521,6 +1521,9 @@ export type Database = {
           registration_data: Json | null
           status: string
           user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
         }
         Insert: {
           coupon_id?: string | null
@@ -1537,6 +1540,9 @@ export type Database = {
           registration_data?: Json | null
           status?: string
           user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Update: {
           coupon_id?: string | null
@@ -1553,6 +1559,9 @@ export type Database = {
           registration_data?: Json | null
           status?: string
           user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
         }
         Relationships: [
           {

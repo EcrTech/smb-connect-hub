@@ -95,6 +95,12 @@ const EventLandingPageView = () => {
         setRegistrationMessage('');
 
         try {
+          // Capture UTM params from URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const utmSource = urlParams.get('utm_source');
+          const utmMedium = urlParams.get('utm_medium');
+          const utmCampaign = urlParams.get('utm_campaign');
+
           const requestBody = {
             landing_page_id: landingPage.id,
             email: formData.email,
@@ -102,7 +108,10 @@ const EventLandingPageView = () => {
             last_name: formData.last_name || '',
             phone: formData.phone || null,
             registration_data: formData,
-            coupon_code: formData.coupon_code || null
+            coupon_code: formData.coupon_code || null,
+            utm_source: utmSource,
+            utm_medium: utmMedium,
+            utm_campaign: utmCampaign
           };
           
           console.log('[SMB Registration] Sending to edge function:', requestBody);
