@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Upload, Eye, Save, Loader2, Copy, ExternalLink, Plus, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
+import { UtmLinkGenerator } from '@/components/admin/UtmLinkGenerator';
 
 interface PageData {
   id: string;
@@ -596,6 +597,11 @@ const CreateLandingPage = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     Default values used when registrations don't have UTM parameters. URL parameters (utm_source, utm_medium, utm_campaign) will override these.
                   </p>
+                </div>
+
+                {/* UTM Link Generator */}
+                <div className="border-t pt-4 mt-4">
+                  <UtmLinkGenerator slug={slug} />
                 </div>
               </div>
             )}
