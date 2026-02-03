@@ -1,141 +1,60 @@
 
 
-## Add UTM Source Tracking to Event Registrations Report
+## Update Bharat DtoC Manager Role to Owner
 
-This plan adds UTM tracking columns to the database and displays the registration source in the admin report.
+This plan updates the association manager's role from `manager` to `owner` to enable saving logos and cover images.
 
 ---
 
 ### Current State
 
-- UTM parameters are passed via URL (e.g., `?utm_source=telecalling&utm_medium=phone`)
-- The `event_registrations` table does NOT have UTM columns
-- UTM data is not being captured or stored
+The Bharat DtoC association manager has:
+- **Role**: `manager`
+- **Permissions**: `null`
+
+This does not satisfy the RLS policy requirement for updating association details.
 
 ---
 
-### Implementation Steps
+### Solution
 
-**Step 1: Database Migration**
-
-Add three UTM tracking columns to the `event_registrations` table:
+Run a database migration to update the manager's role:
 
 ```sql
-ALTER TABLE event_registrations
-ADD COLUMN utm_source TEXT,
-ADD COLUMN utm_medium TEXT,
-ADD COLUMN utm_campaign TEXT;
+UPDATE association_managers
+SET role = 'owner'
+WHERE association_id = (
+  SELECT id FROM associations WHERE name = 'Bharat DtoC'
+)
+AND role = 'manager';
 ```
 
 ---
 
-**Step 2: Update Frontend to Capture UTM Parameters**
+### What This Enables
 
-Modify `src/pages/public/EventLandingPageView.tsx` to:
-1. Extract UTM parameters from the URL when page loads
-2. Include UTM parameters in the registration request
-
-```text
-// Capture UTM params from URL
-const urlParams = new URLSearchParams(window.location.search);
-const utmSource = urlParams.get('utm_source');
-const utmMedium = urlParams.get('utm_medium');
-const utmCampaign = urlParams.get('utm_campaign');
-
-// Add to registration request
-const requestBody = {
-  ...existingFields,
-  utm_source: utmSource,
-  utm_medium: utmMedium,
-  utm_campaign: utmCampaign
-};
-```
-
----
-
-**Step 3: Update Edge Function**
-
-Modify `supabase/functions/process-event-registration/index.ts` to:
-1. Accept UTM parameters in the request body
-2. Store UTM parameters in the database
-
-```text
-interface RegistrationRequest {
-  // ...existing fields
-  utm_source?: string;
-  utm_medium?: string;
-  utm_campaign?: string;
-}
-
-// Insert with UTM data
-const { data: registration } = await supabase
-  .from('event_registrations')
-  .insert({
-    // ...existing fields
-    utm_source: body.utm_source || null,
-    utm_medium: body.utm_medium || null,
-    utm_campaign: body.utm_campaign || null
-  });
-```
-
----
-
-**Step 4: Update Registration Report**
-
-Modify `src/pages/admin/EventRegistrations.tsx` to:
-1. Add `utm_source` to the query
-2. Add a "Source" column to the table
-3. Include UTM data in the CSV export
-
----
-
-### Updated Table Display
-
-| Name | Email | Phone | Source | Coupon | Amount | Status | Registered |
-|------|-------|-------|--------|--------|--------|--------|------------|
-| John Doe | john@example.com | 9876543210 | **telecalling** | DTOC100 | ₹500 | Completed | Feb 3, 2026 |
-| Jane Smith | jane@example.com | 8765432109 | **smita** | - | ₹600 | Completed | Feb 2, 2026 |
-
-The source column will show values like:
-- `telecalling` (from phone calls)
-- `social` (from social media)
-- `paid` (from ads)
-- `smita` / `rajeev` (personal referrals)
-- `internal` (internal team)
-- `-` (no UTM tracking)
+After the update, the manager will be able to:
+- Upload and save association logos
+- Upload and save cover/background images
+- Edit all association profile details
 
 ---
 
 ### Files to Modify
 
-| File | Changes |
-|------|---------|
-| Database | Add `utm_source`, `utm_medium`, `utm_campaign` columns |
-| `src/pages/public/EventLandingPageView.tsx` | Capture UTM params from URL and pass to registration |
-| `supabase/functions/process-event-registration/index.ts` | Accept and store UTM parameters |
-| `src/pages/admin/EventRegistrations.tsx` | Display Source column and include in CSV export |
+| Component | Change |
+|-----------|--------|
+| Database Migration | Update `association_managers.role` from `manager` to `owner` for Bharat DtoC |
 
 ---
 
-### Registration Details Dialog Enhancement
+### Technical Details
 
-The details popup will also show UTM tracking info:
-
-```text
-📊 TRACKING INFO
-┌────────────┬─────────────────┐
-│ Source     │ telecalling     │
-│ Medium     │ phone           │
-│ Campaign   │ bharat-dtoc-2026│
-└────────────┴─────────────────┘
+The RLS policy on `associations` table allows updates when:
+```sql
+association_managers.role = 'owner'
+OR (permissions ->> 'edit_association')::boolean = true
 ```
 
----
-
-### CSV Export
-
-The exported CSV will include new columns:
-- `UTM Source`
-- `UTM Medium`
-- `UTM Campaign`
+By changing the role to `owner`, the manager will pass this policy check and be able to save image updates.
 
