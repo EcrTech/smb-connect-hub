@@ -1,115 +1,99 @@
 
 
-## UTM Link Generator for Event Landing Pages
+## Update Post Image Dimensions and Size Limits
 
-Add an interactive UTM link generator tool that helps admins create shareable tracking URLs with UTM parameters pre-filled, eliminating the need to use external tools.
-
----
-
-### What We're Building
-
-A collapsible UTM Link Generator section in the landing page editor that:
-1. Lets admins enter custom UTM source, medium, and campaign values
-2. Generates a complete URL with those parameters appended
-3. Provides one-click copy functionality
-4. Shows a preview of the generated link
-5. Includes common presets for quick selection
+Align the post image validation with the LinkedIn-style specifications you provided.
 
 ---
 
-### User Experience
+### Current vs Requested Comparison
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│  🔗 UTM Link Generator                              [▼ Expand]
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Quick Presets: [WhatsApp] [Email] [LinkedIn] [Facebook]    │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │ UTM Source   │  │ UTM Medium   │  │ UTM Campaign │       │
-│  │ whatsapp     │  │ social       │  │ summit-2025  │       │
-│  └──────────────┘  └──────────────┘  └──────────────┘       │
-│                                                             │
-│  Generated URL:                                             │
-│  ┌─────────────────────────────────────────────────┐ [Copy] │
-│  │ https://smbconnect.in/event/summit-2025?utm_... │        │
-│  └─────────────────────────────────────────────────┘        │
-│                                                             │
-│  Use the production domain for tracking:                    │
-│  ○ Preview (lovable.app)  ● Production (smbconnect.in)      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+| Setting | Current | Requested | Action |
+|---------|---------|-----------|--------|
+| **Post - Square** | 1080 x 1080 | 1080 x 1080 | No change needed |
+| **Post - Landscape** | 1200 x 627 | 1200 x 627 | No change needed |
+| **Post - Portrait** | 1080 x 1350 (4:5) | 1200 x 1200 | **Add as new option** |
+| **Post File Size** | 5 MB | 8 MB | **Increase limit** |
+| **Document Size** | 10 MB | 100 MB | **Increase limit** |
+| **Formats** | JPG, PNG | JPG, PNG | No change needed |
+
+---
+
+### What We'll Change
+
+**1. Add 1200x1200 Portrait Option**
+
+Currently, portrait posts require 1080x1350 (4:5 ratio). We'll add support for 1200x1200 as an alternative portrait format while keeping the existing option.
+
+**2. Increase Post Image Size Limit**
+
+Update from 5MB to 8MB to match LinkedIn's specifications.
+
+**3. Increase Document (Carousel) Size Limit**
+
+Update from 10MB to 100MB for document uploads in posts.
+
+---
+
+### File to Modify
+
+| File | Changes |
+|------|---------|
+| `src/lib/uploadValidation.ts` | Update `POST_IMAGE_DIMENSIONS`, `FILE_SIZE_LIMITS`, and validation logic |
+
+---
+
+### Technical Details
+
+**Updated Constants:**
+
+```typescript
+export const FILE_SIZE_LIMITS = {
+  // ... other limits
+  POST_IMAGE: 8 * 1024 * 1024,  // 8MB (was 5MB)
+  DOCUMENT: 100 * 1024 * 1024,  // 100MB (was 10MB)
+} as const;
+
+export const POST_IMAGE_DIMENSIONS = {
+  SQUARE: { width: 1080, height: 1080 },      // 1:1 - Feed posts
+  PORTRAIT_4_5: { width: 1080, height: 1350 }, // 4:5 - Portrait (existing)
+  PORTRAIT_1_1: { width: 1200, height: 1200 }, // 1:1 - Portrait (new)
+  LANDSCAPE: { width: 1200, height: 627 },     // 1.91:1 - Link previews
+} as const;
+```
+
+**Updated Validation Logic:**
+
+The `validatePostImageDimensions` function will be updated to check for 4 formats instead of 3:
+- 1080 x 1080 (Square)
+- 1080 x 1350 (Portrait 4:5)
+- 1200 x 1200 (Portrait 1:1) - **NEW**
+- 1200 x 627 (Landscape)
+
+---
+
+### Error Message Update
+
+The error message will be updated to reflect all allowed formats:
+
+```
+"Image dimensions (WxH) don't match allowed formats: 
+1080x1080 (square), 1080x1350 (portrait 4:5), 
+1200x1200 (portrait), or 1200x627 (landscape). 
+Please resize your image."
 ```
 
 ---
 
-### Features
+### Other Image Types (No Changes Needed)
 
-| Feature | Description |
-|---------|-------------|
-| **Custom UTM Fields** | Input fields for source, medium, and campaign |
-| **Quick Presets** | One-click buttons for common channels (WhatsApp, Email, LinkedIn, Facebook, Twitter) |
-| **Domain Toggle** | Switch between preview and production URLs |
-| **Live Preview** | Shows the complete URL as you type |
-| **Copy Button** | One-click copy to clipboard with success feedback |
-| **Validation** | Only generates link when slug is set |
+The following specifications you mentioned are for profile/company images which use different validation with maximum limits rather than exact dimensions. These are already adequately covered:
 
----
+- **Profile Picture (400x400)**: Current max 1000x1000 allows this
+- **Personal Background (1584x396)**: Current max 2000x1000 allows this  
+- **Company Logo (400x400)**: Current system allows this
+- **Company Banner (1128x191)**: Current max 2000x1000 allows this
+- **Event Banner (1600x900)**: Uses general validation, within limits
 
-### Preset Configurations
-
-| Preset | Source | Medium | Suggested Use |
-|--------|--------|--------|---------------|
-| WhatsApp | `whatsapp` | `social` | Sharing via WhatsApp groups/broadcasts |
-| Email | `email` | `email` | Newsletter or email campaigns |
-| LinkedIn | `linkedin` | `social` | LinkedIn posts and messages |
-| Facebook | `facebook` | `social` | Facebook posts and ads |
-| Twitter/X | `twitter` | `social` | Twitter/X posts |
-
----
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/admin/CreateLandingPage.tsx` | Add UTM Link Generator component section after the Default UTM Parameters section |
-
----
-
-### Technical Implementation
-
-1. **New State Variables**
-   - `utmLinkSource` - UTM source for link generation
-   - `utmLinkMedium` - UTM medium for link generation  
-   - `utmLinkCampaign` - UTM campaign for link generation
-   - `useProductionDomain` - Toggle between preview/production URL
-   - `showUtmGenerator` - Collapsible state
-
-2. **Domain Configuration**
-   - Production domain: `smbconnect.in`
-   - Uses `/event/{slug}` route format
-   - Appends `?utm_source=X&utm_medium=Y&utm_campaign=Z`
-
-3. **Preset Buttons**
-   - Clicking a preset auto-fills source and medium
-   - Campaign defaults to slug or can be customized
-
-4. **URL Generation Logic**
-   ```
-   base = useProductionDomain 
-     ? "https://smbconnect.in/event/{slug}"
-     : "{origin}/event/{slug}"
-   
-   params = []
-   if (source) params.push("utm_source=" + source)
-   if (medium) params.push("utm_medium=" + medium)
-   if (campaign) params.push("utm_campaign=" + campaign)
-   
-   url = base + "?" + params.join("&")
-   ```
-
-5. **Copy Functionality**
-   - Uses `navigator.clipboard.writeText()`
-   - Shows toast confirmation on success
+These use flexible "maximum" validation rather than exact-match validation, so they already accept the sizes you specified.
 
