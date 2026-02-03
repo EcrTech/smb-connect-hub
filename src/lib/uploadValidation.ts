@@ -24,6 +24,7 @@ export const IMAGE_DIMENSION_LIMITS = {
 
 // Specific post image dimensions for social media optimization
 export const POST_IMAGE_DIMENSIONS = {
+  SQUARE_SMALL: { width: 800, height: 800 },       // 1:1 - Small square
   SQUARE: { width: 1080, height: 1080 },           // 1:1 - Feed posts, carousel slides
   PORTRAIT_4_5: { width: 1080, height: 1350 },     // 4:5 - Portrait feed posts
   PORTRAIT_SQUARE: { width: 1200, height: 1200 },  // 1:1 - Portrait (larger)
@@ -189,6 +190,8 @@ export const validatePostImageDimensions = (file: File): Promise<ValidationResul
       
       // Check if dimensions match any allowed format (with 10px tolerance)
       const tolerance = 10;
+      const isSquareSmall = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE_SMALL.width) <= tolerance && 
+                            Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE_SMALL.height) <= tolerance;
       const isSquare = Math.abs(width - POST_IMAGE_DIMENSIONS.SQUARE.width) <= tolerance && 
                        Math.abs(height - POST_IMAGE_DIMENSIONS.SQUARE.height) <= tolerance;
       const isPortrait4_5 = Math.abs(width - POST_IMAGE_DIMENSIONS.PORTRAIT_4_5.width) <= tolerance && 
@@ -198,12 +201,12 @@ export const validatePostImageDimensions = (file: File): Promise<ValidationResul
       const isLandscape = Math.abs(width - POST_IMAGE_DIMENSIONS.LANDSCAPE.width) <= tolerance && 
                           Math.abs(height - POST_IMAGE_DIMENSIONS.LANDSCAPE.height) <= tolerance;
       
-      if (isSquare || isPortrait4_5 || isPortraitSquare || isLandscape) {
+      if (isSquareSmall || isSquare || isPortrait4_5 || isPortraitSquare || isLandscape) {
         resolve({ valid: true });
       } else {
         resolve({
           valid: false,
-          error: `Image dimensions (${width}x${height}) don't match allowed formats: 1080x1080 (square), 1080x1350 (portrait 4:5), 1200x1200 (portrait), or 1200x627 (landscape). Please resize your image.`,
+          error: `Image dimensions (${width}x${height}) don't match allowed formats: 800x800 (small square), 1080x1080 (square), 1080x1350 (portrait 4:5), 1200x1200 (portrait), or 1200x627 (landscape). Please resize your image.`,
         });
       }
     };
