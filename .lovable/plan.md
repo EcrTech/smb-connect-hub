@@ -1,60 +1,115 @@
 
 
-## Update Bharat DtoC Manager Role to Owner
+## UTM Link Generator for Event Landing Pages
 
-This plan updates the association manager's role from `manager` to `owner` to enable saving logos and cover images.
-
----
-
-### Current State
-
-The Bharat DtoC association manager has:
-- **Role**: `manager`
-- **Permissions**: `null`
-
-This does not satisfy the RLS policy requirement for updating association details.
+Add an interactive UTM link generator tool that helps admins create shareable tracking URLs with UTM parameters pre-filled, eliminating the need to use external tools.
 
 ---
 
-### Solution
+### What We're Building
 
-Run a database migration to update the manager's role:
+A collapsible UTM Link Generator section in the landing page editor that:
+1. Lets admins enter custom UTM source, medium, and campaign values
+2. Generates a complete URL with those parameters appended
+3. Provides one-click copy functionality
+4. Shows a preview of the generated link
+5. Includes common presets for quick selection
 
-```sql
-UPDATE association_managers
-SET role = 'owner'
-WHERE association_id = (
-  SELECT id FROM associations WHERE name = 'Bharat DtoC'
-)
-AND role = 'manager';
+---
+
+### User Experience
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  🔗 UTM Link Generator                              [▼ Expand]
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Quick Presets: [WhatsApp] [Email] [LinkedIn] [Facebook]    │
+│                                                             │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │ UTM Source   │  │ UTM Medium   │  │ UTM Campaign │       │
+│  │ whatsapp     │  │ social       │  │ summit-2025  │       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
+│                                                             │
+│  Generated URL:                                             │
+│  ┌─────────────────────────────────────────────────┐ [Copy] │
+│  │ https://smbconnect.in/event/summit-2025?utm_... │        │
+│  └─────────────────────────────────────────────────┘        │
+│                                                             │
+│  Use the production domain for tracking:                    │
+│  ○ Preview (lovable.app)  ● Production (smbconnect.in)      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### What This Enables
+### Features
 
-After the update, the manager will be able to:
-- Upload and save association logos
-- Upload and save cover/background images
-- Edit all association profile details
+| Feature | Description |
+|---------|-------------|
+| **Custom UTM Fields** | Input fields for source, medium, and campaign |
+| **Quick Presets** | One-click buttons for common channels (WhatsApp, Email, LinkedIn, Facebook, Twitter) |
+| **Domain Toggle** | Switch between preview and production URLs |
+| **Live Preview** | Shows the complete URL as you type |
+| **Copy Button** | One-click copy to clipboard with success feedback |
+| **Validation** | Only generates link when slug is set |
+
+---
+
+### Preset Configurations
+
+| Preset | Source | Medium | Suggested Use |
+|--------|--------|--------|---------------|
+| WhatsApp | `whatsapp` | `social` | Sharing via WhatsApp groups/broadcasts |
+| Email | `email` | `email` | Newsletter or email campaigns |
+| LinkedIn | `linkedin` | `social` | LinkedIn posts and messages |
+| Facebook | `facebook` | `social` | Facebook posts and ads |
+| Twitter/X | `twitter` | `social` | Twitter/X posts |
 
 ---
 
 ### Files to Modify
 
-| Component | Change |
-|-----------|--------|
-| Database Migration | Update `association_managers.role` from `manager` to `owner` for Bharat DtoC |
+| File | Changes |
+|------|---------|
+| `src/pages/admin/CreateLandingPage.tsx` | Add UTM Link Generator component section after the Default UTM Parameters section |
 
 ---
 
-### Technical Details
+### Technical Implementation
 
-The RLS policy on `associations` table allows updates when:
-```sql
-association_managers.role = 'owner'
-OR (permissions ->> 'edit_association')::boolean = true
-```
+1. **New State Variables**
+   - `utmLinkSource` - UTM source for link generation
+   - `utmLinkMedium` - UTM medium for link generation  
+   - `utmLinkCampaign` - UTM campaign for link generation
+   - `useProductionDomain` - Toggle between preview/production URL
+   - `showUtmGenerator` - Collapsible state
 
-By changing the role to `owner`, the manager will pass this policy check and be able to save image updates.
+2. **Domain Configuration**
+   - Production domain: `smbconnect.in`
+   - Uses `/event/{slug}` route format
+   - Appends `?utm_source=X&utm_medium=Y&utm_campaign=Z`
+
+3. **Preset Buttons**
+   - Clicking a preset auto-fills source and medium
+   - Campaign defaults to slug or can be customized
+
+4. **URL Generation Logic**
+   ```
+   base = useProductionDomain 
+     ? "https://smbconnect.in/event/{slug}"
+     : "{origin}/event/{slug}"
+   
+   params = []
+   if (source) params.push("utm_source=" + source)
+   if (medium) params.push("utm_medium=" + medium)
+   if (campaign) params.push("utm_campaign=" + campaign)
+   
+   url = base + "?" + params.join("&")
+   ```
+
+5. **Copy Functionality**
+   - Uses `navigator.clipboard.writeText()`
+   - Shows toast confirmation on success
 
