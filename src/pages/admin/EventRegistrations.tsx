@@ -39,6 +39,9 @@ interface Registration {
   original_amount: number | null;
   discount_amount: number | null;
   final_amount: number | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
   event_coupons: {
     code: string;
   } | null;
@@ -89,6 +92,9 @@ const EventRegistrations = () => {
           original_amount,
           discount_amount,
           final_amount,
+          utm_source,
+          utm_medium,
+          utm_campaign,
           event_coupons (
             code
           )
@@ -125,6 +131,9 @@ const EventRegistrations = () => {
       'Discount Amount': reg.discount_amount?.toString() || '',
       'Final Amount': reg.final_amount?.toString() || '',
       'Coupon Code': reg.event_coupons?.code || '',
+      'UTM Source': reg.utm_source || '',
+      'UTM Medium': reg.utm_medium || '',
+      'UTM Campaign': reg.utm_campaign || '',
     };
 
     // Flatten registration_data JSONB
@@ -250,6 +259,7 @@ const EventRegistrations = () => {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>Source</TableHead>
                   <TableHead>Coupon</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
@@ -265,6 +275,15 @@ const EventRegistrations = () => {
                     </TableCell>
                     <TableCell>{reg.email}</TableCell>
                     <TableCell>{reg.phone || '-'}</TableCell>
+                    <TableCell>
+                      {reg.utm_source ? (
+                        <Badge variant="secondary" className="text-xs">
+                          {reg.utm_source}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {reg.event_coupons?.code ? (
                         <Badge variant="outline" className="text-xs">
@@ -348,6 +367,26 @@ const EventRegistrations = () => {
                   </div>
                 )}
               </div>
+
+              {(selectedRegistration.utm_source || selectedRegistration.utm_medium || selectedRegistration.utm_campaign) && (
+                <div className="border-t pt-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">📊 Tracking Info</p>
+                  <div className="grid grid-cols-3 gap-4 bg-muted/50 rounded-lg p-3">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Source</p>
+                      <p className="font-medium">{selectedRegistration.utm_source || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Medium</p>
+                      <p className="font-medium">{selectedRegistration.utm_medium || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Campaign</p>
+                      <p className="font-medium">{selectedRegistration.utm_campaign || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {(selectedRegistration.original_amount !== null || selectedRegistration.final_amount !== null) && (
                 <div className="border-t pt-4">

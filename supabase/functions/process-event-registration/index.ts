@@ -53,6 +53,9 @@ interface RegistrationRequest {
   phone?: string;
   registration_data?: Record<string, unknown>;
   coupon_code?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
 }
 
 serve(async (req: Request) => {
@@ -70,7 +73,7 @@ serve(async (req: Request) => {
 
   try {
     const body: RegistrationRequest = await req.json();
-    const { landing_page_id, email, first_name, last_name, phone, registration_data, coupon_code } = body;
+    const { landing_page_id, email, first_name, last_name, phone, registration_data, coupon_code, utm_source, utm_medium, utm_campaign } = body;
 
     // Validate required fields
     if (!landing_page_id || !email || !first_name || !last_name) {
@@ -314,7 +317,10 @@ serve(async (req: Request) => {
         coupon_id: couponId,
         original_amount: originalAmount,
         discount_amount: discountAmount,
-        final_amount: finalAmount
+        final_amount: finalAmount,
+        utm_source: utm_source || null,
+        utm_medium: utm_medium || null,
+        utm_campaign: utm_campaign || null
       })
       .select()
       .single();
