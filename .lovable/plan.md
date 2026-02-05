@@ -1,37 +1,52 @@
 
 
-## Update Post Image Dimensions and Size Limits
+## Allow Flexible Image Dimensions (LinkedIn-Style)
 
-Align the post image validation with the LinkedIn-style specifications you provided.
-
----
-
-### Current vs Requested Comparison
-
-| Setting | Current | Requested | Action |
-|---------|---------|-----------|--------|
-| **Post - Square** | 1080 x 1080 | 1080 x 1080 | No change needed |
-| **Post - Landscape** | 1200 x 627 | 1200 x 627 | No change needed |
-| **Post - Portrait** | 1080 x 1350 (4:5) | 1200 x 1200 | **Add as new option** |
-| **Post File Size** | 5 MB | 8 MB | **Increase limit** |
-| **Document Size** | 10 MB | 100 MB | **Increase limit** |
-| **Formats** | JPG, PNG | JPG, PNG | No change needed |
+Align with LinkedIn's actual image handling policy, which is **permissive rather than restrictive** on exact dimensions.
 
 ---
 
-### What We'll Change
+### Current Problem
 
-**1. Add 1200x1200 Portrait Option**
+The validation is rejecting an 889px height image because it only allows these specific heights:
+- 627, 800, 1080, 1200, or 1350 pixels
 
-Currently, portrait posts require 1080x1350 (4:5 ratio). We'll add support for 1200x1200 as an alternative portrait format while keeping the existing option.
+However, **LinkedIn doesn't actually enforce strict dimension requirements** - it accepts a wide range of sizes and handles resizing/cropping automatically.
 
-**2. Increase Post Image Size Limit**
+---
 
-Update from 5MB to 8MB to match LinkedIn's specifications.
+### LinkedIn's Actual Policy
 
-**3. Increase Document (Carousel) Size Limit**
+| Requirement | LinkedIn Standard |
+|-------------|-------------------|
+| **Minimum Width** | 552px (will be accepted but may look low quality) |
+| **Recommended Width** | 1200px for optimal quality |
+| **Maximum File Size** | 8MB |
+| **Aspect Ratio** | Flexible (1.91:1 to 1:1 most common) |
+| **Dimension Enforcement** | None - LinkedIn auto-crops/resizes |
 
-Update from 10MB to 100MB for document uploads in posts.
+---
+
+### Proposed Change
+
+Instead of validating for specific heights, use **minimum dimension requirements** like LinkedIn:
+
+| Setting | Current | New (LinkedIn-Style) |
+|---------|---------|----------------------|
+| **Min Width** | None | 400px |
+| **Min Height** | Must be exactly 627/800/1080/1200/1350 | 400px |
+| **Max Width** | 4000px | 4096px |
+| **Max Height** | 4000px | 4096px |
+| **Max File Size** | 8MB | 8MB (no change) |
+
+---
+
+### What This Means
+
+- Images like 889px height will now be **accepted**
+- Any image at least 400x400px and under 8MB will be valid
+- Extremely small images (under 400px) will be rejected with a helpful message
+- The platform displays images responsively anyway, so exact dimensions aren't critical
 
 ---
 
@@ -39,7 +54,7 @@ Update from 10MB to 100MB for document uploads in posts.
 
 | File | Changes |
 |------|---------|
-| `src/lib/uploadValidation.ts` | Update `POST_IMAGE_DIMENSIONS`, `FILE_SIZE_LIMITS`, and validation logic |
+| `src/lib/uploadValidation.ts` | Replace height-only validation with minimum dimension check |
 
 ---
 
@@ -48,52 +63,65 @@ Update from 10MB to 100MB for document uploads in posts.
 **Updated Constants:**
 
 ```typescript
-export const FILE_SIZE_LIMITS = {
-  // ... other limits
-  POST_IMAGE: 8 * 1024 * 1024,  // 8MB (was 5MB)
-  DOCUMENT: 100 * 1024 * 1024,  // 100MB (was 10MB)
-} as const;
-
-export const POST_IMAGE_DIMENSIONS = {
-  SQUARE: { width: 1080, height: 1080 },      // 1:1 - Feed posts
-  PORTRAIT_4_5: { width: 1080, height: 1350 }, // 4:5 - Portrait (existing)
-  PORTRAIT_1_1: { width: 1200, height: 1200 }, // 1:1 - Portrait (new)
-  LANDSCAPE: { width: 1200, height: 627 },     // 1.91:1 - Link previews
+// Post image dimension limits (LinkedIn-style)
+export const POST_IMAGE_LIMITS = {
+  MIN_WIDTH: 400,      // Minimum for acceptable quality
+  MIN_HEIGHT: 400,     // Minimum for acceptable quality
+  MAX_WIDTH: 4096,     // Maximum allowed
+  MAX_HEIGHT: 4096,    // Maximum allowed
+  RECOMMENDED_WIDTH: 1200,  // For optimal quality
 } as const;
 ```
 
 **Updated Validation Logic:**
 
-The `validatePostImageDimensions` function will be updated to check for 4 formats instead of 3:
-- 1080 x 1080 (Square)
-- 1080 x 1350 (Portrait 4:5)
-- 1200 x 1200 (Portrait 1:1) - **NEW**
-- 1200 x 627 (Landscape)
+```typescript
+export const validatePostImageDimensions = (file: File): Promise<ValidationResult> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { width, height } = img;
+      
+      // Check minimum dimensions
+      if (width < POST_IMAGE_LIMITS.MIN_WIDTH || height < POST_IMAGE_LIMITS.MIN_HEIGHT) {
+        resolve({
+          valid: false,
+          error: `Image is too small (${width}x${height}px). Minimum size is ${POST_IMAGE_LIMITS.MIN_WIDTH}x${POST_IMAGE_LIMITS.MIN_HEIGHT}px.`,
+        });
+        return;
+      }
+      
+      // Check maximum dimensions
+      if (width > POST_IMAGE_LIMITS.MAX_WIDTH || height > POST_IMAGE_LIMITS.MAX_HEIGHT) {
+        resolve({
+          valid: false,
+          error: `Image is too large (${width}x${height}px). Maximum size is ${POST_IMAGE_LIMITS.MAX_WIDTH}x${POST_IMAGE_LIMITS.MAX_HEIGHT}px.`,
+        });
+        return;
+      }
+      
+      resolve({ valid: true });
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve({ valid: false, error: 'Failed to load image' });
+    };
+    
+    img.src = url;
+  });
+};
+```
 
 ---
 
-### Error Message Update
+### Benefits
 
-The error message will be updated to reflect all allowed formats:
-
-```
-"Image dimensions (WxH) don't match allowed formats: 
-1080x1080 (square), 1080x1350 (portrait 4:5), 
-1200x1200 (portrait), or 1200x627 (landscape). 
-Please resize your image."
-```
-
----
-
-### Other Image Types (No Changes Needed)
-
-The following specifications you mentioned are for profile/company images which use different validation with maximum limits rather than exact dimensions. These are already adequately covered:
-
-- **Profile Picture (400x400)**: Current max 1000x1000 allows this
-- **Personal Background (1584x396)**: Current max 2000x1000 allows this  
-- **Company Logo (400x400)**: Current system allows this
-- **Company Banner (1128x191)**: Current max 2000x1000 allows this
-- **Event Banner (1600x900)**: Uses general validation, within limits
-
-These use flexible "maximum" validation rather than exact-match validation, so they already accept the sizes you specified.
+1. **User-Friendly**: Users can upload images without resizing to exact dimensions
+2. **LinkedIn-Compatible**: Matches how LinkedIn actually handles images
+3. **Quality Guardrails**: Still prevents very small (low quality) or oversized images
+4. **Flexible Aspect Ratios**: Square, portrait, landscape - all accepted
 
