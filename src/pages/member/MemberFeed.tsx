@@ -1155,7 +1155,7 @@ export default function MemberFeed() {
                           <img
                             src={post.image_url}
                             alt="Post"
-                            className="mt-4 rounded-lg max-h-96 w-full max-w-full object-cover"
+                            className="mt-4 rounded-lg max-h-96 w-full max-w-full object-contain bg-gray-100"
                           />
                         )}
 

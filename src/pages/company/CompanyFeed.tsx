@@ -1093,7 +1093,7 @@ export default function CompanyFeed() {
                               <img 
                                 src={post.image_url} 
                                 alt="Post" 
-                                className="mt-3 rounded-lg max-h-96 w-full max-w-full object-cover" 
+                                className="mt-3 rounded-lg max-h-96 w-full max-w-full object-contain bg-gray-100" 
                               />
                             )}
                             {post.video_url && (
