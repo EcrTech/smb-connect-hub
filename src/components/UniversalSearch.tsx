@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, Building2, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SearchResult {
+interface MemberResult {
+  type: 'member';
   id: string;
   user_id: string;
   first_name: string;
@@ -13,6 +14,16 @@ interface SearchResult {
   avatar: string | null;
   company_name: string | null;
 }
+
+interface AssociationResult {
+  type: 'association';
+  id: string;
+  name: string;
+  logo: string | null;
+  industry: string | null;
+}
+
+type SearchResult = MemberResult | AssociationResult;
 
 export const UniversalSearch = () => {
   const navigate = useNavigate();
@@ -34,7 +45,7 @@ export const UniversalSearch = () => {
   }, []);
 
   useEffect(() => {
-    const searchMembers = async () => {
+    const search = async () => {
       if (!searchTerm.trim()) {
         setResults([]);
         return;
@@ -42,35 +53,13 @@ export const UniversalSearch = () => {
 
       setLoading(true);
       try {
-        const { data: profiles, error } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, avatar')
-          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`)
-          .limit(8);
+        // Search members and associations in parallel
+        const [membersResult, associationsResult] = await Promise.all([
+          searchMembers(searchTerm),
+          searchAssociations(searchTerm),
+        ]);
 
-        if (error) throw error;
-
-        const resultsWithCompany = await Promise.all(
-          (profiles || []).map(async (profile) => {
-            const { data: memberData } = await supabase
-              .from('members')
-              .select('id, company:companies(name)')
-              .eq('user_id', profile.id)
-              .eq('is_active', true)
-              .single();
-
-            return {
-              id: memberData?.id || profile.id,
-              user_id: profile.id,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
-              avatar: profile.avatar,
-              company_name: memberData?.company?.name || null,
-            };
-          })
-        );
-
-        setResults(resultsWithCompany.filter(r => r.id));
+        setResults([...associationsResult, ...membersResult]);
       } catch (error) {
         console.error('Search error:', error);
       } finally {
@@ -78,7 +67,7 @@ export const UniversalSearch = () => {
       }
     };
 
-    const debounce = setTimeout(searchMembers, 300);
+    const debounce = setTimeout(search, 300);
     return () => clearTimeout(debounce);
   }, [searchTerm]);
 
@@ -86,17 +75,21 @@ export const UniversalSearch = () => {
     setIsFocused(false);
     setSearchTerm('');
     setResults([]);
-    navigate(`/profile/${result.user_id}`);
+    if (result.type === 'association') {
+      navigate(`/association/${result.id}`);
+    } else {
+      navigate(`/profile/${result.user_id}`);
+    }
   };
 
-  const showDropdown = isFocused && (searchTerm.trim().length > 0);
+  const showDropdown = isFocused && searchTerm.trim().length > 0;
 
   return (
     <div ref={containerRef} className="relative w-full max-w-xs">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search members..."
+          placeholder="Search members & associations..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setIsFocused(true)}
@@ -111,36 +104,61 @@ export const UniversalSearch = () => {
               Searching...
             </div>
           ) : results.length > 0 ? (
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-72 overflow-y-auto">
               {results.map((result) => (
                 <button
-                  key={result.id}
+                  key={`${result.type}-${result.id}`}
                   onClick={() => handleSelect(result)}
                   className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left"
                 >
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={result.avatar || undefined} />
-                    <AvatarFallback>
-                      {result.first_name[0]}
-                      {result.last_name[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {result.first_name} {result.last_name}
-                    </p>
-                    {result.company_name && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {result.company_name}
-                      </p>
-                    )}
-                  </div>
+                  {result.type === 'association' ? (
+                    <>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={result.logo || undefined} />
+                        <AvatarFallback>
+                          <Building2 className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{result.name}</p>
+                        {result.industry && (
+                          <p className="text-xs text-muted-foreground truncate">{result.industry}</p>
+                        )}
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium shrink-0">
+                        Association
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={result.avatar || undefined} />
+                        <AvatarFallback>
+                          {result.first_name[0]}
+                          {result.last_name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {result.first_name} {result.last_name}
+                        </p>
+                        {result.company_name && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {result.company_name}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium shrink-0">
+                        Member
+                      </span>
+                    </>
+                  )}
                 </button>
               ))}
             </div>
           ) : (
             <div className="p-3 text-center text-sm text-muted-foreground">
-              No members found
+              No results found
             </div>
           )}
         </div>
@@ -148,3 +166,55 @@ export const UniversalSearch = () => {
     </div>
   );
 };
+
+async function searchMembers(term: string): Promise<MemberResult[]> {
+  const { data: profiles, error } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, avatar')
+    .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+    .limit(6);
+
+  if (error || !profiles) return [];
+
+  const results = await Promise.all(
+    profiles.map(async (profile) => {
+      const { data: memberData } = await supabase
+        .from('members')
+        .select('id, company:companies(name)')
+        .eq('user_id', profile.id)
+        .eq('is_active', true)
+        .single();
+
+      return {
+        type: 'member' as const,
+        id: memberData?.id || profile.id,
+        user_id: profile.id,
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        avatar: profile.avatar,
+        company_name: memberData?.company?.name || null,
+      };
+    })
+  );
+
+  return results.filter((r) => r.id);
+}
+
+async function searchAssociations(term: string): Promise<AssociationResult[]> {
+  const { data, error } = await supabase
+    .from('associations')
+    .select('id, name, logo, industry')
+    .eq('is_active', true)
+    .ilike('name', `%${term}%`)
+    .limit(4);
+
+  if (error || !data) return [];
+
+  return data.map((a) => ({
+    type: 'association' as const,
+    id: a.id,
+    name: a.name,
+    logo: a.logo,
+    industry: a.industry,
+  }));
+}
