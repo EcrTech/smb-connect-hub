@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, UserPlus, Heart, MessageCircle, Check, CheckCheck } from 'lucide-react';
+import { Bell, UserPlus, Heart, MessageCircle, Check, CheckCheck, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -27,6 +27,8 @@ const getNotificationIcon = (type: string) => {
       return <Heart className="h-4 w-4 text-destructive" />;
     case 'post_comment':
       return <MessageCircle className="h-4 w-4 text-blue-500" />;
+    case 'association_post':
+      return <Building2 className="h-4 w-4 text-primary" />;
     default:
       return <Bell className="h-4 w-4 text-muted-foreground" />;
   }

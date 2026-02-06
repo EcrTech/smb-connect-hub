@@ -64,6 +64,8 @@ interface Post {
   user_id: string;
   original_post_id: string | null;
   original_author_id: string | null;
+  post_context: string | null;
+  organization_id: string | null;
   profile: {
     first_name: string;
     last_name: string;
@@ -81,6 +83,7 @@ interface Post {
     } | null;
   } | null;
   user_liked: boolean;
+  association?: Association | null;
 }
 
 interface Association {
@@ -266,11 +269,11 @@ export default function MemberFeed() {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Only load member posts (exclude association/company posts)
+      // Load member + association posts
       const { data: postsData, error } = await supabase
         .from('posts')
         .select('*')
-        .or('post_context.is.null,post_context.eq.member')
+        .or('post_context.is.null,post_context.eq.member,post_context.eq.association')
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -297,6 +300,25 @@ export default function MemberFeed() {
         return acc;
       }, {} as Record<string, any>);
 
+      // Collect organization IDs for association posts
+      const orgIds = Array.from(new Set(
+        postsData.filter(p => p.post_context === 'association' && p.organization_id)
+          .map(p => p.organization_id!)
+      ));
+
+      // Batch fetch association info
+      let associationsById: Record<string, Association> = {};
+      if (orgIds.length > 0) {
+        const { data: assocData } = await supabase
+          .from('associations')
+          .select('id, name, logo')
+          .in('id', orgIds);
+        associationsById = (assocData || []).reduce((acc, a) => {
+          acc[a.id] = a;
+          return acc;
+        }, {} as Record<string, Association>);
+      }
+
       // Load profile and member data for each post
       const postsWithProfiles = await Promise.all(
         postsData.map(async (post) => {
@@ -312,7 +334,10 @@ export default function MemberFeed() {
             ...post,
             profile: profileData,
             original_author: post.original_author_id ? profilesById[post.original_author_id] : null,
-            member: memberData
+            member: memberData,
+            association: post.post_context === 'association' && post.organization_id 
+              ? associationsById[post.organization_id] || null 
+              : null,
           };
         })
       );
@@ -1061,8 +1086,16 @@ export default function MemberFeed() {
                        fullName.includes(searchLower);
               })
               .map((post) => {
-              const fullName = `${post.profile.first_name} ${post.profile.last_name}`;
-              const initials = `${post.profile.first_name[0]}${post.profile.last_name[0]}`;
+              const isAssociationPost = post.post_context === 'association' && post.association;
+              const fullName = isAssociationPost 
+                ? post.association!.name 
+                : `${post.profile.first_name} ${post.profile.last_name}`;
+              const initials = isAssociationPost
+                ? post.association!.name.substring(0, 2).toUpperCase()
+                : `${post.profile.first_name[0]}${post.profile.last_name[0]}`;
+              const avatarSrc = isAssociationPost
+                ? post.association!.logo || undefined
+                : (post.original_author?.avatar || post.profile.avatar || undefined);
               const isOwnPost = post.user_id === currentUserId;
 
               return (
@@ -1071,8 +1104,15 @@ export default function MemberFeed() {
                     {/* Engagement badge */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
+                        {/* Association badge */}
+                        {isAssociationPost && (
+                          <div className="flex items-center gap-1 text-xs text-primary font-medium">
+                            <Building2 className="w-3 h-3" />
+                            <span>Association Update</span>
+                          </div>
+                        )}
                         {/* Repost indicator */}
-                        {post.original_post_id && post.original_author && (
+                        {!isAssociationPost && post.original_post_id && post.original_author && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Repeat2 className="w-4 h-4" />
                             <span>
@@ -1093,14 +1133,14 @@ export default function MemberFeed() {
                     <div className="flex gap-4 min-w-0">
                       <Avatar 
                         className="cursor-pointer"
-                        onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
+                        onClick={() => isAssociationPost 
+                          ? navigate(`/member/associations/${post.organization_id}`)
+                          : navigate(`/profile/${post.original_author_id || post.user_id}`)
+                        }
                       >
-                        <AvatarImage src={post.original_author?.avatar || post.profile.avatar || undefined} />
+                        <AvatarImage src={avatarSrc} />
                         <AvatarFallback>
-                          {post.original_author ? 
-                            `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}` :
-                            initials
-                          }
+                          {initials}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -1108,19 +1148,19 @@ export default function MemberFeed() {
                           <div>
                             <h3 
                               className="font-semibold hover:underline cursor-pointer"
-                              onClick={() => navigate(`/profile/${post.original_author_id || post.user_id}`)}
-                            >
-                              {post.original_author ? 
-                                `${post.original_author.first_name} ${post.original_author.last_name}` :
-                                fullName
+                              onClick={() => isAssociationPost
+                                ? navigate(`/member/associations/${post.organization_id}`)
+                                : navigate(`/profile/${post.original_author_id || post.user_id}`)
                               }
+                            >
+                              {fullName}
                             </h3>
-                            {!post.original_post_id && post.profile.headline && (
+                            {!isAssociationPost && !post.original_post_id && post.profile.headline && (
                               <p className="text-sm text-muted-foreground">
                                 {post.profile.headline}
                               </p>
                             )}
-                            {!post.original_post_id && post.member?.company && (
+                            {!isAssociationPost && !post.original_post_id && post.member?.company && (
                               <p className="text-sm text-muted-foreground">
                                 {post.member.company.name}
                               </p>
