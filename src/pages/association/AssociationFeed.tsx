@@ -920,49 +920,39 @@ export default function AssociationFeed() {
 
           {/* Content Filters - Only show on Posts tab */}
           {activeTab === 'posts' && (
-            <div className="flex flex-col gap-3 mb-4">
-              {/* Search Posts */}
-              <Input
-                icon={<Search className="w-4 h-4" />}
-                placeholder="Search posts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-              />
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex gap-2">
-                  <Badge 
-                    variant={contentFilter === 'all' ? 'default' : 'outline'} 
-                    className="cursor-pointer hover:bg-primary/80"
-                    onClick={() => setContentFilter('all')}
-                  >
-                    All
-                  </Badge>
-                  <Badge 
-                    variant={contentFilter === 'images' ? 'default' : 'outline'}
-                    className="cursor-pointer hover:bg-primary/80"
-                    onClick={() => setContentFilter('images')}
-                  >
-                    Images
-                  </Badge>
-                  <Badge 
-                    variant={contentFilter === 'videos' ? 'default' : 'outline'}
-                    className="cursor-pointer hover:bg-primary/80"
-                    onClick={() => setContentFilter('videos')}
-                  >
-                    Videos
-                  </Badge>
-                </div>
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recent">Recent</SelectItem>
-                    <SelectItem value="top">Top</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+              <div className="flex gap-2">
+                <Badge 
+                  variant={contentFilter === 'all' ? 'default' : 'outline'} 
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('all')}
+                >
+                  All
+                </Badge>
+                <Badge 
+                  variant={contentFilter === 'images' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('images')}
+                >
+                  Images
+                </Badge>
+                <Badge 
+                  variant={contentFilter === 'videos' ? 'default' : 'outline'}
+                  className="cursor-pointer hover:bg-primary/80"
+                  onClick={() => setContentFilter('videos')}
+                >
+                  Videos
+                </Badge>
               </div>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Recent</SelectItem>
+                  <SelectItem value="top">Top</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
