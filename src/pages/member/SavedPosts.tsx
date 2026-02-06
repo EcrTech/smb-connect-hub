@@ -240,7 +240,7 @@ export default function SavedPosts() {
                           <img
                             src={post.image_url}
                             alt="Post"
-                            className="mt-4 rounded-lg max-h-96 w-full object-cover"
+                            className="mt-4 rounded-lg max-h-96 w-full object-contain bg-gray-100"
                           />
                         )}
 

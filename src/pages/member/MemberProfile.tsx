@@ -1205,7 +1205,7 @@ export default function MemberProfile() {
                       <img
                         src={post.image_url}
                         alt="Post"
-                        className="rounded-lg max-h-96 w-full object-cover mb-4"
+                        className="rounded-lg max-h-96 w-full object-contain bg-gray-100 mb-4"
                       />
                     )}
                     {post.video_url && (
@@ -1346,7 +1346,7 @@ export default function MemberProfile() {
                           <img
                             src={post.image_url}
                             alt="Post"
-                            className="rounded-lg max-h-96 w-full object-cover mb-4"
+                            className="rounded-lg max-h-96 w-full object-contain bg-gray-100 mb-4"
                           />
                         )}
                         {post.video_url && (

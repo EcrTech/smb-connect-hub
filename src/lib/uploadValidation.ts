@@ -24,8 +24,8 @@ export const IMAGE_DIMENSION_LIMITS = {
 
 // Post image dimension limits (LinkedIn-style flexible dimensions)
 export const POST_IMAGE_LIMITS = {
-  MIN_WIDTH: 400,      // Minimum for acceptable quality
-  MIN_HEIGHT: 400,     // Minimum for acceptable quality
+  MIN_WIDTH: 200,      // Minimum for acceptable quality
+  MIN_HEIGHT: 200,     // Minimum for acceptable quality
   MAX_WIDTH: 4096,     // Maximum allowed
   MAX_HEIGHT: 4096,    // Maximum allowed
   RECOMMENDED_WIDTH: 1200,  // For optimal quality
