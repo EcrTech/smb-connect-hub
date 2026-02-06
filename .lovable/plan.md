@@ -1,127 +1,60 @@
 
 
-## Allow Flexible Image Dimensions (LinkedIn-Style)
+## Fix LinkedIn-Style Image Display and Validation
 
-Align with LinkedIn's actual image handling policy, which is **permissive rather than restrictive** on exact dimensions.
-
----
-
-### Current Problem
-
-The validation is rejecting an 889px height image because it only allows these specific heights:
-- 627, 800, 1080, 1200, or 1350 pixels
-
-However, **LinkedIn doesn't actually enforce strict dimension requirements** - it accepts a wide range of sizes and handles resizing/cropping automatically.
+Two changes are needed to match LinkedIn's image handling: how images are **displayed** and the minimum size allowed.
 
 ---
 
-### LinkedIn's Actual Policy
+### Problem
 
-| Requirement | LinkedIn Standard |
-|-------------|-------------------|
-| **Minimum Width** | 552px (will be accepted but may look low quality) |
-| **Recommended Width** | 1200px for optimal quality |
-| **Maximum File Size** | 8MB |
-| **Aspect Ratio** | Flexible (1.91:1 to 1:1 most common) |
-| **Dimension Enforcement** | None - LinkedIn auto-crops/resizes |
+Images downloaded from LinkedIn appear blurred or improperly scaled because:
+
+1. **Display uses `object-cover`** -- This CSS property crops images to fill the container, cutting off parts of the image and stretching/blurring non-standard aspect ratios
+2. **Minimum dimension may still be too restrictive** -- Some LinkedIn-sourced images may be smaller than 400px in one dimension
 
 ---
 
-### Proposed Change
+### Changes
 
-Instead of validating for specific heights, use **minimum dimension requirements** like LinkedIn:
+**1. Fix Image Display (6 files)**
 
-| Setting | Current | New (LinkedIn-Style) |
-|---------|---------|----------------------|
-| **Min Width** | None | 400px |
-| **Min Height** | Must be exactly 627/800/1080/1200/1350 | 400px |
-| **Max Width** | 4000px | 4096px |
-| **Max Height** | 4000px | 4096px |
-| **Max File Size** | 8MB | 8MB (no change) |
+Change all post image rendering from `object-cover` (crops to fill) to `object-contain` (fits entire image without cropping), and add a background color so the image container looks clean.
 
----
+| File | Current | Updated |
+|------|---------|---------|
+| `src/pages/member/MemberFeed.tsx` | `object-cover` | `object-contain bg-gray-100` |
+| `src/pages/member/MemberProfile.tsx` (2 places) | `object-cover` | `object-contain bg-gray-100` |
+| `src/pages/member/SavedPosts.tsx` | `object-cover` | `object-contain bg-gray-100` |
+| `src/pages/company/CompanyFeed.tsx` | `object-cover` | `object-contain bg-gray-100` |
+| `src/pages/association/AssociationFeed.tsx` | `object-cover` | `object-contain bg-gray-100` |
 
-### What This Means
+This ensures the full image is always visible without cropping or distortion, matching how LinkedIn displays post images.
 
-- Images like 889px height will now be **accepted**
-- Any image at least 400x400px and under 8MB will be valid
-- Extremely small images (under 400px) will be rejected with a helpful message
-- The platform displays images responsively anyway, so exact dimensions aren't critical
+**2. Lower Minimum Dimensions (1 file)**
 
----
+In `src/lib/uploadValidation.ts`, reduce the minimum from 400x400 to 200x200 to accept more images including smaller LinkedIn downloads:
 
-### File to Modify
-
-| File | Changes |
-|------|---------|
-| `src/lib/uploadValidation.ts` | Replace height-only validation with minimum dimension check |
+```
+MIN_WIDTH:  400 --> 200
+MIN_HEIGHT: 400 --> 200
+```
 
 ---
 
 ### Technical Details
 
-**Updated Constants:**
+The CSS change on each post image tag:
 
-```typescript
-// Post image dimension limits (LinkedIn-style)
-export const POST_IMAGE_LIMITS = {
-  MIN_WIDTH: 400,      // Minimum for acceptable quality
-  MIN_HEIGHT: 400,     // Minimum for acceptable quality
-  MAX_WIDTH: 4096,     // Maximum allowed
-  MAX_HEIGHT: 4096,    // Maximum allowed
-  RECOMMENDED_WIDTH: 1200,  // For optimal quality
-} as const;
+```html
+<!-- Before -->
+<img className="mt-4 rounded-lg max-h-96 w-full object-cover" />
+
+<!-- After -->
+<img className="mt-4 rounded-lg max-h-96 w-full object-contain bg-gray-100 rounded-lg" />
 ```
 
-**Updated Validation Logic:**
-
-```typescript
-export const validatePostImageDimensions = (file: File): Promise<ValidationResult> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const { width, height } = img;
-      
-      // Check minimum dimensions
-      if (width < POST_IMAGE_LIMITS.MIN_WIDTH || height < POST_IMAGE_LIMITS.MIN_HEIGHT) {
-        resolve({
-          valid: false,
-          error: `Image is too small (${width}x${height}px). Minimum size is ${POST_IMAGE_LIMITS.MIN_WIDTH}x${POST_IMAGE_LIMITS.MIN_HEIGHT}px.`,
-        });
-        return;
-      }
-      
-      // Check maximum dimensions
-      if (width > POST_IMAGE_LIMITS.MAX_WIDTH || height > POST_IMAGE_LIMITS.MAX_HEIGHT) {
-        resolve({
-          valid: false,
-          error: `Image is too large (${width}x${height}px). Maximum size is ${POST_IMAGE_LIMITS.MAX_WIDTH}x${POST_IMAGE_LIMITS.MAX_HEIGHT}px.`,
-        });
-        return;
-      }
-      
-      resolve({ valid: true });
-    };
-    
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve({ valid: false, error: 'Failed to load image' });
-    };
-    
-    img.src = url;
-  });
-};
-```
-
----
-
-### Benefits
-
-1. **User-Friendly**: Users can upload images without resizing to exact dimensions
-2. **LinkedIn-Compatible**: Matches how LinkedIn actually handles images
-3. **Quality Guardrails**: Still prevents very small (low quality) or oversized images
-4. **Flexible Aspect Ratios**: Square, portrait, landscape - all accepted
+- `object-contain` preserves the full image and aspect ratio
+- `bg-gray-100` provides a subtle background for images that don't fill the full width (e.g., tall portrait images)
+- `max-h-96` (384px max height) is kept to prevent overly tall images from dominating the feed
 
