@@ -76,7 +76,7 @@ export const UniversalSearch = () => {
     setSearchTerm('');
     setResults([]);
     if (result.type === 'association') {
-      navigate(`/association/${result.id}`);
+      navigate(`/member/association/${result.id}`);
     } else {
       navigate(`/profile/${result.user_id}`);
     }
