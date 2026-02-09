@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { LinkifiedText } from '@/lib/linkify';
+import { MentionText } from '@/components/post/MentionText';
+import { MentionInput, parseMentions } from '@/components/post/MentionInput';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Heart, MessageCircle, Trash2, Image as ImageIcon, Video, X, ArrowLeft, Search, Repeat2, MessageSquare, Users, Calendar, Building2, Settings, LogOut, UserPlus, Bell, Send, Pencil, FileText } from 'lucide-react';
 import { EditAssociationProfileDialog } from '@/components/association/EditAssociationProfileDialog';
@@ -587,23 +587,40 @@ export default function AssociationFeed() {
         }
       }
 
-      console.log('Inserting post...', { content: newPost.trim().substring(0, 50), imageUrl, videoUrl, documentUrl, organizationId: associationInfo.id });
+      const contentToSave = newPost.trim() || ' ';
+      console.log('Inserting post...', { content: contentToSave.substring(0, 50), imageUrl, videoUrl, documentUrl, organizationId: associationInfo.id });
 
-      const { error } = await supabase
+      const { data: postData, error } = await supabase
         .from('posts')
         .insert([{ 
-          content: newPost.trim() || ' ', 
+          content: contentToSave, 
           user_id: currentUserId, 
           image_url: imageUrl,
           video_url: videoUrl,
           document_url: documentUrl,
           post_context: 'association',
           organization_id: associationInfo.id,
-        }]);
+        }])
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Post insert error:', error);
         throw error;
+      }
+
+      // Insert mentions into post_mentions table
+      if (postData) {
+        const mentions = parseMentions(contentToSave);
+        if (mentions.length > 0) {
+          await supabase.from('post_mentions').insert(
+            mentions.map(m => ({
+              post_id: postData.id,
+              mentioned_user_id: m.userId || null,
+              mentioned_association_id: m.associationId || null,
+            }))
+          );
+        }
       }
 
       console.log('Post created successfully');
@@ -1042,10 +1059,10 @@ export default function AssociationFeed() {
               {/* Post Creation Card */}
               <Card className="mb-6">
                 <CardContent className="pt-6">
-                  <Textarea
-                    placeholder="What's on your mind?"
+                  <MentionInput
+                    placeholder="What's on your mind? Use @ to mention"
                     value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
+                    onChange={setNewPost}
                     className="mb-4 resize-none"
                     rows={3}
                   />
@@ -1266,7 +1283,7 @@ export default function AssociationFeed() {
                                 </div>
                               )}
                             </div>
-                            <LinkifiedText text={post.content} className="mt-3" />
+                            <MentionText text={post.content} className="mt-3" />
                             {post.image_url && (
                               <img 
                                 src={post.image_url} 
