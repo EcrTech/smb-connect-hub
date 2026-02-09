@@ -1053,7 +1053,7 @@ export default function MemberFeed() {
                 )}
                 <Button
                   onClick={handleCreatePost}
-                  disabled={!newPostContent.trim() || posting}
+                  disabled={(!newPostContent.trim() && !imageFile && !videoFile && !documentFile) || posting}
                   size="sm"
                   className="bg-primary hover:bg-primary/90"
                 >
