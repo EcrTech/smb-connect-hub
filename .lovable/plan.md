@@ -1,111 +1,117 @@
 
 
-## Make Association Posts Visible and Notified to All Members
+## Debug and Fix Association Post Button for Prerna
 
-Association posts are currently isolated to the association feed only. This plan makes them visible in every member's feed and sends a notification to all platform members when an association creates a post.
+### Problem
 
----
+The Post button appears enabled (green) but clicking it produces no result. The user "Prerna" is a valid association manager for "The Rise" but has zero posts in the database. The error is being swallowed silently somewhere in the `handleCreatePost` flow.
 
-### Change 1: Show Association Posts in Member Feed
+### Root Cause Analysis
 
-**File:** `src/pages/member/MemberFeed.tsx`
+After thorough investigation:
+- Prerna IS in `association_managers` table with role `manager` for "The Rise" -- so `associationInfo` should load correctly
+- RLS policies on `posts` table are correct (`auth.uid() = user_id` for INSERT)
+- Storage policies on `profile-images` are correct (folder-based auth check)
+- No database errors in logs
+- The `content` column is NOT NULL, but empty strings are allowed
 
-Update the post query filter from:
+The most likely cause is that the **error is caught silently** in `handleCreatePost`. The `uploadImage` function catches errors and returns `null` without surfacing them, and the main catch block shows a generic toast that may not be visible or may flash too quickly.
+
+### Solution
+
+Add detailed console logging throughout `handleCreatePost` to trace exactly where the flow stops, and also improve error surfacing:
+
+**File: `src/pages/association/AssociationFeed.tsx`**
+
+1. Add `console.log` at key checkpoints in `handleCreatePost`:
+   - Before the early returns (content check, associationInfo check)
+   - Before and after storage upload
+   - Before and after the database insert
+   - In the catch block with the actual error details
+
+2. In `uploadImage`, log the actual upload error instead of only logging to console (which may not be checked). Also add the error to the toast so the user sees what went wrong.
+
+3. If the upload fails (returns null) but the user attached an image, **stop the post creation and show an error** instead of silently inserting a post without the image.
+
+### Technical Changes
+
+```typescript
+// In handleCreatePost - add logging and stop on upload failure
+const handleCreatePost = async () => {
+  console.log('handleCreatePost called', { 
+    newPost: newPost.trim(), 
+    imageFile: !!imageFile, 
+    associationInfoId: associationInfo?.id,
+    currentUserId 
+  });
+  
+  if (!newPost.trim() && !imageFile && !videoFile && !documentFile) {
+    console.log('No content - returning early');
+    return;
+  }
+
+  if (!associationInfo?.id) {
+    console.log('No association info - showing error');
+    // ... existing toast
+    return;
+  }
+
+  setPosting(true);
+  try {
+    let imageUrl = null;
+    
+    if (imageFile) {
+      imageUrl = await uploadImage(imageFile);
+      if (!imageUrl) {
+        toast({ title: 'Error', description: 'Failed to upload image. Please try again.', variant: 'destructive' });
+        setPosting(false);
+        return;
+      }
+    }
+    
+    // ... rest of upload logic with same pattern for video/document
+    
+    const { error } = await supabase.from('posts').insert([...]);
+    
+    if (error) {
+      console.error('Post insert error:', error);
+      throw error;
+    }
+    
+    // ... success handling
+  } catch (error: any) {
+    console.error('handleCreatePost error:', error);
+    toast({
+      title: 'Error',
+      description: error?.message || 'Failed to create post',
+      variant: 'destructive',
+    });
+  } finally {
+    setPosting(false);
+  }
+};
+
+// In uploadImage - better error handling
+const uploadImage = async (file: File): Promise<string | null> => {
+  try {
+    console.log('Uploading file:', file.name, file.size, file.type);
+    // ... existing upload code
+  } catch (error: any) {
+    console.error('Upload error details:', error);
+    toast({
+      title: 'Upload Error',
+      description: error?.message || 'Failed to upload file',
+      variant: 'destructive',
+    });
+    return null;
+  }
+};
 ```
-.or('post_context.is.null,post_context.eq.member')
-```
-to:
-```
-.or('post_context.is.null,post_context.eq.member,post_context.eq.association')
-```
 
-This single filter change makes all association posts appear in the member feed alongside regular member posts.
-
-Additionally, update the post rendering logic to display association branding (logo, name) for association-context posts instead of the individual user's profile, matching how they appear in the association feed.
-
----
-
-### Change 2: Show Association Posts in Member Profile (Activity Tab)
-
-**File:** `src/pages/member/MemberProfile.tsx`
-
-If similar `post_context` filtering exists, update it to also include `association` posts.
-
----
-
-### Change 3: Database Trigger for Notifications
-
-Create a database trigger function that fires when a new post with `post_context = 'association'` is inserted. It will:
-
-1. Look up the association name from the `organization_id`
-2. Insert a notification row for every active member (all `user_id` values from the `members` table where `is_active = true`)
-3. Skip the post author to avoid self-notification
-
-```sql
-CREATE OR REPLACE FUNCTION public.notify_association_post()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  assoc_name text;
-  member_record record;
-BEGIN
-  -- Only trigger for association posts
-  IF NEW.post_context != 'association' OR NEW.organization_id IS NULL THEN
-    RETURN NEW;
-  END IF;
-
-  -- Get association name
-  SELECT name INTO assoc_name
-  FROM associations
-  WHERE id = NEW.organization_id;
-
-  -- Notify all active members except the post author
-  INSERT INTO notifications (user_id, type, category, title, message, link, data)
-  SELECT DISTINCT
-    m.user_id,
-    'association_post',
-    'updates',
-    'New Association Update',
-    CONCAT(COALESCE(assoc_name, 'An association'), ' shared a new post'),
-    '/feed',
-    jsonb_build_object(
-      'post_id', NEW.id,
-      'association_id', NEW.organization_id,
-      'association_name', assoc_name
-    )
-  FROM members m
-  WHERE m.is_active = true
-    AND m.user_id != NEW.user_id;
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER on_association_post
-  AFTER INSERT ON public.posts
-  FOR EACH ROW
-  EXECUTE FUNCTION public.notify_association_post();
-```
-
----
-
-### Change 4: Update Notification Display
-
-**File:** `src/components/notifications/NotificationsDropdown.tsx` (and related notification rendering)
-
-Add handling for the new `association_post` notification type with an appropriate icon (e.g., Building2) so it displays correctly in the notification list.
-
----
-
-### Summary of Files
+### Summary
 
 | File | Change |
 |------|--------|
-| `src/pages/member/MemberFeed.tsx` | Include association posts in query + render with association branding |
-| `src/pages/member/MemberProfile.tsx` | Include association posts if filtered |
-| `src/components/notifications/NotificationsDropdown.tsx` | Handle `association_post` notification type |
-| Database migration | Add `notify_association_post()` trigger function |
+| `src/pages/association/AssociationFeed.tsx` | Add console logging, stop post if upload fails, surface actual error messages in toasts |
 
+This will either fix the issue (if it's a silent upload failure) or provide the exact error message on the next attempt so we can address the root cause.
