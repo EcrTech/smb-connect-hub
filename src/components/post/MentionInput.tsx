@@ -21,6 +21,24 @@ interface MentionInputProps {
   className?: string;
 }
 
+/** Convert internal markup to display text (just @Name) */
+function toDisplayText(markup: string): string {
+  return markup.replace(/@\[([^\]]+)\]\((member|association):[a-f0-9-]+\)/g, '@$1');
+}
+
+/** Convert display text back to markup using a mention map */
+function toMarkupText(display: string, mentionMap: Map<string, string>): string {
+  // Replace each @Name with its markup if we have it stored
+  let result = display;
+  for (const [displayMention, markup] of mentionMap) {
+    // Replace all occurrences
+    while (result.includes(displayMention)) {
+      result = result.replace(displayMention, markup);
+    }
+  }
+  return result;
+}
+
 export function MentionInput({ value, onChange, placeholder, rows = 3, className }: MentionInputProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [results, setResults] = useState<MentionResult[]>([]);
@@ -31,6 +49,22 @@ export function MentionInput({ value, onChange, placeholder, rows = 3, className
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  // Map from display text "@Name" to full markup "@[Name](type:id)"
+  const mentionMapRef = useRef<Map<string, string>>(new Map());
+
+  // The display value shown in the textarea (no markup, just @Name)
+  const displayValue = toDisplayText(value);
+
+  // Build mention map from current value
+  useEffect(() => {
+    const pattern = /@\[([^\]]+)\]\((member|association):[a-f0-9-]+\)/g;
+    let match;
+    const newMap = new Map<string, string>();
+    while ((match = pattern.exec(value)) !== null) {
+      newMap.set(`@${match[1]}`, match[0]);
+    }
+    mentionMapRef.current = newMap;
+  }, [value]);
 
   const searchMentions = useCallback(async (query: string) => {
     if (query.length < 1) {
@@ -91,17 +125,20 @@ export function MentionInput({ value, onChange, placeholder, rows = 3, className
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    const cursorPos = e.target.selectionStart ?? newValue.length;
-    onChange(newValue);
+    const newDisplayValue = e.target.value;
+    const cursorPos = e.target.selectionStart ?? newDisplayValue.length;
+
+    // Convert display text back to markup
+    const newMarkup = toMarkupText(newDisplayValue, mentionMapRef.current);
+    onChange(newMarkup);
 
     // Detect @ trigger
-    const textBeforeCursor = newValue.slice(0, cursorPos);
+    const textBeforeCursor = newDisplayValue.slice(0, cursorPos);
     const atMatch = textBeforeCursor.match(/(^|\s)@(\w*)$/);
 
     if (atMatch) {
       const query = atMatch[2];
-      setMentionStart(cursorPos - query.length - 1); // -1 for @
+      setMentionStart(cursorPos - query.length - 1);
       setMentionQuery(query);
       updateDropdownPosition();
 
@@ -114,18 +151,26 @@ export function MentionInput({ value, onChange, placeholder, rows = 3, className
   };
 
   const insertMention = (result: MentionResult) => {
-    const before = value.slice(0, mentionStart);
-    const after = value.slice(mentionStart + mentionQuery.length + 1); // +1 for @
-    const mentionMarkup = `@[${result.name}](${result.type}:${result.id}) `;
-    const newValue = before + mentionMarkup + after;
+    const currentDisplay = displayValue;
+    const before = currentDisplay.slice(0, mentionStart);
+    const after = currentDisplay.slice(mentionStart + mentionQuery.length + 1);
+    const displayMention = `@${result.name}`;
+    const fullMarkup = `@[${result.name}](${result.type}:${result.id})`;
 
-    onChange(newValue);
+    // Store in map
+    mentionMapRef.current.set(displayMention, fullMarkup);
+
+    // Build new markup value
+    const newDisplay = before + displayMention + ' ' + after;
+    const newMarkup = toMarkupText(newDisplay, mentionMapRef.current);
+    onChange(newMarkup);
+
     setShowDropdown(false);
     setResults([]);
 
     setTimeout(() => {
       if (textareaRef.current) {
-        const newPos = before.length + mentionMarkup.length;
+        const newPos = before.length + displayMention.length + 1;
         textareaRef.current.focus();
         textareaRef.current.setSelectionRange(newPos, newPos);
       }
@@ -216,7 +261,7 @@ export function MentionInput({ value, onChange, placeholder, rows = 3, className
       <Textarea
         ref={textareaRef}
         placeholder={placeholder}
-        value={value}
+        value={displayValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         rows={rows}
