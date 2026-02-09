@@ -592,7 +592,7 @@ export default function AssociationFeed() {
       const { error } = await supabase
         .from('posts')
         .insert([{ 
-          content: newPost.trim(), 
+          content: newPost.trim() || ' ', 
           user_id: currentUserId, 
           image_url: imageUrl,
           video_url: videoUrl,
