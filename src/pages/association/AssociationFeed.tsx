@@ -184,31 +184,39 @@ export default function AssociationFeed() {
   const loadAssociationInfo = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.warn('loadAssociationInfo: No authenticated user');
+        return;
+      }
+      console.log('loadAssociationInfo: user.id =', user.id);
 
       let associationId: string | null = null;
 
       // First try: association_managers table
-      const { data: managerData } = await supabase
+      const { data: managerData, error: managerError } = await supabase
         .from('association_managers')
         .select('association_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
+      console.log('loadAssociationInfo: managerData =', managerData, 'error =', managerError);
+
       if (managerData?.association_id) {
         associationId = managerData.association_id;
       } else {
         // Fallback for admin users: check if they're an admin and fetch first association
-        const { data: adminData } = await supabase
+        const { data: adminData, error: adminError } = await supabase
           .from('admin_users')
           .select('id')
           .eq('user_id', user.id)
           .eq('is_active', true)
           .maybeSingle();
 
+        console.log('loadAssociationInfo: adminData =', adminData, 'error =', adminError);
+
         if (adminData) {
-          const { data: firstAssoc } = await supabase
+          const { data: firstAssoc, error: assocError } = await supabase
             .from('associations')
             .select('id')
             .eq('is_active', true)
@@ -216,11 +224,15 @@ export default function AssociationFeed() {
             .limit(1)
             .maybeSingle();
 
+          console.log('loadAssociationInfo: firstAssoc =', firstAssoc, 'error =', assocError);
+
           if (firstAssoc) {
             associationId = firstAssoc.id;
           }
         }
       }
+
+      console.log('loadAssociationInfo: resolved associationId =', associationId);
 
       if (associationId) {
         const { data: associationData } = await supabase
@@ -255,6 +267,7 @@ export default function AssociationFeed() {
             memberCount = count || 0;
           }
 
+          console.log('loadAssociationInfo: SUCCESS, setting association:', associationData.name);
           setAssociationInfo({
             ...associationData,
             company_count: companyCount || 0,
