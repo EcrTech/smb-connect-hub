@@ -260,7 +260,11 @@ export default function AssociationFeed() {
             company_count: companyCount || 0,
             member_count: memberCount
           });
+        } else {
+          console.warn('Association not found for id:', associationId);
         }
+      } else {
+        console.warn('No association found for user:', user.id, '- user is not an association manager or admin');
       }
     } catch (error) {
       console.error('Error loading association info:', error);
@@ -1137,7 +1141,7 @@ export default function AssociationFeed() {
                         </Button>
                       )}
                       <Button onClick={handleCreatePost} disabled={(!newPost.trim() && !imageFile && !videoFile && !documentFile) || posting || !associationInfo?.id}>
-                        {posting ? 'Posting...' : 'Post'}
+                        {posting ? 'Posting...' : !associationInfo?.id ? 'No Association Access' : 'Post'}
                       </Button>
                     </div>
                   </div>
