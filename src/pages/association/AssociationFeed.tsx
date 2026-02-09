@@ -481,6 +481,7 @@ export default function AssociationFeed() {
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
+      console.log('uploadImage called:', { name: file.name, size: file.size, type: file.type, currentUserId });
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${currentUserId}/${fileName}`;
@@ -489,24 +490,45 @@ export default function AssociationFeed() {
         .from('profile-images')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
       const { data } = supabase.storage
         .from('profile-images')
         .getPublicUrl(filePath);
 
+      console.log('Upload successful, URL:', data.publicUrl);
       return data.publicUrl;
-    } catch (error) {
-      console.error('Error uploading image:', error);
+    } catch (error: any) {
+      console.error('Upload error details:', error);
+      toast({
+        title: 'Upload Error',
+        description: error?.message || 'Failed to upload file',
+        variant: 'destructive',
+      });
       return null;
     }
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.trim() && !imageFile && !videoFile && !documentFile) return;
+    console.log('handleCreatePost called', { 
+      newPost: newPost.trim(), 
+      imageFile: !!imageFile, 
+      videoFile: !!videoFile,
+      documentFile: !!documentFile,
+      associationInfoId: associationInfo?.id,
+      currentUserId 
+    });
 
-    // Ensure association info is loaded before posting
+    if (!newPost.trim() && !imageFile && !videoFile && !documentFile) {
+      console.log('No content - returning early');
+      return;
+    }
+
     if (!associationInfo?.id) {
+      console.log('No association info - showing error');
       toast({
         title: 'Error',
         description: 'Please wait for association data to load before posting',
@@ -523,15 +545,32 @@ export default function AssociationFeed() {
       
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) {
+          console.error('Image upload failed, aborting post');
+          setPosting(false);
+          return;
+        }
       }
       
       if (videoFile) {
         videoUrl = await uploadImage(videoFile);
+        if (!videoUrl) {
+          console.error('Video upload failed, aborting post');
+          setPosting(false);
+          return;
+        }
       }
 
       if (documentFile) {
         documentUrl = await uploadImage(documentFile);
+        if (!documentUrl) {
+          console.error('Document upload failed, aborting post');
+          setPosting(false);
+          return;
+        }
       }
+
+      console.log('Inserting post...', { content: newPost.trim().substring(0, 50), imageUrl, videoUrl, documentUrl, organizationId: associationInfo.id });
 
       const { error } = await supabase
         .from('posts')
@@ -542,29 +581,26 @@ export default function AssociationFeed() {
           video_url: videoUrl,
           document_url: documentUrl,
           post_context: 'association',
-          organization_id: associationInfo?.id,
+          organization_id: associationInfo.id,
         }]);
 
-      if (error) throw error;
-
-      setNewPost('');
-      setImageFile(null);
-      setImagePreview(null);
-      setVideoFile(null);
-      if (videoPreview) {
-        URL.revokeObjectURL(videoPreview);
+      if (error) {
+        console.error('Post insert error:', error);
+        throw error;
       }
-      setVideoPreview(null);
-      setDocumentFile(null);
+
+      console.log('Post created successfully');
+      clearPostComposer();
       toast({
         title: 'Success',
         description: 'Post created successfully',
       });
       loadPosts();
     } catch (error: any) {
+      console.error('handleCreatePost error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create post',
+        description: error?.message || 'Failed to create post',
         variant: 'destructive',
       });
     } finally {
