@@ -186,7 +186,9 @@ export default function AssociationFeed() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get association where user is a manager
+      let associationId: string | null = null;
+
+      // First try: association_managers table
       const { data: managerData } = await supabase
         .from('association_managers')
         .select('association_id')
@@ -195,10 +197,36 @@ export default function AssociationFeed() {
         .maybeSingle();
 
       if (managerData?.association_id) {
+        associationId = managerData.association_id;
+      } else {
+        // Fallback for admin users: check if they're an admin and fetch first association
+        const { data: adminData } = await supabase
+          .from('admin_users')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (adminData) {
+          const { data: firstAssoc } = await supabase
+            .from('associations')
+            .select('id')
+            .eq('is_active', true)
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+
+          if (firstAssoc) {
+            associationId = firstAssoc.id;
+          }
+        }
+      }
+
+      if (associationId) {
         const { data: associationData } = await supabase
           .from('associations')
           .select('*')
-          .eq('id', managerData.association_id)
+          .eq('id', associationId)
           .maybeSingle();
 
         if (associationData) {
