@@ -1,52 +1,43 @@
 
-# Add @Mention Tagging for Members and Associations in Posts
+# Show Full Association Page from Search Results
 
-## Overview
-Add the ability to tag/mention members and associations in posts by typing `@` in the post composer. A dropdown will appear showing matching members and associations, and selecting one inserts a styled mention into the text.
+## Problem
+When a member clicks on an association from search results, they see a basic profile page with just contact info and details. Instead, they should see the full association page with posts, images, updates, tabs (Posts, About, Members, Companies), cover image/banner, and the association's complete feed -- like how association managers see their own page.
 
-## How It Will Work
-1. When you type `@` followed by characters in the post text box, a dropdown appears with matching members and associations
-2. Select a person or association from the dropdown to insert the mention
-3. Mentions appear as clickable highlighted links in the published post
-4. Clicking a mention navigates to that member's profile or association page
+## Solution
+Rebuild the `MemberAssociationProfileView` page (`src/pages/member/AssociationProfileView.tsx`) to display the full association experience by:
+
+1. Loading the association by the URL `:id` parameter (instead of the current user's manager role)
+2. Showing the association profile header with cover image, logo, name, location, member/company counts
+3. Adding tabs: Posts, About, Members, Companies
+4. Displaying the association's posts feed (read-only, no post composer since the viewer is not a manager)
+5. Showing About info (description, contact, social links, functionaries)
+6. Listing member and company directories for that association
 
 ## Technical Details
 
-### 1. New Database Table: `post_mentions`
-Create a table to store which members/associations are mentioned in each post:
-- `id` (UUID, primary key)
-- `post_id` (UUID, references posts)
-- `mentioned_user_id` (UUID, nullable -- for member mentions)
-- `mentioned_association_id` (UUID, nullable -- for association mentions)
-- `created_at` (timestamp)
-- RLS: viewable by all authenticated users, insertable by post author
+### File to Rewrite: `src/pages/member/AssociationProfileView.tsx`
 
-### 2. New Component: `MentionInput` 
-A wrapper around the Textarea that:
-- Detects `@` typing and extracts the search query after it
-- Queries `profiles` table (members) and `associations` table in parallel
-- Shows a positioned dropdown with results (avatar, name, type label)
-- On selection, replaces `@query` with `@[Display Name](type:id)` markup in the text
-- Handles keyboard navigation (arrow keys, Enter, Escape)
+The page will be restructured to include:
 
-### 3. New Component: `MentionText`
-A renderer that parses `@[Display Name](member:uuid)` or `@[Display Name](association:uuid)` patterns in post content and renders them as clickable styled links that navigate to the correct profile/association page.
+- **Header section**: Cover image, logo, association name, industry, location, member/company counts, Message and Follow buttons
+- **Tabs**: Posts | About | Members | Companies
+- **Posts tab**: Fetch posts where `post_context = 'association'` and `organization_id = association.id`, with content filter (All/Images/Videos) and sort (Recent/Top). Display with likes, comments, shares -- all read-only viewing with engagement actions (like, comment, share, bookmark)
+- **About tab**: Existing contact info, details, social links, and key functionaries (current content reorganized into this tab)
+- **Members tab**: List members associated with this association
+- **Companies tab**: List companies under this association
 
-### 4. Update Post Composer (MemberFeed.tsx and AssociationFeed.tsx)
-- Replace the plain `<Textarea>` with the new `MentionInput` component
-- On post submission, parse mentions from content and insert into `post_mentions` table
+### Data Queries
+- Association info: `associations` table by `:id`
+- Posts: `posts` table filtered by `post_context = 'association'` and `organization_id = :id`
+- Members: Via `association_members` or `company_members` join
+- Companies: `companies` table filtered by `association_id = :id`
+- Key functionaries: `key_functionaries_public` table
 
-### 5. Update Post Display
-- Replace plain text rendering with `MentionText` component so mentions appear as clickable links in all feed views (MemberFeed, AssociationFeed, SavedPosts)
-
-### Files to Create
-- `src/components/post/MentionInput.tsx` -- mention-aware text input
-- `src/components/post/MentionText.tsx` -- mention renderer for display
-
-### Files to Modify
-- `src/pages/member/MemberFeed.tsx` -- use MentionInput in composer, MentionText in posts
-- `src/pages/association/AssociationFeed.tsx` -- same changes
-- `src/pages/member/SavedPosts.tsx` -- use MentionText for display
-
-### Database Migration
-- Create `post_mentions` table with RLS policies
+### Components Reused
+- `MentionText` for post content rendering
+- `CommentsSection` for post comments
+- `SharePostDropdown`, `BookmarkButton`, `PostEngagementBadge` for post interactions
+- `BackButton` for navigation
+- `UniversalSearch` in header
+- `MobileNavigation`, `FloatingChat` for layout consistency
