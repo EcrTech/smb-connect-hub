@@ -376,7 +376,7 @@ export default function MemberFeed() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPostContent.trim()) return;
+    if (!newPostContent.trim() && !imageFile && !videoFile && !documentFile) return;
 
     setPosting(true);
     try {
@@ -443,7 +443,7 @@ export default function MemberFeed() {
 
       const { error } = await supabase.from('posts').insert({
         user_id: user.id,
-        content: newPostContent.trim(),
+        content: newPostContent.trim() || ' ',
         image_url: imageUrl,
         video_url: videoUrl,
         document_url: documentUrl,
