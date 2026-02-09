@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Heart, MessageCircle, ArrowLeft, Bookmark } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { MentionText } from '@/components/post/MentionText';
 import { CommentsSection } from '@/components/member/CommentsSection';
 import { SharePostDropdown } from '@/components/post/SharePostDropdown';
 import { BookmarkButton } from '@/components/post/BookmarkButton';
@@ -234,7 +235,7 @@ export default function SavedPosts() {
                           </div>
                         </div>
 
-                        <p className="mt-4 whitespace-pre-wrap">{post.content}</p>
+                        <MentionText text={post.content} className="mt-4" />
 
                         {post.image_url && (
                           <img

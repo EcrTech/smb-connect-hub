@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { LinkifiedText } from '@/lib/linkify';
+import { MentionText } from '@/components/post/MentionText';
+import { MentionInput, parseMentions } from '@/components/post/MentionInput';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -441,15 +441,30 @@ export default function MemberFeed() {
         documentUrl = publicUrl;
       }
 
-      const { error } = await supabase.from('posts').insert({
+      const contentToSave = newPostContent.trim() || ' ';
+      const { data: postData, error } = await supabase.from('posts').insert({
         user_id: user.id,
-        content: newPostContent.trim() || ' ',
+        content: contentToSave,
         image_url: imageUrl,
         video_url: videoUrl,
         document_url: documentUrl,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // Insert mentions into post_mentions table
+      if (postData) {
+        const mentions = parseMentions(contentToSave);
+        if (mentions.length > 0) {
+          await supabase.from('post_mentions').insert(
+            mentions.map(m => ({
+              post_id: postData.id,
+              mentioned_user_id: m.userId || null,
+              mentioned_association_id: m.associationId || null,
+            }))
+          );
+        }
+      }
 
       toast({
         title: 'Success',
@@ -923,10 +938,10 @@ export default function MemberFeed() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-h-[80px]">
-                <Textarea
-                  placeholder="What's on your mind?"
+                <MentionInput
+                  placeholder="What's on your mind? Use @ to mention"
                   value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
+                  onChange={setNewPostContent}
                   rows={3}
                   className="resize-none border-0 focus-visible:ring-0 px-3 py-2 placeholder:text-muted-foreground w-full"
                 />
@@ -1189,7 +1204,7 @@ export default function MemberFeed() {
                           </div>
                         </div>
 
-                        <LinkifiedText text={post.content} className="mt-4" />
+                        <MentionText text={post.content} className="mt-4" />
 
                         {post.image_url && (
                           <img
