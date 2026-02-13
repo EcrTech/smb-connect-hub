@@ -575,7 +575,7 @@ const AppContent = () => {
             } 
           />
           <Route 
-            path="/member/association/:id" 
+            path="/member/associations/:id" 
             element={
               <ProtectedRoute>
                 <MemberAssociationProfileView />
