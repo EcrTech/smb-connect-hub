@@ -1,43 +1,23 @@
 
-# Show Full Association Page from Search Results
+# Add Explicit Association Manager Records for marketing@asrmedia.in
 
-## Problem
-When a member clicks on an association from search results, they see a basic profile page with just contact info and details. Instead, they should see the full association page with posts, images, updates, tabs (Posts, About, Members, Companies), cover image/banner, and the association's complete feed -- like how association managers see their own page.
+## Current State
+- **marketing@asrmedia.in** (user ID: `1c16e51e-12be-4ddc-8130-ae249e5dcef3`) is already a **Super Admin** (`is_super_admin: true` in `admin_users`)
+- They already have implicit access to all associations via the admin role in the code
+- They have an explicit `association_managers` record only for **The Rise** (role: manager)
 
-## Solution
-Rebuild the `MemberAssociationProfileView` page (`src/pages/member/AssociationProfileView.tsx`) to display the full association experience by:
+## What Needs to Be Done
+Insert `association_managers` records for the 3 remaining associations:
 
-1. Loading the association by the URL `:id` parameter (instead of the current user's manager role)
-2. Showing the association profile header with cover image, logo, name, location, member/company counts
-3. Adding tabs: Posts, About, Members, Companies
-4. Displaying the association's posts feed (read-only, no post composer since the viewer is not a manager)
-5. Showing About info (description, contact, social links, functionaries)
-6. Listing member and company directories for that association
+1. **Advaita Women Entreprenuer Awards** (`2fa9f982-434c-4389-a3e0-5b4c0e9360da`)
+2. **Bharat DtoC** (`89f09def-3cf4-4f9c-b71b-2276b52db40f`)
+3. **We Spark Start Up Association** (`8ff6c8f3-dc66-4913-b000-676beec0030d`)
 
-## Technical Details
+## Database Changes
+A single migration will insert 3 rows into `association_managers` with:
+- `user_id`: `1c16e51e-12be-4ddc-8130-ae249e5dcef3`
+- `role`: `admin`
+- `is_active`: `true`
+- One row per association listed above
 
-### File to Rewrite: `src/pages/member/AssociationProfileView.tsx`
-
-The page will be restructured to include:
-
-- **Header section**: Cover image, logo, association name, industry, location, member/company counts, Message and Follow buttons
-- **Tabs**: Posts | About | Members | Companies
-- **Posts tab**: Fetch posts where `post_context = 'association'` and `organization_id = association.id`, with content filter (All/Images/Videos) and sort (Recent/Top). Display with likes, comments, shares -- all read-only viewing with engagement actions (like, comment, share, bookmark)
-- **About tab**: Existing contact info, details, social links, and key functionaries (current content reorganized into this tab)
-- **Members tab**: List members associated with this association
-- **Companies tab**: List companies under this association
-
-### Data Queries
-- Association info: `associations` table by `:id`
-- Posts: `posts` table filtered by `post_context = 'association'` and `organization_id = :id`
-- Members: Via `association_members` or `company_members` join
-- Companies: `companies` table filtered by `association_id = :id`
-- Key functionaries: `key_functionaries_public` table
-
-### Components Reused
-- `MentionText` for post content rendering
-- `CommentsSection` for post comments
-- `SharePostDropdown`, `BookmarkButton`, `PostEngagementBadge` for post interactions
-- `BackButton` for navigation
-- `UniversalSearch` in header
-- `MobileNavigation`, `FloatingChat` for layout consistency
+No code changes are needed -- only a database migration.
