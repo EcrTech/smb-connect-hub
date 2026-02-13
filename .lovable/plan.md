@@ -1,23 +1,19 @@
 
-# Add Explicit Association Manager Records for marketing@asrmedia.in
+# Fix Association Page 404 Error
 
-## Current State
-- **marketing@asrmedia.in** (user ID: `1c16e51e-12be-4ddc-8130-ae249e5dcef3`) is already a **Super Admin** (`is_super_admin: true` in `admin_users`)
-- They already have implicit access to all associations via the admin role in the code
-- They have an explicit `association_managers` record only for **The Rise** (role: manager)
+## Problem
+The route is defined as `/member/association/:id` (singular) in `App.tsx`, but navigation links in `MemberFeed.tsx` and `MemberProfile.tsx` use `/member/associations/:id` (plural). This mismatch causes a 404 error.
 
-## What Needs to Be Done
-Insert `association_managers` records for the 3 remaining associations:
+## Solution
+Update the route definition in `App.tsx` from `/member/association/:id` to `/member/associations/:id` to match the navigation URLs used throughout the app. This is a one-line change.
 
-1. **Advaita Women Entreprenuer Awards** (`2fa9f982-434c-4389-a3e0-5b4c0e9360da`)
-2. **Bharat DtoC** (`89f09def-3cf4-4f9c-b71b-2276b52db40f`)
-3. **We Spark Start Up Association** (`8ff6c8f3-dc66-4913-b000-676beec0030d`)
+## Technical Details
 
-## Database Changes
-A single migration will insert 3 rows into `association_managers` with:
-- `user_id`: `1c16e51e-12be-4ddc-8130-ae249e5dcef3`
-- `role`: `admin`
-- `is_active`: `true`
-- One row per association listed above
+### File: `src/App.tsx`
+- Change the route path from `path="/member/association/:id"` to `path="/member/associations/:id"`
 
-No code changes are needed -- only a database migration.
+This aligns the route with the existing navigation calls in:
+- `src/pages/member/MemberFeed.tsx` (4 occurrences of `/member/associations/`)
+- `src/pages/member/MemberProfile.tsx` (1 occurrence of `/member/associations/`)
+
+No other files need changes.
