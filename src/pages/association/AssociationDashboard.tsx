@@ -15,7 +15,7 @@ export default function AssociationDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userData } = useUserRole();
-  const { setRole } = useRoleContext();
+  const { setRole, selectedAssociationId } = useRoleContext();
   const [association, setAssociation] = useState<any>(null);
   const [stats, setStats] = useState({
     totalCompanies: 0,
@@ -74,15 +74,21 @@ export default function AssociationDashboard() {
           setLoading(false);
         }
       } else if (userData?.type === 'god-admin' || userData?.type === 'admin') {
-        // Admin user without association context - fetch first association or show selector
-        console.log('Admin user accessing association dashboard without context');
+        // Admin user without association context - use selectedAssociationId or fetch first
+        console.log('Admin user accessing association dashboard, selectedAssociationId:', selectedAssociationId);
         try {
-          const { data: associations, error } = await supabase
+          let query = supabase
             .from('associations')
             .select('*')
-            .eq('is_active', true)
-            .limit(1)
-            .maybeSingle();
+            .eq('is_active', true);
+          
+          if (selectedAssociationId) {
+            query = query.eq('id', selectedAssociationId);
+          } else {
+            query = query.limit(1);
+          }
+          
+          const { data: associations, error } = await query.maybeSingle();
           
           if (associations) {
             console.log('Auto-selected association for admin:', associations);

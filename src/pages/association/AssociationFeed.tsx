@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { BackButton } from '@/components/BackButton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useRoleContext } from '@/contexts/RoleContext';
 
 interface Post {
   id: string;
@@ -80,6 +81,7 @@ interface AssociationInfo {
 export default function AssociationFeed() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { selectedAssociationId } = useRoleContext();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(true);
@@ -121,7 +123,7 @@ export default function AssociationFeed() {
     return () => {
       supabase.removeChannel(connectionsChannel);
     };
-  }, []);
+  }, [selectedAssociationId]);
 
   // Load posts when association info is available
   useEffect(() => {
@@ -192,42 +194,45 @@ export default function AssociationFeed() {
 
       let associationId: string | null = null;
 
-      // First try: association_managers table
-      const { data: managerData, error: managerError } = await supabase
-        .from('association_managers')
-        .select('association_id')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .maybeSingle();
-
-      console.log('loadAssociationInfo: managerData =', managerData, 'error =', managerError);
-
-      if (managerData?.association_id) {
-        associationId = managerData.association_id;
+      // Priority 1: Use selectedAssociationId from RoleContext
+      if (selectedAssociationId) {
+        associationId = selectedAssociationId;
+        console.log('loadAssociationInfo: using selectedAssociationId from RoleContext:', associationId);
       } else {
-        // Fallback for admin users: check if they're an admin and fetch first association
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('id')
+        // Fallback: association_managers table
+        const { data: managerData, error: managerError } = await supabase
+          .from('association_managers')
+          .select('association_id')
           .eq('user_id', user.id)
           .eq('is_active', true)
+          .limit(1)
           .maybeSingle();
 
-        console.log('loadAssociationInfo: adminData =', adminData, 'error =', adminError);
+        console.log('loadAssociationInfo: managerData =', managerData, 'error =', managerError);
 
-        if (adminData) {
-          const { data: firstAssoc, error: assocError } = await supabase
-            .from('associations')
+        if (managerData?.association_id) {
+          associationId = managerData.association_id;
+        } else {
+          // Fallback for admin users
+          const { data: adminData } = await supabase
+            .from('admin_users')
             .select('id')
+            .eq('user_id', user.id)
             .eq('is_active', true)
-            .order('created_at', { ascending: true })
-            .limit(1)
             .maybeSingle();
 
-          console.log('loadAssociationInfo: firstAssoc =', firstAssoc, 'error =', assocError);
+          if (adminData) {
+            const { data: firstAssoc } = await supabase
+              .from('associations')
+              .select('id')
+              .eq('is_active', true)
+              .order('created_at', { ascending: true })
+              .limit(1)
+              .maybeSingle();
 
-          if (firstAssoc) {
-            associationId = firstAssoc.id;
+            if (firstAssoc) {
+              associationId = firstAssoc.id;
+            }
           }
         }
       }
