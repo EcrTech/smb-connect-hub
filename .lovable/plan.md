@@ -1,19 +1,17 @@
 
 
-# Fix 404 Error When Searching for Associations
+# Add Help Widget Script to index.html
 
-## Problem
-The Universal Search component navigates to `/member/association/:id` (singular), but the route is defined as `/member/associations/:id` (plural). This mismatch causes a 404 error.
-
-## Solution
-Fix the navigation path in `src/components/UniversalSearch.tsx` from `/member/association/` to `/member/associations/`.
+## What will change
+A help widget script tag will be added to the `index.html` file, just before the closing `</body>` tag. This will load an external help widget from `go-in-sync.lovable.app` with the data source set to `smb_connect`.
 
 ## Technical Details
 
-### File: `src/components/UniversalSearch.tsx`
-Change line 79:
-- **From:** `navigate('/member/association/${result.id}')`
-- **To:** `navigate('/member/associations/${result.id}')`
+### File: `index.html`
+Add the following script tag before `</body>`:
+```html
+<script src="https://go-in-sync.lovable.app/help-widget.js" data-source="smb_connect"></script>
+```
 
-This is a one-line fix. No other files need changes.
+No other files need changes.
 
