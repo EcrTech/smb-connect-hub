@@ -1023,7 +1023,7 @@ export default function CompanyFeed() {
                             className="cursor-pointer"
                             onClick={() => {
                               if (post.post_context !== 'company') {
-                                navigate(`/profile/${post.original_author_id || post.user_id}`);
+                                navigate(`/profile/${post.user_id}`);
                               }
                             }}
                           >
@@ -1036,10 +1036,7 @@ export default function CompanyFeed() {
                             <AvatarFallback>
                               {post.post_context === 'company'
                                 ? companyInfo?.name?.[0] || 'C'
-                                : (post.original_author 
-                                    ? `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}`
-                                    : `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
-                                  )
+                                : `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
                               }
                             </AvatarFallback>
                           </Avatar>
@@ -1050,16 +1047,13 @@ export default function CompanyFeed() {
                                   className={`font-semibold ${post.post_context !== 'company' ? 'cursor-pointer hover:underline' : ''}`}
                                   onClick={() => {
                                     if (post.post_context !== 'company') {
-                                      navigate(`/profile/${post.original_author_id || post.user_id}`);
+                                      navigate(`/profile/${post.user_id}`);
                                     }
                                   }}
                                 >
                                   {post.post_context === 'company'
                                     ? companyInfo?.name || 'Company'
-                                    : (post.original_author 
-                                        ? `${post.original_author.first_name} ${post.original_author.last_name}`
-                                        : `${post.profiles?.first_name} ${post.profiles?.last_name}`
-                                      )
+                                    : `${post.profiles?.first_name} ${post.profiles?.last_name}`
                                   }
                                 </p>
                                 {post.post_context !== 'company' && post.members?.companies && !post.original_post_id && (

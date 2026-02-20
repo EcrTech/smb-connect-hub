@@ -1223,7 +1223,7 @@ export default function AssociationFeed() {
                             className="cursor-pointer"
                             onClick={() => {
                               if (post.post_context !== 'association') {
-                                navigate(`/profile/${post.original_author_id || post.user_id}`);
+                                navigate(`/profile/${post.user_id}`);
                               }
                             }}
                           >
@@ -1236,10 +1236,7 @@ export default function AssociationFeed() {
                             <AvatarFallback>
                               {post.post_context === 'association'
                                 ? associationInfo?.name?.[0] || 'A'
-                                : (post.original_author 
-                                    ? `${post.original_author.first_name?.[0] || '?'}${post.original_author.last_name?.[0] || '?'}`
-                                    : `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
-                                  )
+                                : `${post.profiles?.first_name?.[0] || '?'}${post.profiles?.last_name?.[0] || '?'}`
                               }
                             </AvatarFallback>
                           </Avatar>
@@ -1250,16 +1247,13 @@ export default function AssociationFeed() {
                                   className={`font-semibold ${post.post_context !== 'association' ? 'cursor-pointer hover:underline' : ''}`}
                                   onClick={() => {
                                     if (post.post_context !== 'association') {
-                                      navigate(`/profile/${post.original_author_id || post.user_id}`);
+                                      navigate(`/profile/${post.user_id}`);
                                     }
                                   }}
                                 >
                                   {post.post_context === 'association'
                                     ? associationInfo?.name || 'Association'
-                                    : (post.original_author 
-                                        ? `${post.original_author.first_name || 'Unknown'} ${post.original_author.last_name || 'User'}`
-                                        : `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
-                                      )
+                                    : `${post.profiles?.first_name || 'Unknown'} ${post.profiles?.last_name || 'User'}`
                                   }
                                 </p>
                                 {post.post_context !== 'association' && post.members?.companies && !post.original_post_id && (
