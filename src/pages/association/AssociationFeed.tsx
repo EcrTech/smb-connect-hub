@@ -828,7 +828,7 @@ export default function AssociationFeed() {
                     variant="ghost" 
                     size="sm"
                     className="flex flex-col items-center gap-0.5 h-auto py-2 px-3"
-                    onClick={() => navigate('/association/feed')}
+                    onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); loadPosts(); }}
                   >
                     <MessageSquare className="w-5 h-5" />
                     <span className="text-xs">Feed</span>
