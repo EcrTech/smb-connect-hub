@@ -1030,7 +1030,7 @@ export default function CompanyFeed() {
                             <AvatarImage 
                               src={post.post_context === 'company' 
                                 ? companyInfo?.logo || undefined 
-                                : (post.original_author?.avatar || post.profiles?.avatar || undefined)
+                                : (post.profiles?.avatar || undefined)
                               } 
                             />
                             <AvatarFallback>

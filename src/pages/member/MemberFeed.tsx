@@ -1110,7 +1110,7 @@ export default function MemberFeed() {
                 : `${post.profile.first_name[0]}${post.profile.last_name[0]}`;
               const avatarSrc = isAssociationPost
                 ? post.association!.logo || undefined
-                : (post.original_author?.avatar || post.profile.avatar || undefined);
+                : (post.profile.avatar || undefined);
               const isOwnPost = post.user_id === currentUserId;
 
               return (

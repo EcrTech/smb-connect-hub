@@ -1230,7 +1230,7 @@ export default function AssociationFeed() {
                             <AvatarImage 
                               src={post.post_context === 'association' 
                                 ? associationInfo?.logo || undefined 
-                                : (post.original_author?.avatar || post.profiles?.avatar || undefined)
+                                : (post.profiles?.avatar || undefined)
                               } 
                             />
                             <AvatarFallback>
