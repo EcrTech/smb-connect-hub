@@ -13,17 +13,26 @@ interface NavItem {
   path: string;
 }
 
-const navItems: NavItem[] = [
-  { icon: Home, label: "Feed", path: "/feed" },
-  { icon: Users, label: "Members", path: "/members" },
-  { icon: MessageCircle, label: "Messages", path: "/messages" },
-  { icon: Bookmark, label: "Saved", path: "/saved-posts" },
-  { icon: Bell, label: "Alerts", path: "/notifications" },
-];
+const getNavItems = (pathname: string): NavItem[] => {
+  const isAssociation = pathname.startsWith('/association');
+  const isCompany = pathname.startsWith('/company');
+
+  const feedPath = isAssociation ? '/association/feed' : isCompany ? '/company/feed' : '/feed';
+  const membersPath = isAssociation ? '/association/members' : isCompany ? '/company/members' : '/members';
+
+  return [
+    { icon: Home, label: "Feed", path: feedPath },
+    { icon: Users, label: "Members", path: membersPath },
+    { icon: MessageCircle, label: "Messages", path: "/messages" },
+    { icon: Bookmark, label: "Saved", path: "/saved-posts" },
+    { icon: Bell, label: "Alerts", path: "/notifications" },
+  ];
+};
 
 export function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const navItems = getNavItems(location.pathname);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { unreadCount } = useUnreadMessageCount(currentUserId);
   const pendingConnectionCount = usePendingConnectionCount(currentUserId);
@@ -38,8 +47,8 @@ export function MobileNavigation() {
   }, []);
 
   const isActive = (path: string) => {
-    if (path === "/feed") {
-      return location.pathname === "/feed" || location.pathname === "/";
+    if (path === "/feed" || path === "/association/feed" || path === "/company/feed") {
+      return location.pathname === path || location.pathname === "/";
     }
     return location.pathname.startsWith(path);
   };
