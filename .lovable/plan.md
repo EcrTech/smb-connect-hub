@@ -1,44 +1,52 @@
 
 
-# Fix Repost Display: Show Reposter's Identity Instead of Original Author
+# Fix: Mobile Navigation Routes for Association Context
 
 ## Problem
-When Rahul reposts Prerna Arora's post, the post card incorrectly shows Prerna's name, initials, and profile link -- even though the avatar image was already fixed. The "Rahul reposted Prerna Arora" banner is correct, but the main post identity (avatar fallback, name, profile navigation) still points to the original author instead of the reposter.
-
-## Root Cause
-The previous fix only updated the avatar image `src` to use `post.profiles?.avatar` (the reposter). However, the following elements still reference `post.original_author`:
-- **Avatar fallback initials** -- shows Prerna's initials
-- **Display name** -- shows "Prerna Arora" instead of "Rahul Upadhyay"
-- **Profile link (onClick)** -- navigates to Prerna's profile
-
-Additionally, since Rahul has no avatar uploaded, the fallback initials kick in and show "PA" (Prerna Arora) instead of "RU" (Rahul Upadhyay).
+When logged in as an Association Manager (e.g., Bharat DtoC) and on the Association Feed (`/association/feed`), the bottom mobile navigation bar uses hardcoded member routes like `/feed`, `/members`, `/messages`. Clicking any of these takes the user out of the association context and into the member area. Navigating back then lands on the main dashboard instead of the association feed.
 
 ## Solution
-Update all three feed files so that for reposts, the post card consistently shows the **reposter's** identity (avatar, name, initials, profile link). The "reposted from [Original Author]" banner already correctly identifies the original content creator.
+Update `MobileNavigation` to detect the current route context (association, company, or member) and adjust navigation paths accordingly.
+
+- If the user is on an `/association/*` route, the "Feed" button should go to `/association/feed`, "Members" to `/association/members`, etc.
+- If on a `/company/*` route, use company-prefixed routes.
+- Otherwise, use the default member routes.
 
 ## Technical Details
 
-### Files to modify:
+### File: `src/components/layout/MobileNavigation.tsx`
 
-**1. `src/pages/association/AssociationFeed.tsx`**
-- Line 1226: Change profile link from `post.original_author_id || post.user_id` to `post.user_id`
-- Lines 1239-1242: Change fallback initials to always use `post.profiles` instead of `post.original_author`
-- Line 1253: Change profile link from `post.original_author_id || post.user_id` to `post.user_id`
-- Lines 1259-1262: Change display name to always use `post.profiles` instead of `post.original_author`
+1. Detect the current context from `location.pathname`:
+   - Starts with `/association` --> association context
+   - Starts with `/company` --> company context
+   - Otherwise --> member context (default)
 
-**2. `src/pages/member/MemberFeed.tsx`**
-- Line 1153: Change profile link from `post.original_author_id || post.user_id` to `post.user_id`
-- Line 1168: Same profile link fix for the name element
+2. Replace static `navItems` with dynamic path resolution:
 
-**3. `src/pages/company/CompanyFeed.tsx`**
-- Line 1026: Change profile link from `post.original_author_id || post.user_id` to `post.user_id`
-- Lines 1039-1041: Change fallback initials to always use `post.profiles` instead of `post.original_author`
-- Line 1053: Change profile link from `post.original_author_id || post.user_id` to `post.user_id`
-- Lines 1059-1061: Change display name to always use `post.profiles` instead of `post.original_author`
+```text
+Association context:
+  Feed    --> /association/feed
+  Members --> /association/members
+  Messages --> /messages (shared route)
+  Saved   --> /saved-posts (shared route)
+  Alerts  --> /notifications (shared route)
 
-### Result
-For a repost by Rahul of Prerna's content:
-- Banner: "Rahul Upadhyay reposted Prerna Arora" (unchanged, already correct)
-- Avatar/Name/Link: Shows Rahul Upadhyay's identity
-- Post content: Shows the original post content (unchanged)
+Company context:
+  Feed    --> /company/feed
+  Members --> /company/members
+  Messages --> /messages (shared route)
+  Saved   --> /saved-posts (shared route)
+  Alerts  --> /notifications (shared route)
+
+Member context (default, unchanged):
+  Feed    --> /feed
+  Members --> /members
+  Messages --> /messages
+  Saved   --> /saved-posts
+  Alerts  --> /notifications
+```
+
+3. Update the `isActive` check to account for the context-aware paths.
+
+This ensures navigation stays within the correct role context and prevents unintended redirects to the dashboard.
 
