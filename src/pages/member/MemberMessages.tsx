@@ -67,7 +67,7 @@ export default function MemberMessages() {
       <header className="border-b bg-card">
         <div className="container mx-auto py-3 md:py-4 md:!pl-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <BackButton fallbackPath="/feed" variant="ghost" />
+            <BackButton fallbackPath={window.location.pathname.includes('/association') ? '/association/feed' : '/feed'} variant="ghost" />
             <div>
               <h1 className="text-lg md:text-2xl font-bold">Messaging</h1>
               <p className="text-xs md:text-sm text-muted-foreground hidden sm:block">Stay connected</p>

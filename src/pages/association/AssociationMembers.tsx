@@ -115,9 +115,9 @@ export default function AssociationMembers() {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container mx-auto py-4 md:pl-20">
-          <Button variant="ghost" onClick={() => navigate('/association')}>
+          <Button variant="ghost" onClick={() => navigate('/association/feed')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            Back to Feed
           </Button>
         </div>
       </header>
