@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { MentionText } from '@/components/post/MentionText';
 import { MentionInput, parseMentions } from '@/components/post/MentionInput';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -80,6 +80,7 @@ interface AssociationInfo {
 
 export default function AssociationFeed() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const { selectedAssociationId } = useRoleContext();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -106,6 +107,17 @@ export default function AssociationFeed() {
   const [documentFile, setDocumentFile] = useState<File | null>(null);
   
   const { unreadCount: unreadMessageCount } = useUnreadMessageCount(currentUserId);
+
+  // Reset to posts tab when navigating back to feed via mobile nav
+  useEffect(() => {
+    const state = location.state as { resetTab?: number } | null;
+    if (state?.resetTab) {
+      setActiveTab('posts');
+      loadPosts();
+      // Clear the state to prevent re-triggering
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     loadCurrentUser();

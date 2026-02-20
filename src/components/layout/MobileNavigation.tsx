@@ -69,7 +69,16 @@ export function MobileNavigation() {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => {
+                if (location.pathname === item.path || (item.path.endsWith('/feed') && location.pathname === item.path)) {
+                  // Already on this page - scroll to top and signal reset
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  // Use replace navigation with state to trigger re-render
+                  navigate(item.path, { replace: true, state: { resetTab: Date.now() } });
+                } else {
+                  navigate(item.path);
+                }
+              }}
               className={cn(
                 "flex flex-col items-center justify-center w-full h-full gap-1 transition-colors relative",
                 "active:scale-95 touch-manipulation",
