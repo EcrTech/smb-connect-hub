@@ -817,7 +817,7 @@ export default function AssociationFeed() {
             <div className="flex items-center justify-between h-14 gap-3">
               {/* Left - Back Button (desktop only, logo handles home on all views) */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <BackButton fallbackPath="/association" variant="ghost" size="icon" label="" className="hidden md:flex" />
+                <BackButton fallbackPath="/association/feed" variant="ghost" size="icon" label="" className="hidden md:flex" />
               </div>
 
               {/* Center - Universal Search */}
