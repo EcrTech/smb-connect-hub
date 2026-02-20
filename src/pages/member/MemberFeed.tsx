@@ -1150,7 +1150,7 @@ export default function MemberFeed() {
                         className="cursor-pointer"
                         onClick={() => isAssociationPost 
                           ? navigate(`/member/associations/${post.organization_id}`)
-                          : navigate(`/profile/${post.original_author_id || post.user_id}`)
+                          : navigate(`/profile/${post.user_id}`)
                         }
                       >
                         <AvatarImage src={avatarSrc} />
@@ -1165,7 +1165,7 @@ export default function MemberFeed() {
                               className="font-semibold hover:underline cursor-pointer"
                               onClick={() => isAssociationPost
                                 ? navigate(`/member/associations/${post.organization_id}`)
-                                : navigate(`/profile/${post.original_author_id || post.user_id}`)
+                                : navigate(`/profile/${post.user_id}`)
                               }
                             >
                               {fullName}
