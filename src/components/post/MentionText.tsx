@@ -43,7 +43,7 @@ export function MentionText({ text, className = '' }: { text: string; className?
 
     const path = mention.type === 'member'
       ? `/profile/${mention.id}`
-      : `/member/association/${mention.id}`;
+      : `/member/associations/${mention.id}`;
 
     parts.push(
       <button
