@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { LinkifiedText } from '@/lib/linkify';
+import { MentionText } from '@/components/post/MentionText';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -1082,7 +1082,7 @@ export default function CompanyFeed() {
                                 </div>
                               )}
                             </div>
-                            <LinkifiedText text={post.content} className="mt-3" />
+                            <MentionText text={post.content} className="mt-3" />
                             {post.image_url && (
                               <img 
                                 src={post.image_url} 
