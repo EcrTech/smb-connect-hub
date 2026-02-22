@@ -207,6 +207,7 @@ export function EditProfileDialog({ profile, onSave }: EditProfileDialogProps) {
                 <SelectValue placeholder="Select your status" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="currently_working">💼 Currently working</SelectItem>
                 <SelectItem value="open_to_opportunities">🟢 Open to opportunities</SelectItem>
                 <SelectItem value="actively_looking">🔍 Actively looking</SelectItem>
                 <SelectItem value="hiring">📢 Hiring</SelectItem>
