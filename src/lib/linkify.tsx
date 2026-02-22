@@ -8,14 +8,12 @@ export function linkifyText(text: string): React.ReactNode[] {
   if (!text) return [];
 
   // URL regex pattern that matches http(s) URLs
-  const urlPattern = /(https?:\/\/[^\s<>[\]{}|\\^`"']+)/gi;
+  const urlPattern = /(https?:\/\/[^\s<>[\]{}|\\^`"']+)/i;
   
-  const parts = text.split(urlPattern);
+  const parts = text.split(new RegExp(urlPattern.source, 'gi'));
   
   return parts.map((part, index) => {
     if (urlPattern.test(part)) {
-      // Reset lastIndex since we're using the same regex
-      urlPattern.lastIndex = 0;
       return (
         <a
           key={index}

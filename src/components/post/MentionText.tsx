@@ -74,12 +74,11 @@ export function MentionText({ text, className = '' }: { text: string; className?
 }
 
 function linkifySegment(text: string, keyPrefix: string): React.ReactNode[] {
-  const urlPattern = /(https?:\/\/[^\s<>[\]{}|\\^`"']+)/gi;
-  const segmentParts = text.split(urlPattern);
+  const urlPattern = /(https?:\/\/[^\s<>[\]{}|\\^`"']+)/i;
+  const segmentParts = text.split(new RegExp(urlPattern.source, 'gi'));
 
   return segmentParts.map((part, index) => {
     if (urlPattern.test(part)) {
-      urlPattern.lastIndex = 0;
       return (
         <a
           key={`${keyPrefix}-url-${index}`}
