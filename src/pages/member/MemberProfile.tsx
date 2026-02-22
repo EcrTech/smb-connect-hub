@@ -1051,6 +1051,7 @@ export default function MemberProfile() {
                             variant={profile.open_to_work ? "default" : "secondary"}
                             className="text-sm"
                           >
+                            {profile.employment_status === 'currently_working' && '💼 Currently working'}
                             {profile.employment_status === 'open_to_opportunities' && '🟢 Open to opportunities'}
                             {profile.employment_status === 'actively_looking' && '🔍 Actively looking'}
                             {profile.employment_status === 'hiring' && '📢 Hiring'}
