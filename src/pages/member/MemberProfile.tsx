@@ -347,6 +347,29 @@ export default function MemberProfile() {
     }
   };
 
+  const handleDeleteEducation = async (educationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('education')
+        .delete()
+        .eq('id', educationId);
+
+      if (error) throw error;
+
+      setEducation(prev => prev.filter(e => e.id !== educationId));
+      toast({
+        title: 'Success',
+        description: 'Education entry deleted',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete education entry',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleDeletePost = async (postId: string) => {
     try {
       const { error } = await supabase
@@ -1511,21 +1534,46 @@ export default function MemberProfile() {
                   <div className="space-y-6">
                     {education.map((edu, index) => (
                       <div key={edu.id}>
-                        <h3 className="font-semibold">{edu.school}</h3>
-                        <p className="text-muted-foreground">
-                          {edu.degree}
-                          {edu.field_of_study && ` in ${edu.field_of_study}`}
-                        </p>
-                        {(edu.start_date || edu.end_date) && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {edu.start_date ? formatDate(edu.start_date) : ''} - {edu.end_date ? formatDate(edu.end_date) : ''}
-                          </p>
-                        )}
-                        {edu.description && (
-                          <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {edu.description}
-                          </p>
-                        )}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{edu.school}</h3>
+                            <p className="text-muted-foreground">
+                              {edu.degree}
+                              {edu.field_of_study && ` in ${edu.field_of_study}`}
+                            </p>
+                            {(edu.start_date || edu.end_date) && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {edu.start_date ? formatDate(edu.start_date) : ''} - {edu.end_date ? formatDate(edu.end_date) : ''}
+                              </p>
+                            )}
+                            {edu.description && (
+                              <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                                {edu.description}
+                              </p>
+                            )}
+                          </div>
+                          {isOwnProfile && (
+                            <div className="flex items-center gap-1 ml-2">
+                              <EditEducationDialog
+                                onSave={loadProfile}
+                                education={edu}
+                                trigger={
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                }
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteEducation(edu.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                         {index < education.length - 1 && <Separator className="mt-6" />}
                       </div>
                     ))}
