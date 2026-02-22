@@ -909,7 +909,13 @@ export default function MemberProfile() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Profile not found</p>
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">Profile not found</p>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Go Back
+          </Button>
+        </div>
       </div>
     );
   }
