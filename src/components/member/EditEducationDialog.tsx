@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,26 +14,59 @@ import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { DEGREES, FIELDS_OF_STUDY } from '@/lib/profileOptions';
+
+interface EducationData {
+  id: string;
+  school: string;
+  degree: string | null;
+  field_of_study: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  grade?: string | null;
+  description: string | null;
+}
 
 interface EditEducationDialogProps {
   onSave: () => void;
+  education?: EducationData;
+  trigger?: React.ReactNode;
 }
 
-export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
+const emptyForm = {
+  school: '',
+  degree: '',
+  field_of_study: '',
+  start_date: '',
+  end_date: '',
+  grade: '',
+  description: '',
+};
+
+export function EditEducationDialog({ onSave, education, trigger }: EditEducationDialogProps) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    school: '',
-    degree: '',
-    field_of_study: '',
-    start_date: '',
-    end_date: '',
-    grade: '',
-    description: '',
-  });
+  const [formData, setFormData] = useState(emptyForm);
+
+  const isEditMode = !!education;
+
+  useEffect(() => {
+    if (open && education) {
+      setFormData({
+        school: education.school || '',
+        degree: education.degree || '',
+        field_of_study: education.field_of_study || '',
+        start_date: education.start_date || '',
+        end_date: education.end_date || '',
+        grade: education.grade || '',
+        description: education.description || '',
+      });
+    } else if (open && !education) {
+      setFormData(emptyForm);
+    }
+  }, [open, education]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +76,7 @@ export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase.from('education').insert({
-        user_id: user.id,
+      const payload = {
         school: formData.school,
         degree: formData.degree || null,
         field_of_study: formData.field_of_study || null,
@@ -52,29 +84,33 @@ export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
         end_date: formData.end_date || null,
         grade: formData.grade || null,
         description: formData.description || null,
-      });
+      };
 
-      if (error) throw error;
+      if (isEditMode) {
+        const { error } = await supabase
+          .from('education')
+          .update(payload)
+          .eq('id', education.id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('education').insert({
+          user_id: user.id,
+          ...payload,
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: 'Success',
-        description: 'Education added',
+        description: isEditMode ? 'Education updated' : 'Education added',
       });
       setOpen(false);
-      setFormData({
-        school: '',
-        degree: '',
-        field_of_study: '',
-        start_date: '',
-        end_date: '',
-        grade: '',
-        description: '',
-      });
       onSave();
     } catch (error: any) {
       toast({
         title: 'Error',
-        description: 'Failed to add education',
+        description: isEditMode ? 'Failed to update education' : 'Failed to add education',
         variant: 'destructive',
       });
     } finally {
@@ -85,15 +121,19 @@ export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Plus className="w-4 h-4 mr-2" />
-          Add
-        </Button>
+        {trigger || (
+          <Button variant="outline" size="sm">
+            <Plus className="w-4 h-4 mr-2" />
+            Add
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Education</DialogTitle>
-          <DialogDescription>Add your educational background</DialogDescription>
+          <DialogTitle>{isEditMode ? 'Edit Education' : 'Add Education'}</DialogTitle>
+          <DialogDescription>
+            {isEditMode ? 'Update your educational background' : 'Add your educational background'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -176,7 +216,7 @@ export function EditEducationDialog({ onSave }: EditEducationDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Education'}
+              {loading ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Education' : 'Add Education')}
             </Button>
           </div>
         </form>
