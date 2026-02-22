@@ -1,28 +1,32 @@
 
-# Fix: Add Edit and Delete Functionality to Education Section
+# Fix: Tagged Mentions Not Rendering and Links Not Working
 
 ## Problem
-The Education section on your profile only has an "Add" button. Once an education entry is added, there's no way to edit or delete it -- the entries are displayed as read-only text.
+Tagged people like @Sandipan Ray are showing as raw markup text (e.g., `@[Sandipan Ray](member:uuid)`) instead of being rendered as clickable names. URLs in posts are also not working as clickable links.
+
+## Root Cause
+There are two bugs:
+
+1. **URL linkification bug in MentionText.tsx**: The `linkifySegment` function uses a URL regex with the `g` (global) flag, then calls `.test()` on it inside a `.map()` loop. With the `g` flag, `.test()` advances an internal cursor (`lastIndex`), causing it to alternately match and miss URLs. This makes URL detection unreliable and can also interfere with the rendering of text segments around mentions.
+
+2. **CompanyFeed.tsx uses wrong component**: The Company Feed uses `LinkifiedText` (which only handles URLs) instead of `MentionText` (which handles both mentions and URLs). So mentions in company feed posts always show as raw text.
 
 ## Solution
-Add edit (pencil) and delete (trash) buttons to each education entry, and create an edit dialog that pre-fills the form with existing data so you can update it.
 
-## Technical Details
+### 1. Fix `src/components/post/MentionText.tsx`
+- Remove the `g` flag from `urlPattern` in `linkifySegment`, or create a new regex instance for each `.test()` call to avoid the `lastIndex` state bug
+- This ensures every URL is correctly detected and every text segment renders properly
 
-### 1. Update `EditEducationDialog` to support editing existing entries
-- Accept an optional `education` prop with existing data
-- When provided, pre-fill the form and use `UPDATE` instead of `INSERT`
-- Change the dialog title/button text accordingly ("Edit Education" vs "Add Education")
+### 2. Fix `src/lib/linkify.tsx`
+- Apply the same fix to the `linkifyText` function which has the identical bug
 
-### 2. Add edit/delete buttons to each education entry in `MemberProfile.tsx`
-- Add a Pencil icon button that opens the `EditEducationDialog` with the selected entry's data
-- Add a Trash icon button that deletes the entry (with confirmation)
-- Only show these buttons when viewing your own profile (`isOwnProfile`)
+### 3. Fix `src/pages/company/CompanyFeed.tsx`
+- Replace `LinkifiedText` import with `MentionText` import
+- Replace `<LinkifiedText>` usage with `<MentionText>` so mentions are properly rendered in company feed posts
 
-### 3. Add delete handler in `MemberProfile.tsx`
-- Add a `handleDeleteEducation` function that calls `supabase.from('education').delete()` for the selected entry
-- Show a success/error toast and refresh the profile
+### Technical Details
 
-### Files to modify:
-- `src/components/member/EditEducationDialog.tsx` -- support edit mode with pre-filled data
-- `src/pages/member/MemberProfile.tsx` -- add edit/delete buttons and delete handler for education entries
+**Files to modify:**
+- `src/components/post/MentionText.tsx` -- fix the regex `g` flag bug in `linkifySegment`
+- `src/lib/linkify.tsx` -- fix the same regex bug in `linkifyText`
+- `src/pages/company/CompanyFeed.tsx` -- switch from `LinkifiedText` to `MentionText`
