@@ -1,32 +1,24 @@
 
-# Fix: Tagged Mentions Not Rendering and Links Not Working
+# Fix: Profiles Not Displaying Due to `.single()` Errors
 
 ## Problem
-Tagged people like @Sandipan Ray are showing as raw markup text (e.g., `@[Sandipan Ray](member:uuid)`) instead of being rendered as clickable names. URLs in posts are also not working as clickable links.
+When clicking on a tagged person's name, the profile page shows "Profile not found". This happens because the `MemberProfile.tsx` page uses `.single()` to query the `members` table for the viewed user. Many users (especially admin-only users) have no record in the `members` table, causing `.single()` to throw a 406 error that crashes the entire profile loading function.
 
 ## Root Cause
-There are two bugs:
+The `loadProfile` function in `MemberProfile.tsx` calls `.single()` on the `members` table (line 641) to get connection count. When no member record exists for the user being viewed, `.single()` throws an error, which is caught by the `catch` block. This prevents the rest of the profile from loading properly - even though the profile data itself was already fetched successfully from the `profiles` table.
 
-1. **URL linkification bug in MentionText.tsx**: The `linkifySegment` function uses a URL regex with the `g` (global) flag, then calls `.test()` on it inside a `.map()` loop. With the `g` flag, `.test()` advances an internal cursor (`lastIndex`), causing it to alternately match and miss URLs. This makes URL detection unreliable and can also interfere with the rendering of text segments around mentions.
-
-2. **CompanyFeed.tsx uses wrong component**: The Company Feed uses `LinkifiedText` (which only handles URLs) instead of `MentionText` (which handles both mentions and URLs). So mentions in company feed posts always show as raw text.
+The same issue affects several connection-related functions (lines 421, 428, 504, 511, 782, 788) that also use `.single()` on the members table.
 
 ## Solution
 
-### 1. Fix `src/components/post/MentionText.tsx`
-- Remove the `g` flag from `urlPattern` in `linkifySegment`, or create a new regex instance for each `.test()` call to avoid the `lastIndex` state bug
-- This ensures every URL is correctly detected and every text segment renders properly
+Replace all `.single()` calls on the `members` table in `MemberProfile.tsx` with `.maybeSingle()`. This returns `null` instead of throwing an error when no rows are found, allowing the profile to display correctly even when the user has no member record.
 
-### 2. Fix `src/lib/linkify.tsx`
-- Apply the same fix to the `linkifyText` function which has the identical bug
+### Files to modify:
+- **`src/pages/member/MemberProfile.tsx`** - Change 7 instances of `.single()` to `.maybeSingle()` for members table queries (lines 421, 428, 504, 511, 529, 641, 782, 788)
 
-### 3. Fix `src/pages/company/CompanyFeed.tsx`
-- Replace `LinkifiedText` import with `MentionText` import
-- Replace `<LinkifiedText>` usage with `<MentionText>` so mentions are properly rendered in company feed posts
-
-### Technical Details
-
-**Files to modify:**
-- `src/components/post/MentionText.tsx` -- fix the regex `g` flag bug in `linkifySegment`
-- `src/lib/linkify.tsx` -- fix the same regex bug in `linkifyText`
-- `src/pages/company/CompanyFeed.tsx` -- switch from `LinkifiedText` to `MentionText`
+### Technical details:
+- Line 641: The `loadProfile` function queries members to get connection count. With `.maybeSingle()`, if no member record exists, `userMember` will be null and the connection count section is safely skipped (there's already a `if (userMember)` check on line 643).
+- Lines 421, 428: `checkConnectionStatus` - already has a null check (`if (!currentMember || !otherMember) return`)
+- Lines 504, 511: `handleSendMessage` - already has a null check
+- Lines 782, 788: `handleConnect`/disconnect - already has null checks
+- Line 529: `.select().single()` after an insert can remain, but should also use `.maybeSingle()` for safety
