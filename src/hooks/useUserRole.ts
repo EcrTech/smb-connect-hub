@@ -61,6 +61,34 @@ export function useUserRole() {
               
             setRole('association');
             setUserData({ ...associationData, type: 'association' });
+          } else if (selectedAssociationId) {
+            // Admin users may not be in association_managers but can still manage associations
+            const { data: adminData } = await supabase
+              .from('admin_users')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('is_active', true)
+              .maybeSingle();
+
+            if (adminData) {
+              const { data: assocData } = await supabase
+                .from('associations')
+                .select('*')
+                .eq('id', selectedAssociationId)
+                .maybeSingle();
+
+              if (assocData) {
+                setRole('association');
+                setUserData({
+                  ...adminData,
+                  type: 'association',
+                  association_id: assocData.id,
+                  association: assocData,
+                });
+                setIsSuperAdmin(adminData.is_super_admin || false);
+                setIsGodAdmin(adminData.is_super_admin && (adminData as any).is_hidden === true);
+              }
+            }
           }
         } else if (selectedRole === 'company') {
           // Query without filtering by company_id - let RLS determine access
