@@ -418,14 +418,14 @@ export default function MemberProfile() {
         .select('id, company_id')
         .eq('user_id', currentUser)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       const { data: otherMember } = await supabase
         .from('members')
         .select('id, company_id')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (!currentMember || !otherMember) return;
 
@@ -501,14 +501,14 @@ export default function MemberProfile() {
         .select('id')
         .eq('user_id', currentUser)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       const { data: otherMember } = await supabase
         .from('members')
         .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (!currentMember || !otherMember) {
         toast({
@@ -638,7 +638,7 @@ export default function MemberProfile() {
         .select('id')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (userMember) {
         const { count } = await supabase
@@ -779,13 +779,13 @@ export default function MemberProfile() {
         .from('members')
         .select('id')
         .eq('user_id', currentUser)
-        .single();
+        .maybeSingle();
 
       const { data: otherMember } = await supabase
         .from('members')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (!currentMember || !otherMember) {
         toast({
