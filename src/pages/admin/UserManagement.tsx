@@ -402,6 +402,33 @@ export default function UserManagement() {
           if (companyAdminError) throw companyAdminError;
           break;
 
+        case 'association_member': {
+          if (!selectedAssociation) {
+            toast({ title: 'Error', description: 'Please select an association', variant: 'destructive' });
+            return;
+          }
+          const defaultCompany = companies.find(c => c.association_id === selectedAssociation && c.is_default);
+          if (!defaultCompany) {
+            toast({ title: 'Error', description: 'No default company found for this association', variant: 'destructive' });
+            return;
+          }
+          const { data: existingAssocMember } = await supabase
+            .from('members')
+            .select('id')
+            .eq('user_id', selectedUser.id)
+            .eq('company_id', defaultCompany.id)
+            .maybeSingle();
+          if (existingAssocMember) {
+            toast({ title: 'Already a member', description: 'This user is already a member of this association', variant: 'destructive' });
+            return;
+          }
+          const { error: assocMemberError } = await supabase
+            .from('members')
+            .insert({ user_id: selectedUser.id, company_id: defaultCompany.id, role: 'member' });
+          if (assocMemberError) throw assocMemberError;
+          break;
+        }
+
         case 'company_member':
           if (!selectedCompany) {
             toast({ title: 'Error', description: 'Please select a company', variant: 'destructive' });
@@ -882,6 +909,12 @@ export default function UserManagement() {
                                     Company Admin
                                   </div>
                                 </SelectItem>
+                                <SelectItem value="association_member">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="h-4 w-4" />
+                                    Association Member
+                                  </div>
+                                </SelectItem>
                                 <SelectItem value="company_member">
                                   <div className="flex items-center gap-2">
                                     <Users className="h-4 w-4" />
@@ -892,7 +925,7 @@ export default function UserManagement() {
                             </Select>
                           </div>
 
-                          {roleType === 'association_admin' && (
+                          {(roleType === 'association_admin' || roleType === 'association_member') && (
                             <div className="space-y-2">
                               <Label>Association</Label>
                               <Select value={selectedAssociation} onValueChange={setSelectedAssociation}>
@@ -911,6 +944,11 @@ export default function UserManagement() {
                                   )}
                                 </SelectContent>
                               </Select>
+                              {roleType === 'association_member' && selectedAssociation && (
+                                <p className="text-xs text-muted-foreground">
+                                  User will be added to the association's default company as a member.
+                                </p>
+                              )}
                             </div>
                           )}
 
