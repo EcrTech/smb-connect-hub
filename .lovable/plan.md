@@ -1,30 +1,30 @@
 
 
-# Fix: "Currently Working" Employment Status Causes Database Error
+# Add "Association Member" Role Option to User Management
 
 ## Problem
-When selecting "Currently working" in the Edit Profile dialog, the save fails with:
-> "new row for relation 'profiles' violates check constraint 'employment_status_check'"
-
-The database only allows these values: `open_to_opportunities`, `actively_looking`, `hiring`, `not_looking`, `open_to_consulting`, `available_for_freelance`.
-
-The value `currently_working` exists in the UI dropdown but is **not** included in the database constraint.
+The "Assign Role" dialog in User Management only offers 4 role types: Admin, Association Admin, Company Admin, and Company Member. There is no option to directly add a user as an **Association Member** -- someone who belongs to an association's default company as a regular member.
 
 ## Solution
-Add `currently_working` to the database check constraint so it matches the UI options.
+Add a new "Association Member" role type to the dialog. When selected, the admin picks an association, the system automatically uses that association's default company, and inserts the user into the `members` table with the role "member".
 
-### Changes:
-1. **Database migration** -- Update the `employment_status_check` constraint on the `profiles` table to include `currently_working`:
-   ```sql
-   ALTER TABLE public.profiles DROP CONSTRAINT employment_status_check;
-   ALTER TABLE public.profiles ADD CONSTRAINT employment_status_check 
-     CHECK (employment_status IS NULL OR employment_status = ANY(ARRAY[
-       'currently_working', 'open_to_opportunities', 'actively_looking', 
-       'hiring', 'not_looking', 'open_to_consulting', 'available_for_freelance'
-     ]));
-   ```
+## Changes
 
-2. **Update display in MemberProfile.tsx** -- The display code for `currently_working` already exists (line 1054), so no frontend changes are needed.
+### File: `src/pages/admin/UserManagement.tsx`
 
-No other files need modification.
+1. **Add "Association Member" to the role type dropdown** (after "Association Admin", around line 878):
+   - New `SelectItem` with value `"association_member"` and a user icon
 
+2. **Add UI for "Association Member" selection** (after the `association_admin` section, around line 915):
+   - Show an Association dropdown (same as existing ones)
+   - No company picker needed -- the default company is used automatically
+
+3. **Add logic in `assignRole` function** (around line 388):
+   - New `case 'association_member'`:
+     - Validate an association is selected
+     - Find the default company for that association from the already-loaded `companies` array
+     - If no default company exists, show an error
+     - Check for existing membership (same pattern as `company_member`)
+     - Insert into `members` table with `company_id` = default company, `role` = "member"
+
+No database changes needed -- this uses the existing `members` table structure.
