@@ -51,6 +51,7 @@ const EventLandingPageView = () => {
             method: 'GET',
             headers: {
               'Content-Type': 'application/json',
+              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
             },
           }
         );
@@ -122,6 +123,7 @@ const EventLandingPageView = () => {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               },
               body: JSON.stringify(requestBody),
             }
@@ -393,7 +395,7 @@ const EventLandingPageView = () => {
             
             fetch(supabaseUrl + '/functions/v1/validate-coupon', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'apikey': '${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}' },
               body: JSON.stringify({
                 code: code,
                 landing_page_id: landingPageId,
