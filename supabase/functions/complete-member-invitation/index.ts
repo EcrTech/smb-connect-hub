@@ -59,13 +59,40 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Found valid invitation:', invitation.id);
 
-    // Check if user already exists
-    const { data: { users: existingUsersList } } = await supabase.auth.admin.listUsers({
-      filter: `email.eq.${invitation.email}`,
-      page: 1,
-      perPage: 1,
-    });
-    const existingUser = existingUsersList?.[0] || null;
+    // Deterministic user lookup via profiles table
+    const normalizedInviteEmail = invitation.email.trim().toLowerCase();
+    console.log('Looking up existing user for:', normalizedInviteEmail);
+
+    const { data: profileMatches } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .ilike('email', normalizedInviteEmail);
+
+    let existingUser = null;
+    if (profileMatches && profileMatches.length === 1) {
+      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(profileMatches[0].id);
+      if (authUser && authUser.email?.toLowerCase() === normalizedInviteEmail) {
+        existingUser = authUser;
+        console.log('Resolved existing user via profiles:', authUser.id);
+      }
+    } else if (profileMatches && profileMatches.length > 1) {
+      console.error('Ambiguous profile match for invitation email:', normalizedInviteEmail);
+    }
+
+    // Fallback: paginated auth scan if no profile match
+    if (!existingUser && (!profileMatches || profileMatches.length === 0)) {
+      let page = 1;
+      const perPage = 50;
+      let found = false;
+      while (!found) {
+        const { data: { users } } = await supabase.auth.admin.listUsers({ page, perPage });
+        if (!users || users.length === 0) break;
+        const match = users.find(u => u.email?.toLowerCase() === normalizedInviteEmail);
+        if (match) { existingUser = match; found = true; console.log('Resolved existing user via scan:', match.id); }
+        if (users.length < perPage) break;
+        page++;
+      }
+    }
 
     if (existingUser) {
       console.log('User already exists:', existingUser.id);

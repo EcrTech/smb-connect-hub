@@ -18,9 +18,9 @@ serve(async (req) => {
       throw new Error('Email, OTP code, and new password are required')
     }
 
-    console.log('Verifying OTP for:', email)
+    const normalizedEmail = email.trim().toLowerCase()
+    console.log('Verifying OTP for normalized email:', normalizedEmail)
 
-    // Create Supabase client with service role
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -32,11 +32,11 @@ serve(async (req) => {
       }
     )
 
-    // Find the OTP record
+    // Find the OTP record using case-insensitive email match
     const { data: otpRecords, error: fetchError } = await supabaseAdmin
       .from('password_reset_otps')
       .select('*')
-      .eq('email', email)
+      .ilike('email', normalizedEmail)
       .eq('otp_code', otp)
       .eq('used', false)
       .gt('expires_at', new Date().toISOString())
@@ -49,32 +49,83 @@ serve(async (req) => {
     }
 
     if (!otpRecords || otpRecords.length === 0) {
-      console.log('Invalid or expired OTP')
+      console.log('Invalid or expired OTP for:', normalizedEmail)
       throw new Error('Invalid or expired verification code')
     }
 
     const otpRecord = otpRecords[0]
     console.log('OTP verified successfully')
 
-    // Get user by email using proper filter
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers({
-      filter: `email.eq.${email}`,
-      page: 1,
-      perPage: 1,
-    })
+    // Deterministic user resolution: query profiles table by email
+    const { data: profileMatches, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, email')
+      .ilike('email', normalizedEmail)
 
-    if (userError || !users || users.length === 0) {
-      console.error('User lookup error:', userError)
+    if (profileError) {
+      console.error('Error querying profiles:', profileError)
+      throw new Error('Failed to resolve user identity')
+    }
+
+    let resolvedUserId: string | null = null
+
+    if (profileMatches && profileMatches.length === 1) {
+      resolvedUserId = profileMatches[0].id
+      console.log('Resolved user via profiles:', resolvedUserId)
+    } else if (profileMatches && profileMatches.length > 1) {
+      console.error('SECURITY: Ambiguous profile match - multiple profiles for email:', normalizedEmail, 'count:', profileMatches.length)
+      throw new Error('Unable to resolve user identity - please contact support')
+    } else {
+      // Fallback: paginated auth scan
+      console.log('No profile match, falling back to paginated auth scan')
+      let page = 1
+      const perPage = 50
+      let found = false
+      while (!found) {
+        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage,
+        })
+        if (listError) {
+          console.error('Error listing users page', page, listError)
+          break
+        }
+        if (!users || users.length === 0) break
+
+        const match = users.find(u => u.email?.toLowerCase() === normalizedEmail)
+        if (match) {
+          resolvedUserId = match.id
+          found = true
+          console.log('Resolved user via paginated scan:', resolvedUserId)
+        }
+        if (users.length < perPage) break
+        page++
+      }
+    }
+
+    if (!resolvedUserId) {
+      console.error('SECURITY: No user found for email:', normalizedEmail)
       throw new Error('User not found')
     }
 
-    const user = users[0]
+    // Safety guard: verify the resolved auth user's email matches
+    const { data: { user: resolvedUser }, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(resolvedUserId)
 
-    console.log('Updating password for user:', user.id)
+    if (getUserError || !resolvedUser) {
+      console.error('Failed to fetch resolved user:', getUserError)
+      throw new Error('Failed to verify user identity')
+    }
+
+    if (resolvedUser.email?.toLowerCase() !== normalizedEmail) {
+      console.error('SECURITY ABORT: Email mismatch! Requested:', normalizedEmail, 'Resolved user email:', resolvedUser.email, 'User ID:', resolvedUserId)
+      throw new Error('User identity verification failed - password NOT updated')
+    }
+
+    console.log('Safety guard passed. Updating password for user:', resolvedUserId)
 
     // Update user password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      resolvedUserId,
       { password: newPassword }
     )
 
@@ -89,7 +140,7 @@ serve(async (req) => {
       .update({ used: true, used_at: new Date().toISOString() })
       .eq('id', otpRecord.id)
 
-    console.log('Password updated successfully')
+    console.log('Password updated successfully for user:', resolvedUserId, 'email:', normalizedEmail)
 
     return new Response(
       JSON.stringify({ success: true }),

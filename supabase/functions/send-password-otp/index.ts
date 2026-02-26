@@ -12,13 +12,14 @@ serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json()
+    const { email: rawEmail } = await req.json()
 
-    if (!email) {
+    if (!rawEmail) {
       throw new Error('Email is required')
     }
 
-    console.log('Generating OTP for:', email)
+    const email = rawEmail.trim().toLowerCase()
+    console.log('Generating OTP for normalized email:', email)
 
     // Create Supabase client with service role
     const supabaseAdmin = createClient(

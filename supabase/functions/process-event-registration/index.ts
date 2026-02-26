@@ -242,13 +242,40 @@ serve(async (req: Request) => {
       finalAmount = originalAmount - discountAmount;
     }
 
-    // Check if user already exists in auth
-    const { data: { users: existingUsersList } } = await supabase.auth.admin.listUsers({
-      filter: `email.eq.${email.toLowerCase()}`,
-      page: 1,
-      perPage: 1,
-    });
-    const existingUser = existingUsersList?.[0] || null;
+    // Deterministic user lookup via profiles table
+    const normalizedRegEmail = email.trim().toLowerCase();
+    console.log('Looking up existing user for registration:', normalizedRegEmail);
+
+    const { data: regProfileMatches } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .ilike('email', normalizedRegEmail);
+
+    let existingUser = null;
+    if (regProfileMatches && regProfileMatches.length === 1) {
+      const { data: { user: authUser } } = await supabase.auth.admin.getUserById(regProfileMatches[0].id);
+      if (authUser && authUser.email?.toLowerCase() === normalizedRegEmail) {
+        existingUser = authUser;
+        console.log('Resolved existing user via profiles:', authUser.id);
+      }
+    } else if (regProfileMatches && regProfileMatches.length > 1) {
+      console.error('Ambiguous profile match for registration email:', normalizedRegEmail);
+    }
+
+    // Fallback: paginated auth scan
+    if (!existingUser && (!regProfileMatches || regProfileMatches.length === 0)) {
+      let page = 1;
+      const perPage = 50;
+      let found = false;
+      while (!found) {
+        const { data: { users } } = await supabase.auth.admin.listUsers({ page, perPage });
+        if (!users || users.length === 0) break;
+        const match = users.find(u => u.email?.toLowerCase() === normalizedRegEmail);
+        if (match) { existingUser = match; found = true; console.log('Resolved existing user via scan:', match.id); }
+        if (users.length < perPage) break;
+        page++;
+      }
+    }
 
     let userId: string | null = null;
     let password: string | null = null;
