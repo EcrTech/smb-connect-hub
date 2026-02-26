@@ -26,6 +26,48 @@ interface LandingPageData {
   } | null;
 }
 
+const EDGE_FUNCTION_HEADERS = {
+  'Content-Type': 'application/json',
+  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+};
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 2) => {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const retryParam = `${url.includes('?') ? '&' : '?'}_r=${Date.now()}-${attempt}`;
+      const response = await fetch(`${url}${retryParam}`, {
+        ...options,
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok || response.status === 404 || attempt === maxRetries) {
+        return response;
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      lastError = error;
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+    }
+
+    await wait((attempt + 1) * 500);
+  }
+
+  throw (lastError instanceof Error ? lastError : new Error('Request failed'));
+};
+
 const EventLandingPageView = () => {
   const { slug, subPage } = useParams<{ slug: string; subPage?: string }>();
   const [landingPage, setLandingPage] = useState<LandingPageData | null>(null);
@@ -45,14 +87,11 @@ const EventLandingPageView = () => {
 
       try {
         const pageParam = subPage ? `&page=${encodeURIComponent(subPage)}` : '';
-        const response = await fetch(
+        const response = await fetchWithRetry(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/get-landing-page?slug=${encodeURIComponent(slug)}${pageParam}`,
           {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
+            headers: EDGE_FUNCTION_HEADERS,
           }
         );
 
@@ -121,10 +160,7 @@ const EventLandingPageView = () => {
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-event-registration`,
             {
               method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-              },
+              headers: EDGE_FUNCTION_HEADERS,
               body: JSON.stringify(requestBody),
             }
           );
@@ -184,9 +220,9 @@ const EventLandingPageView = () => {
     const pagesJson = JSON.stringify(pages || []);
     const baseSlug = slug || '';
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     const fee = registrationFee || 0;
     const landingPageId = pageId || '';
-    
     const formInterceptScript = `
       <style>
         /* Coupon section styles */
@@ -295,6 +331,7 @@ const EventLandingPageView = () => {
           var pages = ${pagesJson};
           var baseSlug = "${baseSlug}";
           var supabaseUrl = "${supabaseUrl}";
+          var publishableKey = "${publishableKey}";
           var registrationFee = ${fee};
           var landingPageId = "${landingPageId}";
           
@@ -395,7 +432,7 @@ const EventLandingPageView = () => {
             
             fetch(supabaseUrl + '/functions/v1/validate-coupon', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'apikey': '${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}' },
+              headers: { 'Content-Type': 'application/json', 'apikey': publishableKey },
               body: JSON.stringify({
                 code: code,
                 landing_page_id: landingPageId,
