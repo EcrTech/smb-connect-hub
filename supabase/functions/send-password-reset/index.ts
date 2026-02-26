@@ -121,7 +121,7 @@ serve(async (req) => {
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: 'SMB Connect <echocommunicator@gmail.com>',
+      from: 'SMB Connect <noreply@smbconnect.in>',
       to: [user.email],
       subject: 'Reset Your Password - SMB Connect',
       html: htmlContent,

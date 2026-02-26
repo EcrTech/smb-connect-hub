@@ -139,7 +139,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'SMB Connect <echocommunicator@gmail.com>',
+        from: 'SMB Connect <noreply@smbconnect.in>',
         to: [email],
         subject: 'Reset Your Password - Verification Code',
         html: htmlContent,
