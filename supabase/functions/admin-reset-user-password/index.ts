@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface ResetPasswordRequest {
@@ -18,10 +18,21 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
+        global: { headers: { Authorization: authHeader } },
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -40,23 +51,25 @@ serve(async (req) => {
       }
     );
 
-    const authHeader = req.headers.get('Authorization')!;
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    // Verify JWT using getClaims
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
 
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
+    if (claimsError || !claimsData?.claims) {
+      console.error('Authentication error:', claimsError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const callerUserId = claimsData.claims.sub;
+    const callerEmail = claimsData.claims.email;
+
     // Verify user is an admin
     const { data: adminData, error: adminError } = await supabaseAdmin
       .from('admin_users')
       .select('is_active, is_super_admin')
-      .eq('user_id', user.id)
+      .eq('user_id', callerUserId)
       .maybeSingle();
 
     if (adminError || !adminData?.is_active) {
@@ -80,7 +93,6 @@ serve(async (req) => {
     let action;
 
     if (sendResetEmail) {
-      // Generate password reset link and send email
       const { data, error } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
         email: (await supabaseAdmin.auth.admin.getUserById(userId)).data.user?.email!,
@@ -99,7 +111,6 @@ serve(async (req) => {
       
       console.log('Password reset email sent for user:', userId);
     } else if (newPassword) {
-      // Validate password length
       if (newPassword.length < 8) {
         return new Response(
           JSON.stringify({ error: 'Password must be at least 8 characters' }),
@@ -107,7 +118,6 @@ serve(async (req) => {
         );
       }
 
-      // Update password directly
       const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
         userId,
         { password: newPassword }
@@ -129,16 +139,16 @@ serve(async (req) => {
       );
     }
 
-    // Log the action in audit_logs
-    await supabaseClient
+    // Log the action in audit_logs using admin client
+    await supabaseAdmin
       .from('audit_logs')
       .insert({
-        user_id: user.id,
+        user_id: callerUserId,
         action: action,
         resource: 'user_password',
         resource_id: userId,
         changes: {
-          admin_email: user.email,
+          admin_email: callerEmail,
           target_user_id: userId,
           method: sendResetEmail ? 'email_reset_link' : 'manual_password_set'
         },
