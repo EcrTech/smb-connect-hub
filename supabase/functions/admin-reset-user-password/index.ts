@@ -28,18 +28,6 @@ serve(async (req) => {
 
     const token = authHeader.replace('Bearer ', '');
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: { headers: { Authorization: authHeader } },
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      }
-    );
-
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -51,19 +39,19 @@ serve(async (req) => {
       }
     );
 
-    // Verify JWT using getClaims
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    // Verify caller identity using admin client (reliable, no session needed)
+    const { data: { user: caller }, error: callerError } = await supabaseAdmin.auth.getUser(token);
 
-    if (claimsError || !claimsData?.claims) {
-      console.error('Authentication error:', claimsError);
+    if (callerError || !caller) {
+      console.error('Authentication error:', callerError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const callerUserId = claimsData.claims.sub;
-    const callerEmail = claimsData.claims.email;
+    const callerUserId = caller.id;
+    const callerEmail = caller.email;
 
     // Verify user is an admin
     const { data: adminData, error: adminError } = await supabaseAdmin
