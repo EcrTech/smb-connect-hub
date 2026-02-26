@@ -60,8 +60,12 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Found valid invitation:', invitation.id);
 
     // Check if user already exists
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email === invitation.email);
+    const { data: { users: existingUsersList } } = await supabase.auth.admin.listUsers({
+      filter: `email.eq.${invitation.email}`,
+      page: 1,
+      perPage: 1,
+    });
+    const existingUser = existingUsersList?.[0] || null;
 
     if (existingUser) {
       console.log('User already exists:', existingUser.id);
