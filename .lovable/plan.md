@@ -1,32 +1,42 @@
 
 
-# Fix Admin Password Reset Edge Function
+# Understanding the Fix
 
-## Problem
-The `admin-reset-user-password` edge function is failing with `AuthSessionMissingError` because:
-1. It creates a Supabase client with the anon key but doesn't pass the Authorization header to it
-2. It then calls `supabaseClient.auth.getUser(token)` which doesn't work correctly with the old SDK version (2.7.1)
-3. The function likely needs `verify_jwt = false` in config.toml since the signing-keys system requires manual JWT validation
+## Why the current function fails entirely
 
-## Solution
+The core issue is straightforward: `getClaims(token)` on line 55 **fails with `AuthSessionMissingError`**. When it fails, the function returns **401 Unauthorized on line 60** and **never reaches the password reset code on line 121**. The password is simply never reset — the function errors out before it gets there.
 
-### File: `supabase/functions/admin-reset-user-password/index.ts`
+So the fix is not "merely error handling" — it is fixing the **only path** to reach the password reset logic. Here is the flow:
 
-1. **Update CORS headers** to include all required Supabase client headers
-2. **Fix authentication**: Create the anon-key client with the Authorization header passed in `global.headers`, so auth context is available. Use `getClaims(token)` instead of `getUser(token)` for reliable JWT verification.
-3. **Update SDK import** to a newer version for `getClaims` support
+```text
+Current (broken):
+  Request → getClaims(token) → FAILS → returns 401 → password NOT reset
 
-### File: `supabase/config.toml`
-
-Add `verify_jwt = false` for this function (required for signing-keys system):
-```toml
-[functions.admin-reset-user-password]
-verify_jwt = false
+Fixed:
+  Request → supabaseAdmin.auth.getUser(token) → SUCCEEDS → admin check → updateUserById(userId) → password RESET
 ```
 
-### Key changes in the edge function:
-- Pass `Authorization` header into the client via `global.headers`
-- Use `getClaims(token)` to verify the JWT and extract `sub` (user ID)
-- Use the admin client for the admin check query
-- Keep the rest of the logic unchanged
+The actual password reset code (`supabaseAdmin.auth.admin.updateUserById(userId, { password })` on line 121) is correct and has always been correct. It resets the password of whichever `userId` is passed in the request body, which comes from the user you selected in the UI. The problem is the function never gets to that line because authentication verification crashes first.
+
+## Regarding your own password being reset
+
+Based on the code analysis, if `getClaims` fails (which it does), the function returns 401 and **no password is changed at all**. Your login issue with `a@in-sync.co.in` may have a different cause (expired session, cached credentials, etc.). I'd recommend trying to log in again or using the "Forgot Password" flow.
+
+## The fix
+
+**File: `supabase/functions/admin-reset-user-password/index.ts`**
+
+Replace the broken `getClaims` call with `supabaseAdmin.auth.getUser(token)` which reliably verifies any JWT using the service role:
+
+```typescript
+// Line 55 — replace getClaims with:
+const { data: { user: caller }, error: callerError } = await supabaseAdmin.auth.getUser(token);
+if (callerError || !caller) {
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+}
+const callerUserId = caller.id;
+const callerEmail = caller.email;
+```
+
+Remove the unused `supabaseClient` (lines 31-41) since we only need `supabaseAdmin`. No other changes needed — the rest of the function is correct.
 
