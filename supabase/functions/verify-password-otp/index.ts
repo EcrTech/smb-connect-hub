@@ -56,13 +56,19 @@ serve(async (req) => {
     const otpRecord = otpRecords[0]
     console.log('OTP verified successfully')
 
-    // Get user by email
-    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers()
-    const user = users.find(u => u.email === email)
+    // Get user by email using proper filter
+    const { data: { users }, error: userError } = await supabaseAdmin.auth.admin.listUsers({
+      filter: `email.eq.${email}`,
+      page: 1,
+      perPage: 1,
+    })
 
-    if (!user) {
+    if (userError || !users || users.length === 0) {
+      console.error('User lookup error:', userError)
       throw new Error('User not found')
     }
+
+    const user = users[0]
 
     console.log('Updating password for user:', user.id)
 
