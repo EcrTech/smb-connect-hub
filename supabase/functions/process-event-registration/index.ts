@@ -243,8 +243,12 @@ serve(async (req: Request) => {
     }
 
     // Check if user already exists in auth
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const { data: { users: existingUsersList } } = await supabase.auth.admin.listUsers({
+      filter: `email.eq.${email.toLowerCase()}`,
+      page: 1,
+      perPage: 1,
+    });
+    const existingUser = existingUsersList?.[0] || null;
 
     let userId: string | null = null;
     let password: string | null = null;
