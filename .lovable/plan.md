@@ -1,26 +1,21 @@
 
 
-## Why the event landing page stopped working
+# Root Cause: `get-landing-page` Edge Function Not Deployed
 
-The `get-landing-page` edge function is being called via raw `fetch()` **without the required `apikey` header**. The edge function logs confirm this: they show only boot/shutdown cycles with zero request-processing logs, meaning the gateway is rejecting the requests before they ever reach your function code.
+The `ERR_QUIC_PROTOCOL_ERROR` is not caused by a missing `apikey` header. The real issue is that the **`get-landing-page` edge function does not exist on the server**. When I tested it directly, it returned:
 
-This likely worked before because the backend gateway was more lenient about enforcing the `apikey` header requirement. A recent infrastructure-level change now strictly requires it on all edge function calls, even public ones.
+```
+404 NOT_FOUND: "Requested function was not found"
+```
 
-## Evidence
-
-- `EventLandingPageView.tsx` line 48-55: `fetch()` call to `get-landing-page` has no `apikey` header
-- Edge function logs: only `Boot` and `Shutdown` entries, no request processing whatsoever
-- Same missing header on the `process-event-registration` and `validate-coupon` calls within this file
+The function code exists in the codebase (`supabase/functions/get-landing-page/index.ts`) but has never been deployed (or was removed during a previous deployment cycle). Chrome reports `ERR_QUIC_PROTOCOL_ERROR` instead of a clean 404 because the gateway drops the connection at the transport level when the function endpoint doesn't exist.
 
 ## Fix
 
-### File: `src/pages/public/EventLandingPageView.tsx`
+Deploy the `get-landing-page` edge function. This is a single action — no code changes needed since the function code and the `apikey` header fix are already in place.
 
-Three fetch calls need the `apikey` header added:
-
-1. **`get-landing-page` fetch** (~line 52): Add `'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY` to headers
-2. **`process-event-registration` fetch** (registration handler): Same header addition
-3. **`validate-coupon` fetch inside iframe script** (in `getEnhancedHtml`): Inject the key as a JS variable and include it in the inline fetch headers
-
-No other files need changes. No database migrations required.
+### Technical Detail
+- The `apikey` header addition from the previous fix is still correct and necessary
+- The function just needs to be deployed to the backend
+- Once deployed, the event landing pages at `/event/bharat-dtoc-2026` and `/event/advaita-women-entreprenuer-awards-2026-` should load correctly
 
