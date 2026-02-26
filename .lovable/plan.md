@@ -1,30 +1,32 @@
 
 
-# Add "Association Member" Role Option to User Management
+# Fix Admin Password Reset Edge Function
 
 ## Problem
-The "Assign Role" dialog in User Management only offers 4 role types: Admin, Association Admin, Company Admin, and Company Member. There is no option to directly add a user as an **Association Member** -- someone who belongs to an association's default company as a regular member.
+The `admin-reset-user-password` edge function is failing with `AuthSessionMissingError` because:
+1. It creates a Supabase client with the anon key but doesn't pass the Authorization header to it
+2. It then calls `supabaseClient.auth.getUser(token)` which doesn't work correctly with the old SDK version (2.7.1)
+3. The function likely needs `verify_jwt = false` in config.toml since the signing-keys system requires manual JWT validation
 
 ## Solution
-Add a new "Association Member" role type to the dialog. When selected, the admin picks an association, the system automatically uses that association's default company, and inserts the user into the `members` table with the role "member".
 
-## Changes
+### File: `supabase/functions/admin-reset-user-password/index.ts`
 
-### File: `src/pages/admin/UserManagement.tsx`
+1. **Update CORS headers** to include all required Supabase client headers
+2. **Fix authentication**: Create the anon-key client with the Authorization header passed in `global.headers`, so auth context is available. Use `getClaims(token)` instead of `getUser(token)` for reliable JWT verification.
+3. **Update SDK import** to a newer version for `getClaims` support
 
-1. **Add "Association Member" to the role type dropdown** (after "Association Admin", around line 878):
-   - New `SelectItem` with value `"association_member"` and a user icon
+### File: `supabase/config.toml`
 
-2. **Add UI for "Association Member" selection** (after the `association_admin` section, around line 915):
-   - Show an Association dropdown (same as existing ones)
-   - No company picker needed -- the default company is used automatically
+Add `verify_jwt = false` for this function (required for signing-keys system):
+```toml
+[functions.admin-reset-user-password]
+verify_jwt = false
+```
 
-3. **Add logic in `assignRole` function** (around line 388):
-   - New `case 'association_member'`:
-     - Validate an association is selected
-     - Find the default company for that association from the already-loaded `companies` array
-     - If no default company exists, show an error
-     - Check for existing membership (same pattern as `company_member`)
-     - Insert into `members` table with `company_id` = default company, `role` = "member"
+### Key changes in the edge function:
+- Pass `Authorization` header into the client via `global.headers`
+- Use `getClaims(token)` to verify the JWT and extract `sub` (user ID)
+- Use the admin client for the admin check query
+- Keep the rest of the logic unchanged
 
-No database changes needed -- this uses the existing `members` table structure.
