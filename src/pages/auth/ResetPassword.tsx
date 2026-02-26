@@ -28,6 +28,7 @@ export default function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const prefilled = location.state?.email || '';
   
   const {
     register,
@@ -36,14 +37,14 @@ export default function ResetPassword() {
     setValue,
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { email: prefilled },
   });
 
   useEffect(() => {
-    const email = location.state?.email;
-    if (email) {
-      setValue('email', email);
+    if (prefilled) {
+      setValue('email', prefilled);
     }
-  }, [location.state, setValue]);
+  }, [prefilled, setValue]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     try {
@@ -109,9 +110,9 @@ export default function ResetPassword() {
                 id="email"
                 type="email"
                 placeholder="you@example.com"
-                disabled={true}
+                disabled={!!prefilled || loading}
                 autoComplete="email"
-                className="bg-muted"
+                className={prefilled ? "bg-muted" : ""}
               />
               {errors.email && (
                 <p className="text-sm text-destructive">{errors.email.message}</p>
