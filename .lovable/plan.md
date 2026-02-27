@@ -1,62 +1,55 @@
 
 
-# Plan: Add Registration SDK Snippet to Admin Landing Page Creator
+# Plan: Add SMBConnect Registration to Advaita Landing Page HTML
 
-## Current State
-The `CreateLandingPage.tsx` page has a "Form Field Names" help section (lines 758-769) that tells developers which field names to use, but there is **no copyable SDK snippet** anywhere in the admin UI. Developers have no way to get the integration code they need to embed in their custom HTML.
+## Problem
+The Advaita landing page's `handleRegistration()` function calls `event.preventDefault()` and either shows a thank-you modal or redirects to Razorpay — but never sends data to the platform via `postMessage`. The platform's injected `submit` listener never fires because the inline `onsubmit="handleRegistration(event)"` prevents it.
 
-## What Will Change
+## Fix
+Update the `html_content` in the database for the Advaita landing page to add a `window.parent.postMessage()` call inside the existing `handleRegistration()` function. This sends the form data to the platform for processing before continuing with the existing coupon/payment logic.
 
-### 1. Create the SDK file: `public/smb-register.js`
-A lightweight standalone script (~60 lines) that:
-- Exposes `window.SMBConnect.register(formData)` — sends a `postMessage` to the parent iframe with the form data
-- Exposes `window.SMBConnect.validateCoupon(code, email)` — validates coupons via `postMessage`
-- Automatically reads `data-landing-page-id` from its own `<script>` tag
-- Works inside the platform's iframe (primary mode) and degrades gracefully outside it
+### What changes in the HTML
 
-### 2. Inject the SDK automatically into the iframe in `EventLandingPageView.tsx`
-- Add a `<script>` tag for the SDK into the enhanced HTML so it's always available inside the iframe
-- Keep the existing capture-phase `submit` listener as a fallback for pages that don't use the SDK
-- Upgrade the existing listener to use `capture: true` so it fires before custom handlers
-
-### 3. Add "Registration Integration" card to `CreateLandingPage.tsx`
-A new card shown when `registrationEnabled` is true, appearing after the registration fee section. Contains:
-- A copyable code snippet showing exactly how to use `SMBConnect.register()` in their form
-- The snippet is pre-populated with the correct `landing_page_id` (when editing)
-- A "Copy Code" button that copies the snippet to clipboard
-- Brief instructions explaining that this is the recommended approach for custom HTML forms
-
-The snippet will look like:
-
-```html
-<form id="registration-form">
-  <input type="email" name="email" required />
-  <input type="text" name="first_name" required />
-  <input type="text" name="last_name" required />
-  <input type="tel" name="phone" />
-  <button type="submit">Register</button>
-</form>
-
-<script>
-  document.getElementById('registration-form')
-    .addEventListener('submit', function(e) {
-      e.preventDefault();
-      var fd = new FormData(e.target);
-      window.parent.postMessage({
-        type: 'event-registration',
-        formData: {
-          email: fd.get('email'),
-          first_name: fd.get('first_name'),
-          last_name: fd.get('last_name'),
-          phone: fd.get('phone') || ''
-        }
-      }, '*');
-    });
-</script>
+The existing `handleRegistration` function:
+```javascript
+function handleRegistration(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    console.log("Registration Details:", data);
+    // ... coupon check / Razorpay redirect
+}
 ```
 
-### Files Changed
-- **New**: `public/smb-register.js` — standalone SDK
-- **Edit**: `src/pages/admin/CreateLandingPage.tsx` — add "Registration Integration" card with copyable snippet
-- **Edit**: `src/pages/public/EventLandingPageView.tsx` — inject SDK into iframe, upgrade `submit` listener to capture phase
+Will become:
+```javascript
+function handleRegistration(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = Object.fromEntries(formData.entries());
+    console.log("Registration Details:", data);
+
+    // Send registration to SMB Connect platform
+    var nameParts = (data.name || '').trim().split(/\s+/);
+    var firstName = nameParts[0] || '';
+    var lastName = nameParts.slice(1).join(' ') || '';
+    window.parent.postMessage({
+        type: 'event-registration',
+        data: {
+            email: data.email || '',
+            first_name: firstName,
+            last_name: lastName,
+            phone: data.phone || '',
+            coupon_code: data.coupon || '',
+            company: data.company || '',
+            city: data.city || ''
+        }
+    }, '*');
+
+    // ... existing coupon check / Razorpay redirect (unchanged)
+}
+```
+
+### Implementation
+A single database UPDATE statement to replace the `handleRegistration` function in the stored HTML, adding the `postMessage` call right after the `console.log` line and before the coupon check logic. All existing behavior (coupon validation, Razorpay redirect, thank-you modal) remains untouched.
 
