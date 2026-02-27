@@ -187,7 +187,13 @@ const EventLandingPageView = () => {
         } catch (err) {
           console.error('[SMB Registration] Exception:', err);
           setRegistrationStatus('error');
-          setRegistrationMessage('An error occurred during registration. Please try again.');
+          const errorMsg = 'An error occurred during registration. Please try again.';
+          setRegistrationMessage(errorMsg);
+          // Notify the iframe about the error
+          iframeRef.current?.contentWindow?.postMessage(
+            { type: 'registration-error', message: errorMsg },
+            '*'
+          );
         }
       }
     };
@@ -498,7 +504,7 @@ const EventLandingPageView = () => {
             messageEl.style.display = 'block';
           }
 
-          // Intercept all form submissions
+          // Intercept all form submissions (capture phase to fire before custom handlers)
           document.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -553,7 +559,7 @@ const EventLandingPageView = () => {
               type: 'event-registration',
               data: normalizedData
             }, '*');
-          });
+          }, true); // capture phase — fires before any custom stopPropagation
 
           // Listen for registration result
           window.addEventListener('message', function(e) {
@@ -650,11 +656,17 @@ const EventLandingPageView = () => {
       </script>
     `;
 
+    // SDK script tag — makes window.SMBConnect available inside iframe
+    const sdkScript = `<script>
+${`(function(){if(window.SMBConnect)return;var _s=null,_e=null;window.SMBConnect={register:function(d){if(!d||!d.email){console.error("[SMBConnect] email required");if(_e)_e("Email is required");return}if(!d.first_name){console.error("[SMBConnect] first_name required");if(_e)_e("First name is required");return}window.parent.postMessage({type:"event-registration",data:d},"*")},onSuccess:function(c){_s=c},onError:function(c){_e=c}};window.addEventListener("message",function(e){if(e.data&&e.data.type==="registration-success"&&_s)_s(e.data.message);if(e.data&&e.data.type==="registration-error"&&_e)_e(e.data.message)})})();`}
+</script>`;
+
     // Insert script before closing body tag
+    const allScripts = formInterceptScript + sdkScript;
     if (sanitizedHtml.includes('</body>')) {
-      return sanitizedHtml.replace('</body>', formInterceptScript + '</body>');
+      return sanitizedHtml.replace('</body>', allScripts + '</body>');
     } else {
-      return sanitizedHtml + formInterceptScript;
+      return sanitizedHtml + allScripts;
     }
   };
 

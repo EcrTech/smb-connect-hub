@@ -767,6 +767,88 @@ const CreateLandingPage = () => {
                     <li><code className="bg-background px-1 rounded">phone</code>, <code className="bg-background px-1 rounded">mobile</code>, or <code className="bg-background px-1 rounded">telephone</code> - Optional</li>
                   </ul>
                 </div>
+
+                {registrationEnabled && (
+                  <Card className="border-primary/30 bg-primary/5">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">📋 Registration Integration Code</CardTitle>
+                      <CardDescription>
+                        Copy this snippet into your custom HTML to ensure registrations are captured by the platform — even if your page has its own JavaScript.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="relative">
+                        <pre className="bg-background border rounded-lg p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">
+{`<form id="registration-form">
+  <input type="email" name="email" required />
+  <input type="text" name="first_name" required />
+  <input type="text" name="last_name" required />
+  <input type="tel" name="phone" />
+  <button type="submit">Register</button>
+</form>
+
+<script>
+  document.getElementById('registration-form')
+    .addEventListener('submit', function(e) {
+      e.preventDefault();
+      var fd = new FormData(e.target);
+      window.parent.postMessage({
+        type: 'event-registration',
+        formData: {
+          email: fd.get('email'),
+          first_name: fd.get('first_name'),
+          last_name: fd.get('last_name'),
+          phone: fd.get('phone') || ''
+        }
+      }, '*');
+    });
+<\/script>`}
+                        </pre>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="absolute top-2 right-2"
+                          onClick={() => {
+                            const snippet = `<form id="registration-form">
+  <input type="email" name="email" required />
+  <input type="text" name="first_name" required />
+  <input type="text" name="last_name" required />
+  <input type="tel" name="phone" />
+  <button type="submit">Register</button>
+</form>
+
+<script>
+  document.getElementById('registration-form')
+    .addEventListener('submit', function(e) {
+      e.preventDefault();
+      var fd = new FormData(e.target);
+      window.parent.postMessage({
+        type: 'event-registration',
+        formData: {
+          email: fd.get('email'),
+          first_name: fd.get('first_name'),
+          last_name: fd.get('last_name'),
+          phone: fd.get('phone') || ''
+        }
+      }, '*');
+    });
+<\/script>`;
+                            navigator.clipboard.writeText(snippet);
+                            toast.success('Integration code copied to clipboard');
+                          }}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        <strong>Important:</strong> The key line is <code className="bg-background px-1 rounded">window.parent.postMessage</code> with type <code className="bg-background px-1 rounded">'event-registration'</code>. 
+                        You can adapt the form fields to match your design — just make sure <code className="bg-background px-1 rounded">email</code> and <code className="bg-background px-1 rounded">first_name</code> are always sent.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="css" className="space-y-4">
