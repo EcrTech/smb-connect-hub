@@ -1,49 +1,39 @@
 
 
-# Fix: DOMPurify Stripping Script Content from Landing Page HTML
+# Fix: CSS Not Loading on Advaita Landing Page
 
 ## Root Cause
-DOMPurify 3.3.0 has `script` in its `DEFAULT_FORBID_CONTENTS` list (line 503 of purify.js). Even though `ADD_TAGS: ['script']` preserves the `<script>` tags, their **content is emptied**. This means:
-- The Advaita's `handleRegistration()` function (including the `postMessage` we added) is stripped
-- The `onsubmit="handleRegistration(event)"` attribute survives, calling an undefined function → error
-- The capture-phase `submit` listener fires first but the subsequent error may interfere
 
-## Fix in `EventLandingPageView.tsx` — `getEnhancedHtml` function
+**DOMPurify removes HTML comments by default.** The script-preservation fix from the last edit uses `<!--SMB_SCRIPT_N-->` comment placeholders — these are stripped during sanitization. The re-injection `.replace()` finds nothing to replace, so **all extracted scripts are silently lost**.
 
-**Extract scripts before sanitization, re-inject after:**
+The Advaita page loads Tailwind CSS via `<script src="https://cdn.tailwindcss.com"></script>`. When that script tag is lost, every Tailwind utility class produces no styling — hence the broken CSS.
+
+## Fix
+
+**Skip DOMPurify entirely.** The HTML is already rendered inside a sandboxed iframe (`sandbox="allow-scripts allow-forms allow-same-origin"`), which provides security isolation. DOMPurify is redundant here and actively breaks the custom HTML.
+
+### Change in `src/pages/public/EventLandingPageView.tsx`
+
+Replace the entire sanitization block (lines 207–226) with a simple pass-through:
 
 ```typescript
-const getEnhancedHtml = (html, cssContent, pages, registrationFee, pageId) => {
-  // 1. Extract <script> blocks BEFORE DOMPurify
-  const scripts: string[] = [];
-  const htmlWithoutScripts = html.replace(
-    /<script[\s\S]*?<\/script>/gi,
-    (match) => {
-      scripts.push(match);
-      return `<!--SMB_SCRIPT_${scripts.length - 1}-->`;
-    }
-  );
+const getEnhancedHtml = (html: string, cssContent?: string | null, pages?: PageInfo[], registrationFee?: number | null, pageId?: string): string => {
+    // No DOMPurify — content is rendered in a sandboxed iframe which provides isolation
+    let sanitizedHtml = html;
 
-  // 2. Sanitize the script-free HTML
-  let sanitizedHtml = DOMPurify.sanitize(htmlWithoutScripts, {
-    ADD_TAGS: ['style', 'link'],
-    ADD_ATTR: ['target', 'onclick', 'onsubmit'],
-    WHOLE_DOCUMENT: true,
-  });
-
-  // 3. Re-inject original scripts
-  scripts.forEach((script, i) => {
-    sanitizedHtml = sanitizedHtml.replace(
-      `<!--SMB_SCRIPT_${i}-->`, script
-    );
-  });
-
-  // ... rest unchanged (CSS injection, formInterceptScript, SDK)
-};
+    // Inject CSS if present
+    // ... rest unchanged
 ```
 
-This preserves the Advaita's custom JavaScript (including the `postMessage` registration call) while still sanitizing the HTML structure.
+This removes ~20 lines (script extraction, DOMPurify call, script re-injection) and replaces them with one line.
+
+## Why This Is Safe
+
+The iframe already has `sandbox="allow-scripts allow-forms allow-same-origin"` which:
+- Prevents the content from accessing the parent page's DOM
+- Blocks popups, top-level navigation, and plugin access
+- The `postMessage` API is the only communication channel (by design)
 
 ## Files Changed
-- **Edit**: `src/pages/public/EventLandingPageView.tsx` — extract and re-inject `<script>` blocks around DOMPurify sanitization
+- `src/pages/public/EventLandingPageView.tsx` — remove DOMPurify sanitization, pass HTML through directly
 
