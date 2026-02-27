@@ -204,10 +204,25 @@ const EventLandingPageView = () => {
 
   // Inject CSS and the form interception script into the HTML
   const getEnhancedHtml = (html: string, cssContent?: string | null, pages?: PageInfo[], registrationFee?: number | null, pageId?: string): string => {
-    let sanitizedHtml = DOMPurify.sanitize(html, {
-      ADD_TAGS: ['style', 'script', 'link'],
+    // Extract <script> blocks BEFORE DOMPurify (it strips script content even with ADD_TAGS)
+    const extractedScripts: string[] = [];
+    const htmlWithoutScripts = html.replace(
+      /<script[\s\S]*?<\/script>/gi,
+      (match) => {
+        extractedScripts.push(match);
+        return `<!--SMB_SCRIPT_${extractedScripts.length - 1}-->`;
+      }
+    );
+
+    let sanitizedHtml = DOMPurify.sanitize(htmlWithoutScripts, {
+      ADD_TAGS: ['style', 'link'],
       ADD_ATTR: ['target', 'onclick', 'onsubmit'],
       WHOLE_DOCUMENT: true,
+    });
+
+    // Re-inject original scripts after sanitization
+    extractedScripts.forEach((script, i) => {
+      sanitizedHtml = sanitizedHtml.replace(`<!--SMB_SCRIPT_${i}-->`, script);
     });
 
     // Inject CSS if present
